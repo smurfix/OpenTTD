@@ -1754,5 +1754,5 @@ int GetPaceFactor() {
 		};
 	// TODO: in following commits we insert the use of game creation settings.
 	//   so far just refer to 1.
-	return factors[0];
+	return factors[1];
 }
