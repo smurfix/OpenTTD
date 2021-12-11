@@ -27,7 +27,7 @@ Year      _cur_year;   ///< Current year, starting at 0
 Month     _cur_month;  ///< Current month (0..11)
 Date      _date;       ///< Current date in days (day counter)
 DateFract _date_fract; ///< Fractional part of the day.
-uint16 _tick_counter;  ///< Ever incrementing (and sometimes wrapping) tick counter for setting off various events
+uint32 _tick_counter;  ///< Ever incrementing (and sometimes wrapping) tick counter for setting off various events
 
 /**
  * Set the date.
@@ -155,6 +155,75 @@ Date ConvertYMDToDate(Year year, Month month, Day day)
 	if (!IsLeapYear(year) && days >= ACCUM_MAR) days--;
 
 	return DAYS_TILL(year) + days;
+}
+
+static const int HOURS_IN_DAY = 24;
+static const int MINUTES_IN_DAY = 24 * 60;
+
+StandardTimeUnits GetStandardTimeUnitFor(Ticks span) {
+	auto day_ticks = GetDayTicks();
+
+	if (span < day_ticks / 24)
+		return StandardTimeUnits::MINUTES;
+
+	if (span < day_ticks)
+		return StandardTimeUnits::HOURS;
+
+	return StandardTimeUnits::DAYS;
+}
+
+int TicksToTimeUnits(Ticks ticks, StandardTimeUnits time_unit) {
+	if (time_unit == StandardTimeUnits::VANILLA_DAY_MAX_UNITS)
+		time_unit = GetStandardTimeUnitFor(VANILLA_DAY_TICKS);
+
+	switch (time_unit) {
+		case StandardTimeUnits::MINUTES:
+			return MINUTES_IN_DAY * ticks / GetDayTicks();
+		case StandardTimeUnits::HOURS:
+			return HOURS_IN_DAY * ticks / GetDayTicks();
+		case StandardTimeUnits::DAYS:
+			return ticks / GetDayTicks();
+		default:
+			NOT_REACHED();
+	}
+}
+
+Ticks TimeUnitsToTicks(int units, StandardTimeUnits time_unit) {
+	if (time_unit == StandardTimeUnits::VANILLA_DAY_MAX_UNITS)
+		time_unit = GetStandardTimeUnitFor(VANILLA_DAY_TICKS);
+
+	switch (time_unit) {
+		case StandardTimeUnits::MINUTES:
+			return GetDayTicks() * units / MINUTES_IN_DAY;
+		case StandardTimeUnits::HOURS:
+			return GetDayTicks() * units / HOURS_IN_DAY;
+		case StandardTimeUnits::DAYS:
+			return GetDayTicks() * units;
+		default:
+			NOT_REACHED();
+	}
+}
+
+Ticks HourMinuteToTicks(uint8 hour, uint8 minute) {
+	auto total_minutes = (uint16)hour * 60 + minute;
+	return GetDayTicks() * total_minutes / MINUTES_IN_DAY;
+}
+
+std::tuple<uint8, uint8> TicksToHourMinute(Ticks ticks) {
+	auto total_minutes = MINUTES_IN_DAY * ticks / GetDayTicks();
+	auto hm = std::div(total_minutes, 60);
+	return {hm.quot, hm.rem};
+}
+
+std::tuple<Date, DateFract> GameDateToVanillaDate(Date d, DateFract fract) {
+	auto x = std::div((long)d * GetDayTicks() + fract, (long)VANILLA_DAY_TICKS);
+	return {x.quot, x.rem};
+}
+
+std::tuple<Date, DateFract> VanillaDateToGameDate(Date d, DateFract fract) {
+	long x = (long)d * VANILLA_DAY_TICKS + fract;
+	auto dd = std::div(x, (long) GetDayTicks());
+	return {dd.quot, dd.rem};
 }
 
 /** Functions used by the IncreaseDate function */

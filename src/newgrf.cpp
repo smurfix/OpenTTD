@@ -6284,9 +6284,15 @@ bool GetGlobalVariable(byte param, uint32 *value, const GRFFile *grffile)
 			*value = _settings_game.vehicle.road_side << 4;
 			return true;
 
-		case 0x09: // date fraction
-			*value = _date_fract * 885;
+		case 0x09: { // date fraction
+		    // FIXME: SLOWPACE: We should return _date_fract of vanilla day
+		    //    or should we return _date_fract of game day (normalized to 74 steps by 885)?
+		    //    Let's assume fraction of vanilla game day is expected (which is used
+		    //    for animation)
+		    auto [_, vanilla_fract] = GameDateToVanillaDate(_date, _date_fract);
+			*value = vanilla_fract * 885;
 			return true;
+		}
 
 		case 0x0A: // animation counter
 			*value = _tick_counter;
@@ -9786,7 +9792,7 @@ void LoadNewGRF(uint load_index, uint num_baseset)
 	Date date            = _date;
 	Year year            = _cur_year;
 	DateFract date_fract = _date_fract;
-	uint16 tick_counter  = _tick_counter;
+	uint32 tick_counter  = _tick_counter;
 	byte display_opt     = _display_opt;
 
 	if (_networking) {

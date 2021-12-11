@@ -619,4 +619,14 @@ static inline GameSettings &GetGameSettings()
 	return (_game_mode == GM_MENU) ? _settings_newgame : _settings_game;
 }
 
+int GetPaceFactor();
+
+inline int GetDayTicks() {
+	return GetPaceFactor() * VANILLA_DAY_TICKS;
+}
+
+inline bool IsTimeRequired() {
+	return (VANILLA_DAY_TICKS < GetDayTicks());
+}
+
 #endif /* SETTINGS_TYPE_H */
