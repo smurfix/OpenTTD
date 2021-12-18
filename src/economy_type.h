@@ -195,7 +195,7 @@ struct PriceBaseSpec {
 };
 
 /** The "steps" in loan size, in British Pounds! */
-#define LOAN_INTERVAL GetLoanInterval()
+#define LOAN_INTERVAL ::GetLoanInterval()
 static const int VANILLA_LOAN_INTERVAL = 10000;
 
 /**
