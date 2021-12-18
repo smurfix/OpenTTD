@@ -53,8 +53,10 @@ void SetTimetableParams(int param1, int param2, Ticks ticks)
 		SetDParam(param1, STR_TIMETABLE_TICKS);
 		SetDParam(param2, ticks);
 	} else {
-		SetDParam(param1, STR_TIMETABLE_DAYS);
-		SetDParam(param2, ticks / DAY_TICKS);
+		auto time_unit = GetStandardTimeUnitFor(VANILLA_DAY_TICKS);
+		auto units = TicksToTimeUnits(ticks, time_unit);
+		SetDParam(param1, STR_TIMETABLE_MINUTES + (int)time_unit);
+		SetDParam(param2, units);
 	}
 }
 
@@ -150,6 +152,29 @@ static void ChangeTimetableStartCallback(const Window *w, Date date)
 	DoCommandP(0, w->window_number, date, CMD_SET_TIMETABLE_START | CMD_MSG(STR_ERROR_CAN_T_TIMETABLE_VEHICLE));
 }
 
+static StringID GetDateTimeStringID() {
+	return IsTimeRequired() ? STR_JUST_DATE_TIME_TINY : STR_JUST_DATE_TINY;
+}
+
+static void SetDateTimeParams(uint start_n, Date game_date, DateFract game_date_fract) {
+	if (!IsTimeRequired()) {
+		SetDParam(start_n, game_date);
+		return;
+	}
+
+	// Normalize date fract
+	game_date += game_date_fract / DAY_TICKS;
+	game_date_fract %= DAY_TICKS;
+
+	SetDParam(start_n, game_date);
+	SetDParam(start_n+1, game_date_fract);
+}
+
+static void SetDateTimeParams(uint start_n, Date vanilla_date) {
+	auto [game_date, game_date_fract] = VanillaDateToGameDate(vanilla_date);
+	SetDateTimeParams(start_n, game_date, game_date_fract);
+}
+
 
 struct TimetableWindow : Window {
 	int sel_index;
@@ -197,7 +222,7 @@ struct TimetableWindow : Window {
 		switch (widget) {
 			case WID_VT_ARRIVAL_DEPARTURE_PANEL:
 				SetDParamMaxValue(0, MAX_YEAR * DAYS_IN_YEAR, 0, FS_SMALL);
-				this->deparr_time_width = GetStringBoundingBox(STR_JUST_DATE_TINY).width;
+				this->deparr_time_width = GetStringBoundingBox(GetDateTimeStringID()).width;
 				this->deparr_abbr_width = std::max(GetStringBoundingBox(STR_TIMETABLE_ARRIVAL_ABBREVIATION).width, GetStringBoundingBox(STR_TIMETABLE_DEPARTURE_ABBREVIATION).width);
 				size->width = WD_FRAMERECT_LEFT + this->deparr_abbr_width + 10 + this->deparr_time_width + WD_FRAMERECT_RIGHT;
 				FALLTHROUGH;
@@ -454,19 +479,19 @@ struct TimetableWindow : Window {
 						if (arr_dep[i / 2].arrival != INVALID_TICKS) {
 							DrawString(abbr_left, abbr_right, y, STR_TIMETABLE_ARRIVAL_ABBREVIATION, i == selected ? TC_WHITE : TC_BLACK);
 							if (this->show_expected && i / 2 == earlyID) {
-								SetDParam(0, _date + arr_dep[i / 2].arrival / DAY_TICKS);
-								DrawString(time_left, time_right, y, STR_JUST_DATE_TINY, TC_GREEN);
+								SetDateTimeParams(0, _date, arr_dep[i / 2].arrival);
+								DrawString(time_left, time_right, y, GetDateTimeStringID(), TC_GREEN);
 							} else {
-								SetDParam(0, _date + (arr_dep[i / 2].arrival + offset) / DAY_TICKS);
-								DrawString(time_left, time_right, y, STR_JUST_DATE_TINY,
+								SetDateTimeParams(0, _date, arr_dep[i / 2].arrival + offset);
+								DrawString(time_left, time_right, y, GetDateTimeStringID(),
 										show_late ? TC_RED : i == selected ? TC_WHITE : TC_BLACK);
 							}
 						}
 					} else {
 						if (arr_dep[i / 2].departure != INVALID_TICKS) {
 							DrawString(abbr_left, abbr_right, y, STR_TIMETABLE_DEPARTURE_ABBREVIATION, i == selected ? TC_WHITE : TC_BLACK);
-							SetDParam(0, _date + (arr_dep[i/2].departure + offset) / DAY_TICKS);
-							DrawString(time_left, time_right, y, STR_JUST_DATE_TINY,
+							SetDateTimeParams(0, _date, arr_dep[i/2].departure + offset);
+							DrawString(time_left, time_right, y, GetDateTimeStringID(),
 									show_late ? TC_RED : i == selected ? TC_WHITE : TC_BLACK);
 						}
 					}
@@ -488,9 +513,9 @@ struct TimetableWindow : Window {
 				if (v->timetable_start != 0) {
 					/* We are running towards the first station so we can start the
 					 * timetable at the given time. */
-					SetDParam(0, STR_JUST_DATE_TINY);
-					SetDParam(1, v->timetable_start);
-					DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, STR_TIMETABLE_STATUS_START_AT);
+					SetDParam(0, GetDateTimeStringID());
+					SetDateTimeParams(1, v->timetable_start);
+					DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, STR_TIMETABLE_STATUS_START_AT_DATETIME);
 				} else if (!HasBit(v->vehicle_flags, VF_TIMETABLE_STARTED)) {
 					/* We aren't running on a timetable yet, so how can we be "on time"
 					 * when we aren't even "on service"/"on duty"? */
@@ -534,8 +559,19 @@ struct TimetableWindow : Window {
 			}
 
 			case WID_VT_START_DATE: // Change the date that the timetable starts.
-				ShowSetDateWindow(this, v->index | (v->orders.list->IsCompleteTimetable() && _ctrl_pressed ? 1U << 20 : 0), _date, _cur_year, _cur_year + 15, ChangeTimetableStartCallback);
+			{
+				auto [hour, minute] = TicksToHourMinute(_date_fract);
+				ShowSetDateWindow(
+					this,
+					v->index | (v->orders.list->IsCompleteTimetable() && _ctrl_pressed ? 1U << 20 : 0),
+					_date,
+					hour, minute,
+					_cur_year,
+					_cur_year + 15,
+					ChangeTimetableStartCallback
+				);
 				break;
+			}
 
 			case WID_VT_CHANGE_TIME: { // "Wait For" button.
 				int selected = this->sel_index;
@@ -548,7 +584,8 @@ struct TimetableWindow : Window {
 
 				if (order != nullptr) {
 					uint time = (selected % 2 == 1) ? order->GetTravelTime() : order->GetWaitTime();
-					if (!_settings_client.gui.timetable_in_ticks) time /= DAY_TICKS;
+					if (!_settings_client.gui.timetable_in_ticks)
+						time = TicksToTimeUnits((Ticks)time);
 
 					if (time != 0) {
 						SetDParam(0, time);
@@ -629,7 +666,8 @@ struct TimetableWindow : Window {
 		if (this->query_is_speed_query) {
 			val = ConvertDisplaySpeedToKmhishSpeed(val);
 		} else {
-			if (!_settings_client.gui.timetable_in_ticks) val *= DAY_TICKS;
+			if (!_settings_client.gui.timetable_in_ticks)
+				val = TimeUnitsToTicks((int)val);
 		}
 
 		uint32 p2 = std::min<uint32>(val, UINT16_MAX);

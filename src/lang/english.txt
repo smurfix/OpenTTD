@@ -4451,6 +4451,8 @@ STR_TIMETABLE_STAY_FOR_ESTIMATED                                :(stay for {STRI
 STR_TIMETABLE_AND_TRAVEL_FOR_ESTIMATED                          :(travel for {STRING1}, not timetabled)
 STR_TIMETABLE_STAY_FOR                                          :and stay for {STRING1}
 STR_TIMETABLE_AND_TRAVEL_FOR                                    :and travel for {STRING1}
+STR_TIMETABLE_MINUTES                                           :{COMMA}{NBSP}minute{P "" s}
+STR_TIMETABLE_HOURS                                             :{COMMA}{NBSP}hour{P "" s}
 STR_TIMETABLE_DAYS                                              :{COMMA}{NBSP}day{P "" s}
 STR_TIMETABLE_TICKS                                             :{COMMA}{NBSP}tick{P "" s}
 
@@ -4462,6 +4464,7 @@ STR_TIMETABLE_STATUS_LATE                                       :{BLACK}This veh
 STR_TIMETABLE_STATUS_EARLY                                      :{BLACK}This vehicle is currently running {STRING1} early
 STR_TIMETABLE_STATUS_NOT_STARTED                                :{BLACK}This timetable has not yet started
 STR_TIMETABLE_STATUS_START_AT                                   :{BLACK}This timetable will start at {STRING1}
+STR_TIMETABLE_STATUS_START_AT_DATETIME                          :{BLACK}This timetable will start at {STRING2}
 
 STR_TIMETABLE_STARTING_DATE                                     :{BLACK}Start date
 STR_TIMETABLE_STARTING_DATE_TOOLTIP                             :{BLACK}Select a date as starting point of this timetable. Ctrl+Click sets the starting point of this timetable and distributes all vehicles sharing this order evenly based on their relative order, if the order is completely timetabled
@@ -4496,6 +4499,8 @@ STR_TIMETABLE_DEPARTURE_ABBREVIATION                            :D:
 STR_DATE_CAPTION                                                :{WHITE}Set date
 STR_DATE_SET_DATE                                               :{BLACK}Set date
 STR_DATE_SET_DATE_TOOLTIP                                       :{BLACK}Use the selected date as starting date for the timetable
+STR_DATE_MINUTE_TOOLTIP                                         :{BLACK}Select minute
+STR_DATE_HOUR_TOOLTIP                                           :{BLACK}Select hour
 STR_DATE_DAY_TOOLTIP                                            :{BLACK}Select day
 STR_DATE_MONTH_TOOLTIP                                          :{BLACK}Select month
 STR_DATE_YEAR_TOOLTIP                                           :{BLACK}Select year
