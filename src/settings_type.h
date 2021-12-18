@@ -326,6 +326,7 @@ struct GameCreationSettings {
 	byte   min_river_length;                 ///< the minimum river length
 	byte   river_route_random;               ///< the amount of randomicity for the route finding
 	byte   amount_of_rivers;                 ///< the amount of rivers
+	byte   year_pace_option;                 ///< game year speed, will be converted into pace factor
 };
 
 /** Settings related to construction in-game */

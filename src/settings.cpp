@@ -1752,7 +1752,6 @@ int GetPaceFactor() {
 			4 * 24,     // 96 times slower (one day)
 			4 * 24 * 7, // 672 times slower (one week)
 		};
-	// TODO: in following commits we insert the use of game creation settings.
-	//   so far just refer to 1.
-	return factors[1];
+
+	return factors[_settings_game.game_creation.year_pace_option];
 }
