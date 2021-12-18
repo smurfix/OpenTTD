@@ -101,6 +101,10 @@ Prices _price;
 Money _additional_cash_required;
 static PriceMultipliers _price_base_multiplier;
 
+int GetLoanInterval() {
+	return VANILLA_LOAN_INTERVAL * GetPaceFactor();
+}
+
 /**
  * Calculate the value of the company. That is the value of all
  * assets (vehicles, stations, etc) and money minus the loan,
@@ -754,6 +758,9 @@ void RecomputePrices()
 	/* Setup maximum loan */
 	_economy.max_loan = ((uint64)_settings_game.difficulty.max_loan * _economy.inflation_prices >> 16) / 50000 * 50000;
 
+	// SLOWPACE: money scaling
+	_economy.max_loan *= GetPaceFactor();
+
 	/* Setup price bases */
 	for (Price i = PR_BEGIN; i < PR_END; i++) {
 		Money price = _price_base_specs[i].start_price;
@@ -799,6 +806,10 @@ void RecomputePrices()
 			/* No base price should be zero, but be sure. */
 			assert(price != 0);
 		}
+
+        // SLOWPACE: money scaling
+        price *= GetPaceFactor();
+
 		/* Store value */
 		_price[i] = price;
 	}
