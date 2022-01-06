@@ -5454,7 +5454,7 @@ STR_FORMAT_DATE_SHORT                                           :{STRING} {NUM}
 STR_FORMAT_DATE_LONG                                            :{STRING} {STRING} {NUM}
 STR_FORMAT_DATE_ISO                                             :{2:NUM}-{1:RAW_STRING}-{0:RAW_STRING}
 
-STR_FORMAT_TIME_TINY                                            :{RAW_STRING}h {RAW_STRING}m
+STR_FORMAT_TIME_TINY                                            :{RAW_STRING}:{RAW_STRING}
 
 STR_FORMAT_COMPANY_NUM                                          :(Company {COMMA})
 STR_FORMAT_GROUP_NAME                                           :Group {COMMA}
