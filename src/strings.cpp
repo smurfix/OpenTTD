@@ -35,6 +35,7 @@
 #include "game/game_text.hpp"
 #include "network/network_content_gui.h"
 #include <stack>
+#include <cmath>
 
 #include "table/strings.h"
 #include "table/control_codes.h"
@@ -488,20 +489,16 @@ static char *FormatTinyTime(char *buff, DateFract date_fract, StringID str, cons
  *   * second - amount of fractional digits in money number
  */
 static std::pair<Money, int> NormalizeMoney(Money number, bool need_fractional_part) {
-	// TODO:
-	//   Can we do it with some fast log10 computations?
 	auto pf = ::GetPaceFactor();
+	auto cr = _currency->rate;
+	auto pfcr = pf / cr;
+
 	int num_fractional_digits;
 	int fractional_factor;
-	if (pf < 1) {
-		NOT_REACHED();
-	} else if (pf == 1) {
+    if (pfcr <= 1) {
 		num_fractional_digits = 0;
 		fractional_factor = 1;
-	} else if (pf > 1 && pf <= 10) {
-		num_fractional_digits = 1;
-		fractional_factor = 10;
-	} else if (pf <= 100) {
+	} else if (pfcr > 1 && pfcr <= 100) {
 		num_fractional_digits = 2;
 		fractional_factor = 100;
 	} else {
@@ -512,14 +509,20 @@ static std::pair<Money, int> NormalizeMoney(Money number, bool need_fractional_p
 	// We still believe that overflow won't happen with int64 and highest
 	// possible pace factor (which, as we believe is ~1000).
 
+	Money number_new;
 	if (need_fractional_part)
-		number *= fractional_factor;
+		number_new = number * fractional_factor;
 	else
 		num_fractional_digits = 0;
 
-	number /= pf;
+	double fnumber = (double)number_new / pf;
+	double intpart;
+	double rem = std::modf(fnumber, &intpart);
 
-	return {number, num_fractional_digits};
+	if (rem > 0.999 || rem < 0.001)
+		return {number / pf, 0};
+
+	return {(Money)fnumber, num_fractional_digits};
 }
 
 static char *FormatGenericCurrency(char *buff, const CurrencySpec *spec, Money number, bool compact, const char *last)
