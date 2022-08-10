@@ -29,14 +29,14 @@ jobs:
     steps:
     - name: Checkout (Release)
       if: github.event_name == 'release'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         # We generate a changelog; for this we need the full git log.
         fetch-depth: 0
 
     - name: Checkout (Manual)
       if: github.event_name == 'workflow_dispatch'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ github.event.inputs.ref }}
         # We generate a changelog; for this we need the full git log.
@@ -44,7 +44,7 @@ jobs:
 
     - name: Checkout (Trigger)
       if: github.event_name == 'repository_dispatch'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ github.event.client_payload.ref }}
         # We generate a changelog; for this we need the full git log.
@@ -174,14 +174,14 @@ jobs:
         echo "::endgroup::"
 
     - name: Store bundles
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: openttd-source
         path: build/bundles/*
         retention-days: 5
 
     - name: Store source (for other jobs)
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: internal-source
         path: source.tar.gz
@@ -195,7 +195,7 @@ jobs:
 
     steps:
     - name: Download source
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: internal-source
 
@@ -258,7 +258,7 @@ jobs:
         echo "::endgroup::"
 
     - name: Store bundles
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: openttd-docs
         path: build/bundles/*.tar.xz
@@ -357,7 +357,7 @@ jobs:
 
     steps:
     - name: Download source
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: internal-source
 
@@ -436,7 +436,7 @@ jobs:
         echo "::endgroup::"
 
     - name: Store bundles
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: openttd-linux-generic
         path: build/bundles
@@ -458,9 +458,6 @@ jobs:
         - container_image: "ubuntu:20.04"
           bundle_name: "focal"
           compiler: "g++"
-        - container_image: "ubuntu:20.10"
-          bundle_name: "groovy"
-          compiler: "g++"
         - container_image: "debian:buster"
           bundle_name: "buster"
           compiler: "g++"
@@ -474,7 +471,7 @@ jobs:
 
     steps:
     - name: Download source
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: internal-source
 
@@ -544,7 +541,7 @@ jobs:
         echo "::endgroup::"
 
     - name: Store bundles
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: openttd-linux-${{ matrix.bundle_name }}
         path: build/bundles
@@ -560,7 +557,7 @@ jobs:
 
     steps:
     - name: Download source
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: internal-source
 
@@ -581,7 +578,7 @@ jobs:
         echo "::set-output name=image::$ImageOS-$ImageVersion"
 
     - name: Enable vcpkg cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: /usr/local/share/vcpkg/installed
         key: ${{ steps.key.outputs.image }}-vcpkg-release-0 # Increase the number whenever dependencies are modified
@@ -735,7 +732,7 @@ jobs:
         mv _CPack_Packages/*/Bundle/openttd-*.zip bundles/
 
     - name: Store bundles
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: openttd-macos-universal
         path: build-x64/bundles
@@ -760,7 +757,7 @@ jobs:
 
     steps:
     - name: Download source
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: internal-source
 
@@ -784,7 +781,7 @@ jobs:
         Write-Output "::set-output name=image::$env:ImageOS-$env:ImageVersion"
 
     - name: Enable vcpkg cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: vcpkg/installed
         key: ${{ steps.key.outputs.image }}-vcpkg-${{ matrix.arch }}-0 # Increase the number whenever dependencies are modified
@@ -928,7 +925,7 @@ jobs:
         WINDOWS_CERTIFICATE_COMMON_NAME: ${{ secrets.WINDOWS_CERTIFICATE_COMMON_NAME }}
 
     - name: Store bundles
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: openttd-windows-${{ matrix.arch }}
         path: build/bundles

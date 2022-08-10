@@ -27,6 +27,7 @@
 #include "newgrf_sound.h"
 #include "newgrf_station.h"
 #include "industrytype.h"
+#include "industry_map.h"
 #include "newgrf_canal.h"
 #include "newgrf_townname.h"
 #include "newgrf_industries.h"
@@ -3374,6 +3375,8 @@ static ChangeInfoResult IgnoreIndustryProperty(int prop, ByteReader *buf)
 static bool ValidateIndustryLayout(const IndustryTileLayout &layout)
 {
 	const size_t size = layout.size();
+	if (size == 0) return false;
+
 	for (size_t i = 0; i < size - 1; i++) {
 		for (size_t j = i + 1; j < size; j++) {
 			if (layout[i].ti.x == layout[j].ti.x &&
@@ -3382,7 +3385,16 @@ static bool ValidateIndustryLayout(const IndustryTileLayout &layout)
 			}
 		}
 	}
-	return true;
+
+	bool have_regular_tile = false;
+	for (size_t i = 0; i < size; i++) {
+		if (layout[i].gfx != GFX_WATERTILE_SPECIALCHECK) {
+			have_regular_tile = true;
+			break;
+		}
+	}
+
+	return have_regular_tile;
 }
 
 /**
@@ -3533,7 +3545,7 @@ static ChangeInfoResult IndustriesChangeInfo(uint indid, int numinfo, int prop, 
 								/* Declared as been valid, can be used */
 								it.gfx = tempid;
 							}
-						} else if (it.gfx == 0xFF) {
+						} else if (it.gfx == GFX_WATERTILE_SPECIALCHECK) {
 							it.ti.x = (int8)GB(it.ti.x, 0, 8);
 							it.ti.y = (int8)GB(it.ti.y, 0, 8);
 
@@ -7051,6 +7063,10 @@ static uint32 GetPatchVariable(uint8 param)
 		/* Shore base sprite */
 		case 0x16:
 			return SPR_SHORE_BASE;
+
+		/* Game map seed */
+		case 0x17:
+			return _settings_game.game_creation.generation_seed;
 
 		default:
 			grfmsg(2, "ParamSet: Unknown Patch variable 0x%02X.", param);

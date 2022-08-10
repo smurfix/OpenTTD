@@ -36,6 +36,11 @@
 #include "station_base.h"
 #include "tilehighlight_func.h"
 #include "zoom_func.h"
+#include "depot_cmd.h"
+#include "vehicle_cmd.h"
+#include "order_cmd.h"
+#include "roadveh_cmd.h"
+#include "train_cmd.h"
 
 #include "safeguards.h"
 #include "date_func.h"
@@ -775,19 +780,17 @@ struct RefitWindow : public Window {
 	StringID GetCapacityString(RefitOption *option) const
 	{
 		assert(_current_company == _local_company);
-		Vehicle *v = Vehicle::Get(this->window_number);
-		CommandCost cost = DoCommand(v->tile, this->selected_vehicle, option->cargo | option->subtype << 8 | this->num_vehicles << 16 |
-				(int)this->auto_refit << 24, DC_QUERY_COST, GetCmdRefitVeh(v->type));
+		auto [cost, refit_capacity, mail_capacity] = Command<CMD_REFIT_VEHICLE>::Do(DC_QUERY_COST, this->selected_vehicle, option->cargo, option->subtype, this->auto_refit, false, this->num_vehicles);
 
 		if (cost.Failed()) return INVALID_STRING_ID;
 
 		SetDParam(0, option->cargo);
-		SetDParam(1, _returned_refit_capacity);
+		SetDParam(1, refit_capacity);
 
 		Money money = cost.GetCost();
-		if (_returned_mail_refit_capacity > 0) {
+		if (mail_capacity > 0) {
 			SetDParam(2, CT_MAIL);
-			SetDParam(3, _returned_mail_refit_capacity);
+			SetDParam(3, mail_capacity);
 			if (this->order != INVALID_VEH_ORDER_ID) {
 				/* No predictable cost */
 				return STR_PURCHASE_INFO_AIRCRAFT_CAPACITY;
@@ -1037,9 +1040,9 @@ struct RefitWindow : public Window {
 
 					if (this->order == INVALID_VEH_ORDER_ID) {
 						bool delete_window = this->selected_vehicle == v->index && this->num_vehicles == UINT8_MAX;
-						if (DoCommandP(v->tile, this->selected_vehicle, this->cargo->cargo | this->cargo->subtype << 8 | this->num_vehicles << 16, GetCmdRefitVeh(v)) && delete_window) this->Close();
+						if (Command<CMD_REFIT_VEHICLE>::Post(GetCmdRefitVehMsg(v), v->tile, this->selected_vehicle, this->cargo->cargo, this->cargo->subtype, false, false, this->num_vehicles) && delete_window) this->Close();
 					} else {
-						if (DoCommandP(v->tile, v->index, this->cargo->cargo | this->order << 16, CMD_ORDER_REFIT)) this->Close();
+						if (Command<CMD_ORDER_REFIT>::Post(v->tile, v->index, this->order, this->cargo->cargo)) this->Close();
 					}
 				}
 				break;
@@ -1445,7 +1448,7 @@ static void DrawSmallOrderList(const Vehicle *v, int left, int right, int y, uin
 		oid++;
 		order = order->next;
 		if (order == nullptr) {
-			order = v->orders.list->GetFirstOrder();
+			order = v->orders->GetFirstOrder();
 			oid = 0;
 		}
 	} while (oid != start);
@@ -1898,7 +1901,7 @@ public:
 
 			case WID_VL_STOP_ALL:
 			case WID_VL_START_ALL:
-				DoCommandP(0, (1 << 1) | (widget == WID_VL_START_ALL ? (1 << 0) : 0), this->window_number, CMD_MASS_START_STOP);
+				Command<CMD_MASS_START_STOP>::Post(0, widget == WID_VL_START_ALL, true, this->vli);
 				break;
 		}
 	}
@@ -1923,7 +1926,7 @@ public:
 						break;
 					case ADI_SERVICE: // Send for servicing
 					case ADI_DEPOT: // Send to Depots
-						DoCommandP(0, DEPOT_MASS_SEND | (index == ADI_SERVICE ? DEPOT_SERVICE : (DepotCommand)0), this->window_number, GetCmdSendToDepot(this->vli.vtype));
+						Command<CMD_SEND_VEHICLE_TO_DEPOT>::Post(GetCmdSendToDepotMsg(this->vli.vtype), 0, DepotCommand::MassSend | (index == ADI_SERVICE ? DepotCommand::Service : DepotCommand::None), this->vli);
 						break;
 
 					default: NOT_REACHED();
@@ -2472,7 +2475,7 @@ struct VehicleDetailsWindow : Window {
 				mod = GetServiceIntervalClamped(mod + v->GetServiceInterval(), v->ServiceIntervalIsPercent());
 				if (mod == v->GetServiceInterval()) return;
 
-				DoCommandP(v->tile, v->index, mod | (1 << 16) | (v->ServiceIntervalIsPercent() << 17), CMD_CHANGE_SERVICE_INT | CMD_MSG(STR_ERROR_CAN_T_CHANGE_SERVICING));
+				Command<CMD_CHANGE_SERVICE_INT>::Post(STR_ERROR_CAN_T_CHANGE_SERVICING, v->index, mod, true, v->ServiceIntervalIsPercent());
 				break;
 			}
 
@@ -2513,7 +2516,7 @@ struct VehicleDetailsWindow : Window {
 				bool iscustom = index != 0;
 				bool ispercent = iscustom ? (index == 2) : Company::Get(v->owner)->settings.vehicle.servint_ispercent;
 				uint16 interval = GetServiceIntervalClamped(v->GetServiceInterval(), ispercent);
-				DoCommandP(v->tile, v->index, interval | (iscustom << 16) | (ispercent << 17), CMD_CHANGE_SERVICE_INT | CMD_MSG(STR_ERROR_CAN_T_CHANGE_SERVICING));
+				Command<CMD_CHANGE_SERVICE_INT>::Post(STR_ERROR_CAN_T_CHANGE_SERVICING, v->index, interval, iscustom, ispercent);
 				break;
 			}
 		}
@@ -2646,39 +2649,38 @@ enum VehicleCommandTranslation {
 };
 
 /** Command codes for the shared buttons indexed by VehicleCommandTranslation and vehicle type. */
-static const uint32 _vehicle_command_translation_table[][4] = {
+static const StringID _vehicle_msg_translation_table[][4] = {
 	{ // VCT_CMD_START_STOP
-		CMD_START_STOP_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_STOP_START_TRAIN),
-		CMD_START_STOP_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_STOP_START_ROAD_VEHICLE),
-		CMD_START_STOP_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_STOP_START_SHIP),
-		CMD_START_STOP_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_STOP_START_AIRCRAFT)
+		STR_ERROR_CAN_T_STOP_START_TRAIN,
+		STR_ERROR_CAN_T_STOP_START_ROAD_VEHICLE,
+		STR_ERROR_CAN_T_STOP_START_SHIP,
+		STR_ERROR_CAN_T_STOP_START_AIRCRAFT
 	},
 	{ // VCT_CMD_CLONE_VEH
-		CMD_CLONE_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_BUY_TRAIN),
-		CMD_CLONE_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_BUY_ROAD_VEHICLE),
-		CMD_CLONE_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_BUY_SHIP),
-		CMD_CLONE_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_BUY_AIRCRAFT)
+		STR_ERROR_CAN_T_BUY_TRAIN,
+		STR_ERROR_CAN_T_BUY_ROAD_VEHICLE,
+		STR_ERROR_CAN_T_BUY_SHIP,
+		STR_ERROR_CAN_T_BUY_AIRCRAFT
 	},
 	{ // VCT_CMD_TURN_AROUND
-		CMD_REVERSE_TRAIN_DIRECTION | CMD_MSG(STR_ERROR_CAN_T_REVERSE_DIRECTION_TRAIN),
-		CMD_TURN_ROADVEH            | CMD_MSG(STR_ERROR_CAN_T_MAKE_ROAD_VEHICLE_TURN),
-		0xffffffff, // invalid for ships
-		0xffffffff  // invalid for aircraft
+		STR_ERROR_CAN_T_REVERSE_DIRECTION_TRAIN,
+		STR_ERROR_CAN_T_MAKE_ROAD_VEHICLE_TURN,
+		INVALID_STRING_ID, // invalid for ships
+		INVALID_STRING_ID  // invalid for aircraft
 	},
 };
 
 /**
  * This is the Callback method after attempting to start/stop a vehicle
+ * @param cmd unused
  * @param result the result of the start/stop command
- * @param tile unused
- * @param p1 vehicle ID
- * @param p2 unused
+ * @param veh_id Vehicle ID.
  */
-void CcStartStopVehicle(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcStartStopVehicle(Commands cmd, const CommandCost &result, VehicleID veh_id, bool)
 {
 	if (result.Failed()) return;
 
-	const Vehicle *v = Vehicle::GetIfValid(p1);
+	const Vehicle *v = Vehicle::GetIfValid(veh_id);
 	if (v == nullptr || !v->IsPrimaryVehicle() || v->owner != _local_company) return;
 
 	StringID msg = (v->vehstatus & VS_STOPPED) ? STR_VEHICLE_COMMAND_STOPPED : STR_VEHICLE_COMMAND_STARTED;
@@ -2694,7 +2696,7 @@ void CcStartStopVehicle(const CommandCost &result, TileIndex tile, uint32 p1, ui
 void StartStopVehicle(const Vehicle *v, bool texteffect)
 {
 	assert(v->IsPrimaryVehicle());
-	DoCommandP(v->tile, v->index, 0, _vehicle_command_translation_table[VCT_CMD_START_STOP][v->type], texteffect ? CcStartStopVehicle : nullptr);
+	Command<CMD_START_STOP_VEHICLE>::Post(_vehicle_msg_translation_table[VCT_CMD_START_STOP][v->type], texteffect ? CcStartStopVehicle : nullptr, v->tile, v->index, false);
 }
 
 /** Checks whether the vehicle may be refitted at the moment.*/
@@ -3018,7 +3020,7 @@ public:
 				break;
 
 			case WID_VV_GOTO_DEPOT: // goto hangar
-				DoCommandP(v->tile, v->index | (_ctrl_pressed ? DEPOT_SERVICE : 0U), 0, GetCmdSendToDepot(v));
+				Command<CMD_SEND_VEHICLE_TO_DEPOT>::Post(GetCmdSendToDepotMsg(v), v->index, _ctrl_pressed ? DepotCommand::Service : DepotCommand::None, {});
 				break;
 			case WID_VV_REFIT: // refit
 				ShowVehicleRefitWindow(v, INVALID_VEH_ORDER_ID, this);
@@ -3042,18 +3044,21 @@ public:
 				 * There is no point to it except for starting the vehicle.
 				 * For starting the vehicle the player has to open the depot GUI, which is
 				 * most likely already open, but is also visible in the vehicle viewport. */
-				DoCommandP(v->tile, v->index, _ctrl_pressed ? 1 : 0,
-										_vehicle_command_translation_table[VCT_CMD_CLONE_VEH][v->type],
-										_ctrl_pressed ? nullptr : CcCloneVehicle);
+				Command<CMD_CLONE_VEHICLE>::Post(_vehicle_msg_translation_table[VCT_CMD_CLONE_VEH][v->type],
+										_ctrl_pressed ? nullptr : CcCloneVehicle,
+										v->tile, v->index, _ctrl_pressed);
 				break;
 			case WID_VV_TURN_AROUND: // turn around
 				assert(v->IsGroundVehicle());
-				DoCommandP(v->tile, v->index, 0,
-										_vehicle_command_translation_table[VCT_CMD_TURN_AROUND][v->type]);
+				if (v->type == VEH_ROAD) {
+					Command<CMD_TURN_ROADVEH>::Post(_vehicle_msg_translation_table[VCT_CMD_TURN_AROUND][v->type], v->tile, v->index);
+				} else {
+					Command<CMD_REVERSE_TRAIN_DIRECTION>::Post(_vehicle_msg_translation_table[VCT_CMD_TURN_AROUND][v->type], v->tile, v->index, false);
+				}
 				break;
 			case WID_VV_FORCE_PROCEED: // force proceed
 				assert(v->type == VEH_TRAIN);
-				DoCommandP(v->tile, v->index, 0, CMD_FORCE_TRAIN_PROCEED | CMD_MSG(STR_ERROR_CAN_T_MAKE_TRAIN_PASS_SIGNAL));
+				Command<CMD_FORCE_TRAIN_PROCEED>::Post(STR_ERROR_CAN_T_MAKE_TRAIN_PASS_SIGNAL, v->tile, v->index);
 				break;
 		}
 	}
@@ -3062,7 +3067,7 @@ public:
 	{
 		if (str == nullptr) return;
 
-		DoCommandP(0, this->window_number, 0, CMD_RENAME_VEHICLE | CMD_MSG(STR_ERROR_CAN_T_RENAME_TRAIN + Vehicle::Get(this->window_number)->type), nullptr, str);
+		Command<CMD_RENAME_VEHICLE>::Post(STR_ERROR_CAN_T_RENAME_TRAIN + Vehicle::Get(this->window_number)->type, this->window_number, str);
 	}
 
 	void OnMouseOver(Point pt, int widget) override
@@ -3169,17 +3174,15 @@ void StopGlobalFollowVehicle(const Vehicle *v)
 
 /**
  * This is the Callback method after the construction attempt of a primary vehicle
- * @param result indicates completion (or not) of the operation
- * @param tile unused
- * @param p1 unused
- * @param p2 unused
  * @param cmd unused
+ * @param result indicates completion (or not) of the operation
+ * @param new_veh_id ID of the new vehicle.
  */
-void CcBuildPrimaryVehicle(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcBuildPrimaryVehicle(Commands cmd, const CommandCost &result, VehicleID new_veh_id, uint, uint16)
 {
 	if (result.Failed()) return;
 
-	const Vehicle *v = Vehicle::Get(_new_vehicle_id);
+	const Vehicle *v = Vehicle::Get(new_veh_id);
 	ShowVehicleViewWindow(v);
 }
 
@@ -3238,6 +3241,7 @@ void SetMouseCursorVehicle(const Vehicle *v, EngineImageType image_type)
 	int total_width = 0;
 	int y_offset = 0;
 	bool rotor_seq = false; // Whether to draw the rotor of the vehicle in this step.
+	bool is_ground_vehicle = v->IsGroundVehicle();
 
 	while (v != nullptr) {
 		if (total_width >= ScaleGUITrad(2 * (int)VEHICLEINFO_FULL_VEHICLE_WIDTH)) break;
@@ -3273,10 +3277,13 @@ void SetMouseCursorVehicle(const Vehicle *v, EngineImageType image_type)
 		}
 	}
 
-	int offs = (ScaleGUITrad(VEHICLEINFO_FULL_VEHICLE_WIDTH) - total_width) / 2;
-	if (rtl) offs = -offs;
-	for (uint i = 0; i < _cursor.sprite_count; ++i) {
-		_cursor.sprite_pos[i].x += offs;
+	if (is_ground_vehicle) {
+		/* Center trains and road vehicles on the front vehicle */
+		int offs = (ScaleGUITrad(VEHICLEINFO_FULL_VEHICLE_WIDTH) - total_width) / 2;
+		if (rtl) offs = -offs;
+		for (uint i = 0; i < _cursor.sprite_count; ++i) {
+			_cursor.sprite_pos[i].x += offs;
+		}
 	}
 
 	UpdateCursorSize();

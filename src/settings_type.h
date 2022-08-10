@@ -21,6 +21,7 @@
 #include "zoom_type.h"
 #include "openttd.h"
 #include "rail_gui.h"
+#include "signal_type.h"
 
 /* Used to validate sizes of "max" value in settings. */
 const size_t MAX_SLE_UINT8 = UINT8_MAX;
@@ -115,6 +116,7 @@ struct GUISettings {
 	uint16 hover_delay_ms;                   ///< time required to activate a hover event, in milliseconds
 	bool   link_terraform_toolbar;           ///< display terraform toolbar when displaying rail, road, water and airport toolbars
 	uint8  smallmap_land_colour;             ///< colour used for land and heightmap at the smallmap
+	uint8  linkgraph_colours;                ///< linkgraph overlay colours
 	uint8  scroll_mode;                      ///< viewport scroll mode
 	bool   smooth_scroll;                    ///< smooth scroll viewports
 	bool   measure_tooltip;                  ///< show a permanent tooltip when dragging tools
@@ -146,6 +148,7 @@ struct GUISettings {
 	bool   pause_on_newgame;                 ///< whether to start new games paused or not
 	SignalGUISettings signal_gui_mode;       ///< select which signal types are shown in the signal GUI
 	SignalCycleSettings cycle_signal_types;  ///< Which signal types to cycle with the build signal tool.
+	SignalType default_signal_type;          ///< The default signal type, which is set automatically by the last signal used. Not available in Settings.
 	Year   coloured_news_year;               ///< when does newspaper become coloured?
 	bool   timetable_in_ticks;               ///< whether to show the timetable in ticks rather than days
 	bool   quick_goto;                       ///< Allow quick access to 'goto button' in vehicle orders window
@@ -518,7 +521,7 @@ struct EconomySettings {
 	bool   allow_town_roads;                 ///< towns are allowed to build roads (always allowed when generating world / in SE)
 	TownFounding found_town;                 ///< town founding.
 	bool   station_noise_level;              ///< build new airports when the town noise level is still within accepted limits
-	uint16 town_noise_population[3];         ///< population to base decision on noise evaluation (@see town_council_tolerance)
+	uint16 town_noise_population[4];         ///< population to base decision on noise evaluation (@see town_council_tolerance)
 	bool   allow_town_level_crossings;       ///< towns are allowed to build level crossings
 	bool   infrastructure_maintenance;       ///< enable monthly maintenance fee for owner infrastructure
 };

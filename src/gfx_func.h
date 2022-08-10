@@ -91,7 +91,7 @@ void GfxScroll(int left, int top, int width, int height, int xo, int yo);
 Dimension GetSpriteSize(SpriteID sprid, Point *offset = nullptr, ZoomLevel zoom = ZOOM_LVL_GUI);
 void DrawSpriteViewport(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub = nullptr);
 void DrawSprite(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub = nullptr, ZoomLevel zoom = ZOOM_LVL_GUI);
-std::unique_ptr<uint32[]> DrawSpriteToRgbaBuffer(SpriteID spriteId);
+std::unique_ptr<uint32[]> DrawSpriteToRgbaBuffer(SpriteID spriteId, ZoomLevel zoom = ZOOM_LVL_GUI);
 
 int DrawString(int left, int right, int top, const char *str, TextColour colour = TC_FROMSTRING, StringAlignment align = SA_LEFT, bool underline = false, FontSize fontsize = FS_NORMAL);
 int DrawString(int left, int right, int top, const std::string &str, TextColour colour = TC_FROMSTRING, StringAlignment align = SA_LEFT, bool underline = false, FontSize fontsize = FS_NORMAL);
@@ -173,6 +173,17 @@ int GetCharacterHeight(FontSize size);
 #define FONT_HEIGHT_MONO  (GetCharacterHeight(FS_MONO))
 
 extern DrawPixelInfo *_cur_dpi;
+
+/**
+ * Checks if a Colours value is valid.
+ *
+ * @param colours The value to check
+ * @return true if the given value is a valid Colours.
+ */
+static inline bool IsValidColours(Colours colours)
+{
+	return colours < COLOUR_END;
+}
 
 TextColour GetContrastColour(uint8 background, uint8 threshold = 128);
 

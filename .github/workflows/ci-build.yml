@@ -23,10 +23,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: /emsdk/upstream/emscripten/cache
         key: 2.0.31-${{ runner.os }}
@@ -94,7 +94,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install dependencies
       run: |
@@ -169,7 +169,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Prepare cache key
       id: key
@@ -177,7 +177,7 @@ jobs:
         echo "::set-output name=image::$ImageOS-$ImageVersion"
 
     - name: Enable vcpkg cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: /usr/local/share/vcpkg/installed
         key: ${{ steps.key.outputs.image }}-vcpkg-${{ matrix.arch }}-0 # Increase the number whenever dependencies are modified
@@ -247,7 +247,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Prepare cache key
       id: key
@@ -259,7 +259,7 @@ jobs:
         Write-Output "::set-output name=image::$env:ImageOS-$env:ImageVersion"
 
     - name: Enable vcpkg cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: vcpkg/installed
         key: ${{ steps.key.outputs.image }}-vcpkg-${{ matrix.arch }}-0 # Increase the number whenever dependencies are modified
@@ -341,7 +341,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2

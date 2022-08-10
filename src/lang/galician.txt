@@ -138,7 +138,7 @@ STR_ABBREV_GOODS                                                :{TINY_FONT}ME
 STR_ABBREV_GRAIN                                                :{TINY_FONT}GR
 STR_ABBREV_WOOD                                                 :{TINY_FONT}MA
 STR_ABBREV_IRON_ORE                                             :{TINY_FONT}FE
-STR_ABBREV_STEEL                                                :{TINY_FONT}AC
+STR_ABBREV_STEEL                                                :{TINY_FONT}AÇ
 STR_ABBREV_VALUABLES                                            :{TINY_FONT}VA
 STR_ABBREV_COPPER_ORE                                           :{TINY_FONT}CO
 STR_ABBREV_MAIZE                                                :{TINY_FONT}MI
@@ -496,11 +496,11 @@ STR_ABOUT_MENU_SEPARATOR                                        :
 STR_ABOUT_MENU_TOGGLE_CONSOLE                                   :(Des)Activar consola
 STR_ABOUT_MENU_AI_DEBUG                                         :Depuración IA/script do xogo
 STR_ABOUT_MENU_SCREENSHOT                                       :Captura de pantalla
-STR_ABOUT_MENU_SHOW_FRAMERATE                                   :Mostrar frame rate
-STR_ABOUT_MENU_ABOUT_OPENTTD                                    :Acerca de 'OpenTTD'
+STR_ABOUT_MENU_SHOW_FRAMERATE                                   :Amosar o número de imaxes por segundo
+STR_ABOUT_MENU_ABOUT_OPENTTD                                    :Sobre 'OpenTTD'
 STR_ABOUT_MENU_SPRITE_ALIGNER                                   :Aliñador de sprites
 STR_ABOUT_MENU_TOGGLE_BOUNDING_BOXES                            :Activa/desactiva caixas delimitadoras
-STR_ABOUT_MENU_TOGGLE_DIRTY_BLOCKS                              :Activa/desactiva o coloreado de bloques modificados
+STR_ABOUT_MENU_TOGGLE_DIRTY_BLOCKS                              :Activa/desactiva a coloración de bloques modificados
 
 # Place in highscore window
 ###length 15
@@ -845,7 +845,7 @@ STR_NEWS_INDUSTRY_CONSTRUCTION                                  :{BIG_FONT}{BLAC
 STR_NEWS_INDUSTRY_PLANTED                                       :{BIG_FONT}{BLACK}Nova {STRING} asentada preto de {TOWN}!
 
 STR_NEWS_INDUSTRY_CLOSURE_GENERAL                               :{BIG_FONT}{BLACK}{STRING} anuncia o seu peche inminente!
-STR_NEWS_INDUSTRY_CLOSURE_SUPPLY_PROBLEMS                       :{BIG_FONT}{BLACK}Problemas de subministración en {STRING} provocan que anuncie o seu peche inminente!
+STR_NEWS_INDUSTRY_CLOSURE_SUPPLY_PROBLEMS                       :{BIG_FONT}{BLACK}Problemas de abastecemento en {STRING} provocan que anuncie o seu peche inminente!
 STR_NEWS_INDUSTRY_CLOSURE_LACK_OF_TREES                         :{BIG_FONT}{BLACK}A falta de árbores cercanos provoca que {STRING} anuncie o peche inminente!
 
 STR_NEWS_EURO_INTRODUCTION                                      :{BIG_FONT}{BLACK}Unión Económica e Monetaria Europea!{}{}O Euro introdúcese como a única moeda para as transaccións diarias no teu país!
@@ -1026,6 +1026,7 @@ STR_GAME_OPTIONS_VIDEO_ACCELERATION_RESTART                     :{WHITE}O cambio
 STR_GAME_OPTIONS_VIDEO_VSYNC                                    :{BLACK}VSync
 STR_GAME_OPTIONS_VIDEO_VSYNC_TOOLTIP                            :{BLACK}Marca esta caixa para activar o V-sync da pantalla. O cambio só se aplicará tras reiniciar o xogo. Só funciona coa aceleración de hardware habilitada
 
+
 STR_GAME_OPTIONS_GUI_ZOOM_FRAME                                 :{BLACK}Tamaño da interface
 STR_GAME_OPTIONS_GUI_ZOOM_DROPDOWN_TOOLTIP                      :{BLACK}Seleciona o tamaño de elementos da interface a usar
 
@@ -1152,10 +1153,11 @@ STR_TERRAIN_TYPE_ALPINIST                                       :Alpinista
 STR_TERRAIN_TYPE_CUSTOM                                         :Altitude personalizada
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :Altitude personalizada ({NUM})
 
-###length 3
-STR_CITY_APPROVAL_PERMISSIVE                                    :Permisiva
+###length 4
+STR_CITY_APPROVAL_LENIENT                                       :Indulxente
 STR_CITY_APPROVAL_TOLERANT                                      :Tolerante
 STR_CITY_APPROVAL_HOSTILE                                       :Hostil
+STR_CITY_APPROVAL_PERMISSIVE                                    :Permisiva (sen efecto nas accións da compañía)
 
 STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}Non hai IA adecuada dispoñíbel...{}Podes descargar varias IAs a través do sistema de contidos online
 
@@ -1256,8 +1258,8 @@ STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :Se está activa
 STR_CONFIG_SETTING_DISASTERS                                    :Desastres: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :Activa os desastres, que ocasionalmente poderían bloquear ou destruír vehículos ou infraestrutura
 
-STR_CONFIG_SETTING_CITY_APPROVAL                                :Actitude das autoridades locáis cara a restruturacións de áreas: {STRING}
-STR_CONFIG_SETTING_CITY_APPROVAL_HELPTEXT                       :Escolle ata que punto o ruido e danos medioambientais producidos polas compañias afectan á súa valoración municipal e ás próximas actividades construtivas na súa área
+STR_CONFIG_SETTING_CITY_APPROVAL                                :Actitude das autoridades locáis: {STRING}
+STR_CONFIG_SETTING_CITY_APPROVAL_HELPTEXT                       :Escolle ata que punto o ruido e danos medioambientais producidos polas compañias afectan á súa valoración municipal e ás próximas actividades construtivas na cidade
 
 STR_CONFIG_SETTING_MAP_HEIGHT_LIMIT                             :Altitude máxima do mapa: {STRING}
 STR_CONFIG_SETTING_MAP_HEIGHT_LIMIT_HELPTEXT                    :Establece a altitude máxima do terreo do mapa. Con "(auto)" collerase un bo valor despois da xeración do terreo.
@@ -1527,6 +1529,14 @@ STR_CONFIG_SETTING_SMALLMAP_LAND_COLOUR_GREEN                   :Verde
 STR_CONFIG_SETTING_SMALLMAP_LAND_COLOUR_DARK_GREEN              :Verde escuro
 STR_CONFIG_SETTING_SMALLMAP_LAND_COLOUR_VIOLET                  :Violeta
 
+STR_CONFIG_SETTING_LINKGRAPH_COLOURS                            :Cores superpostas do fluxo de carga: {STRING}
+STR_CONFIG_SETTING_LINKGRAPH_COLOURS_HELPTEXT                   :Fixa o esquema de cor utilizado para a superposición do fluxo de carga.
+###length 4
+STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREEN_TO_RED               :Verde a vermello(orixinal)
+STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREEN_TO_BLUE              :Verde a azul
+STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREY_TO_RED                :Gris a vermello
+STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREYSCALE                  :Escala de grises
+
 STR_CONFIG_SETTING_SCROLLMODE                                   :Comportamento do desprazamento das xanelas: {STRING}
 STR_CONFIG_SETTING_SCROLLMODE_HELPTEXT                          :Comportamento cando te desplazas polo mapa
 ###length 4
@@ -1634,9 +1644,6 @@ STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION_HELPTEXT              :Usa unha cor di
 
 STR_CONFIG_SETTING_PERSISTENT_BUILDINGTOOLS                     :Mante-las ferramentas de construcción activas tralo uso: {STRING}
 STR_CONFIG_SETTING_PERSISTENT_BUILDINGTOOLS_HELPTEXT            :Mante-las ferramentas de construción abertas para pontes, túneis, etc. tralo uso
-
-STR_CONFIG_SETTING_EXPENSES_LAYOUT                              :Agrupa-los gastos na ventá de finanzas da compañía: {STRING}
-STR_CONFIG_SETTING_EXPENSES_LAYOUT_HELPTEXT                     :Define a apariencia da ventá de gastos da compañía
 
 STR_CONFIG_SETTING_AUTO_REMOVE_SIGNALS                          :orrar automáticamente as sinais durante a construción de ferrocarrís: {STRING}
 STR_CONFIG_SETTING_AUTO_REMOVE_SIGNALS_HELPTEXT                 :Borrar automáticamente as sinais durante a construción de ferrocarrís se as sinais están no medio. Teña en conta que isto pode levar a accidentes de tren.
@@ -2108,7 +2115,7 @@ STR_QUIT_NO                                                     :{BLACK}Non
 # Abandon game
 STR_ABANDON_GAME_CAPTION                                        :{WHITE}Saír da partida
 STR_ABANDON_GAME_QUERY                                          :{YELLOW}Estás seguro de que queres saír desta partida?
-STR_ABANDON_SCENARIO_QUERY                                      :{YELLOW}Estás seguro de que desexas saír deste escenario?
+STR_ABANDON_SCENARIO_QUERY                                      :{YELLOW}Estás seguro de que queres saír deste escenario?
 
 # Cheat window
 STR_CHEATS                                                      :{WHITE}Trampulladas
@@ -2617,7 +2624,7 @@ STR_STATION_BUILD_COVERAGE_ON                                   :{BLACK}On
 STR_STATION_BUILD_COVERAGE_AREA_OFF_TOOLTIP                     :{BLACK}Non resalta-la área de cobertura do sitio proposto
 STR_STATION_BUILD_COVERAGE_AREA_ON_TOOLTIP                      :{BLACK}Resalta-la área de cobertura do sitio proposto
 STR_STATION_BUILD_ACCEPTS_CARGO                                 :{BLACK}Acepta: {GOLD}{CARGO_LIST}
-STR_STATION_BUILD_SUPPLIES_CARGO                                :{BLACK}Suministros: {GOLD}{CARGO_LIST}
+STR_STATION_BUILD_SUPPLIES_CARGO                                :{BLACK}Abastecementos: {GOLD}{CARGO_LIST}
 
 # Join station window
 STR_JOIN_STATION_CAPTION                                        :{WHITE}Unir estación
@@ -2796,7 +2803,7 @@ STR_AIRPORT_HELISTATION                                         :Heliestación
 STR_AIRPORT_CLASS_SMALL                                         :Aeroportos pequenos
 STR_AIRPORT_CLASS_LARGE                                         :Aeroportos grandes
 STR_AIRPORT_CLASS_HUB                                           :Aeroportos centrais
-STR_AIRPORT_CLASS_HELIPORTS                                     :Aeroportos para helicópteros
+STR_AIRPORT_CLASS_HELIPORTS                                     :Heliportos
 
 STR_STATION_BUILD_NOISE                                         :{BLACK}Ruído xerado: {GOLD}{COMMA}
 
@@ -3038,11 +3045,11 @@ STR_ABOUT_VERSION                                               :{BLACK}OpenTTD 
 STR_ABOUT_COPYRIGHT_OPENTTD                                     :{BLACK}OpenTTD {COPYRIGHT}2002-{STRING} O equipo de OpenTTD
 
 # Framerate display window
-STR_FRAMERATE_CAPTION                                           :{WHITE}Frame rate
+STR_FRAMERATE_CAPTION                                           :{WHITE}Imaxes por segundo
 STR_FRAMERATE_CAPTION_SMALL                                     :{STRING}{WHITE} ({DECIMAL}x)
 STR_FRAMERATE_RATE_GAMELOOP                                     :{BLACK}Velocidade de simulación: {STRING}
 STR_FRAMERATE_RATE_GAMELOOP_TOOLTIP                             :{BLACK}Número de ticks do xogo simulados por segundo.
-STR_FRAMERATE_RATE_BLITTER                                      :{BLACK}Velocidade de refresco: {STRING}
+STR_FRAMERATE_RATE_BLITTER                                      :{BLACK}Imaxes por segundo: {STRING}
 STR_FRAMERATE_RATE_BLITTER_TOOLTIP                              :{BLACK}Número de frames renderizados por segundo.
 STR_FRAMERATE_SPEED_FACTOR                                      :{BLACK}Factor de velocidade do xogo actual: {DECIMAL}x
 STR_FRAMERATE_SPEED_FACTOR_TOOLTIP                              :{BLACK}Como de rápido está a correr o xogo, comparado coa velocidade esperada a unha velocidade de simulación normal.
@@ -3447,7 +3454,7 @@ STR_LOCAL_AUTHORITY_ACTION_SMALL_ADVERTISING_CAMPAIGN           :Pequena campañ
 STR_LOCAL_AUTHORITY_ACTION_MEDIUM_ADVERTISING_CAMPAIGN          :Campaña publicitaria mediana
 STR_LOCAL_AUTHORITY_ACTION_LARGE_ADVERTISING_CAMPAIGN           :Gran campaña publicitaria
 STR_LOCAL_AUTHORITY_ACTION_ROAD_RECONSTRUCTION                  :Financia-la reparación das fochancas nas rúas da cidade
-STR_LOCAL_AUTHORITY_ACTION_STATUE_OF_COMPANY                    :Construír unha estatua a Manuel Fraga
+STR_LOCAL_AUTHORITY_ACTION_STATUE_OF_COMPANY                    :Construír unha estatua ao propietario da compañía
 STR_LOCAL_AUTHORITY_ACTION_NEW_BUILDINGS                        :Financiar novos edificios
 STR_LOCAL_AUTHORITY_ACTION_EXCLUSIVE_TRANSPORT                  :Compra-los dereitos exclusivos de transporte
 STR_LOCAL_AUTHORITY_ACTION_BRIBE                                :Suborna-la autoridade local
@@ -3550,7 +3557,7 @@ STR_STATION_VIEW_EXCLUSIVE_RIGHTS_COMPANY                       :{YELLOW}{COMPAN
 
 STR_STATION_VIEW_RATINGS_BUTTON                                 :{BLACK}Puntuacións:
 STR_STATION_VIEW_RATINGS_TOOLTIP                                :{BLACK}Mostra-las puntuacións da estación
-STR_STATION_VIEW_SUPPLY_RATINGS_TITLE                           :{BLACK}Suministro mensual e puntuación local:
+STR_STATION_VIEW_SUPPLY_RATINGS_TITLE                           :{BLACK}Abastecemento mensual e puntuación local:
 STR_STATION_VIEW_CARGO_SUPPLY_RATING                            :{WHITE}{STRING}: {YELLOW}{COMMA} / {STRING} ({COMMA}%)
 
 STR_STATION_VIEW_GROUP                                          :{BLACK}Agrupar por
@@ -3610,29 +3617,36 @@ STR_EDIT_WAYPOINT_NAME                                          :{WHITE}Editar o
 
 # Finances window
 STR_FINANCES_CAPTION                                            :{WHITE}{COMPANY} Finanzas {BLACK}{COMPANY_NUM}
-STR_FINANCES_EXPENDITURE_INCOME_TITLE                           :{WHITE}Gastos/Ingresos
 STR_FINANCES_YEAR                                               :{WHITE}{NUM}
+
+###length 3
+STR_FINANCES_REVENUE_TITLE                                      :{WHITE}Ingresos
+STR_FINANCES_OPERATING_EXPENSES_TITLE                           :{WHITE}Custos operativos
+STR_FINANCES_CAPITAL_EXPENSES_TITLE                             :{WHITE}Custos de capital
+
 
 ###length 13
 STR_FINANCES_SECTION_CONSTRUCTION                               :{GOLD}Construción
 STR_FINANCES_SECTION_NEW_VEHICLES                               :{GOLD}Novos vehículos
-STR_FINANCES_SECTION_TRAIN_RUNNING_COSTS                        :{GOLD}Custo operativo dos trens
-STR_FINANCES_SECTION_ROAD_VEHICLE_RUNNING_COSTS                 :{GOLD}Custo operativo dos vehículos de estrada
-STR_FINANCES_SECTION_AIRCRAFT_RUNNING_COSTS                     :{GOLD}Custo operativo das aeronaves
-STR_FINANCES_SECTION_SHIP_RUNNING_COSTS                         :{GOLD}Custo operativo dos barcos
-STR_FINANCES_SECTION_PROPERTY_MAINTENANCE                       :{GOLD}Mantemento de propiedades
-STR_FINANCES_SECTION_TRAIN_INCOME                               :{GOLD}Ingresos dos trens
-STR_FINANCES_SECTION_ROAD_VEHICLE_INCOME                        :{GOLD}Ingresos dos vehículos de estrada
-STR_FINANCES_SECTION_AIRCRAFT_INCOME                            :{GOLD}Ingresos das aeronaves
-STR_FINANCES_SECTION_SHIP_INCOME                                :{GOLD}Ingresos dos barcos
+STR_FINANCES_SECTION_TRAIN_RUNNING_COSTS                        :{GOLD}Trens
+STR_FINANCES_SECTION_ROAD_VEHICLE_RUNNING_COSTS                 :{GOLD}Vehículos de estrada
+STR_FINANCES_SECTION_AIRCRAFT_RUNNING_COSTS                     :{GOLD}Aeronaves
+STR_FINANCES_SECTION_SHIP_RUNNING_COSTS                         :{GOLD}Barcos
+STR_FINANCES_SECTION_INFRASTRUCTURE                             :{GOLD}Infraestrutura
+STR_FINANCES_SECTION_TRAIN_REVENUE                              :{GOLD}Trens
+STR_FINANCES_SECTION_ROAD_VEHICLE_REVENUE                       :{GOLD}Vehículos de estrada
+STR_FINANCES_SECTION_AIRCRAFT_REVENUE                           :{GOLD}Aeronaves
+STR_FINANCES_SECTION_SHIP_REVENUE                               :{GOLD}Barcos
 STR_FINANCES_SECTION_LOAN_INTEREST                              :{GOLD}Interese do préstamo
 STR_FINANCES_SECTION_OTHER                                      :{GOLD}Outros
 
-STR_FINANCES_NEGATIVE_INCOME                                    :{BLACK}-{CURRENCY_LONG}
-STR_FINANCES_POSITIVE_INCOME                                    :{BLACK}+{CURRENCY_LONG}
-STR_FINANCES_TOTAL_CAPTION                                      :{WHITE}Total:
+STR_FINANCES_NEGATIVE_INCOME                                    :-{CURRENCY_LONG}
+STR_FINANCES_POSITIVE_INCOME                                    :+{CURRENCY_LONG}
+STR_FINANCES_NET_PROFIT                                         :{WHITE}Beneficio neto
 STR_FINANCES_BANK_BALANCE_TITLE                                 :{WHITE}Balance bancario
+STR_FINANCES_OWN_FUNDS_TITLE                                    :{WHITE}Fondos propios
 STR_FINANCES_LOAN_TITLE                                         :{WHITE}Préstamo
+STR_FINANCES_INTEREST_RATE                                      :{WHITE}Interese do préstamo: {BLACK}{NUM}%
 STR_FINANCES_MAX_LOAN                                           :{WHITE}Préstamo máximo: {BLACK}{CURRENCY_LONG}
 STR_FINANCES_TOTAL_CURRENCY                                     :{BLACK}{CURRENCY_LONG}
 STR_FINANCES_BORROW_BUTTON                                      :{BLACK}Pedir {CURRENCY_LONG}
@@ -4136,7 +4150,7 @@ STR_VEHICLE_VIEW_AIRCRAFT_STATUS_START_STOP_TOOLTIP             :{BLACK}Acción 
 STR_VEHICLE_STATUS_LOADING_UNLOADING                            :{LTBLUE}Cargando / Descargando
 STR_VEHICLE_STATUS_LEAVING                                      :{LTBLUE}Saíndo
 STR_VEHICLE_STATUS_CRASHED                                      :{RED}Estrelado!
-STR_VEHICLE_STATUS_BROKEN_DOWN                                  :{RED}Roto
+STR_VEHICLE_STATUS_BROKEN_DOWN                                  :{RED}Avariado
 STR_VEHICLE_STATUS_STOPPED                                      :{RED}Parado
 STR_VEHICLE_STATUS_TRAIN_STOPPING_VEL                           :{RED}Parando, {VELOCITY}
 STR_VEHICLE_STATUS_TRAIN_NO_POWER                               :{RED}Sen enerxía
@@ -4506,7 +4520,7 @@ STR_AI_DEBUG_BREAK_STR_TOOLTIP                                  :{BLACK}Cando un
 STR_AI_DEBUG_MATCH_CASE                                         :{BLACK}Coincidir maiúsculas
 STR_AI_DEBUG_MATCH_CASE_TOOLTIP                                 :{BLACK}Alterna a coincidencia de maiúsculas ao comparar as mensaxes no log da IA coa cadea de parada
 STR_AI_DEBUG_CONTINUE                                           :{BLACK}Continuar
-STR_AI_DEBUG_CONTINUE_TOOLTIP                                   :{BLACK}Quita-la pausa e continua-la IA
+STR_AI_DEBUG_CONTINUE_TOOLTIP                                   :{BLACK}Quitar a pausa e continuar a IA
 STR_AI_DEBUG_SELECT_AI_TOOLTIP                                  :{BLACK}Ve-la saída da depuración desta IA
 STR_AI_GAME_SCRIPT                                              :{BLACK}Script do xogo
 STR_AI_GAME_SCRIPT_TOOLTIP                                      :{BLACK}Comproba o log do script do xogo
@@ -4537,7 +4551,7 @@ STR_AI_CONFIG_CHANGE_AI                                         :IA
 STR_AI_CONFIG_CHANGE_GAMESCRIPT                                 :Script do xogo
 STR_AI_CONFIG_CHANGE_TOOLTIP                                    :{BLACK}Cargar outro script
 STR_AI_CONFIG_CONFIGURE                                         :{BLACK}Configurar
-STR_AI_CONFIG_CONFIGURE_TOOLTIP                                 :{BLACK}Configura-los parámetros do script
+STR_AI_CONFIG_CONFIGURE_TOOLTIP                                 :{BLACK}Configurar os parámetros do script
 
 # Available AIs window
 STR_AI_LIST_CAPTION                                             :{WHITE}Dispoñíbel {STRING}
@@ -5102,7 +5116,7 @@ STR_INDUSTRY_NAME_DIAMOND_MINE                                  :Mina de diamant
 STR_INDUSTRY_NAME_IRON_ORE_MINE                                 :Mina de ferro
 STR_INDUSTRY_NAME_FRUIT_PLANTATION                              :Plantación de froita
 STR_INDUSTRY_NAME_RUBBER_PLANTATION                             :Plantación de sobreiras
-STR_INDUSTRY_NAME_WATER_SUPPLY                                  :Subministro de auga
+STR_INDUSTRY_NAME_WATER_SUPPLY                                  :Abastecemento de auga
 STR_INDUSTRY_NAME_WATER_TOWER                                   :Torre de auga
 STR_INDUSTRY_NAME_FACTORY_2                                     :Fábrica
 STR_INDUSTRY_NAME_FARM_2                                        :Granxa
@@ -5198,20 +5212,20 @@ STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COAL_CAR                      :Coche de Carbó
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_OIL_TANKER                    :Tanque de Petróleo
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_LIVESTOCK_VAN                 :Furgón de Gando
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_GOODS_VAN                     :Furgón de Mercadorías
-STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_GRAIN_HOPPER                  :Tolva de Gran
+STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_GRAIN_HOPPER                  :Tremoia de Gran
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_WOOD_TRUCK                    :Vagón de Madeira
-STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_IRON_ORE_HOPPER               :Tolva de Hematita
+STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_IRON_ORE_HOPPER               :Tremoia de Hematita
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_STEEL_TRUCK                   :Vagón de Aceiro
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_ARMORED_VAN                   :Furgón Blindado
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_FOOD_VAN                      :Furgón de Comida
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_PAPER_TRUCK                   :Vagón de Papel
-STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COPPER_ORE_HOPPER             :Tolva de Mineral de Cobre
+STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COPPER_ORE_HOPPER             :Tremoia de Mineral de Cobre
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_WATER_TANKER                  :Tanque de Auga
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_FRUIT_TRUCK                   :Vagón de Froitas
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_RUBBER_TRUCK                  :Vagón de Caucho
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_SUGAR_TRUCK                   :Vagón de Azucre
-STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COTTON_CANDY_HOPPER           :Tolva de Algodón de Azucre
-STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_TOFFEE_HOPPER                 :Tolva de Toffee
+STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COTTON_CANDY_HOPPER           :Tremoia de Algodón de Azucre
+STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_TOFFEE_HOPPER                 :Tremoia de Toffee
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_BUBBLE_VAN                    :Furgón de Burbullas
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_COLA_TANKER                   :Tanque de Cola
 STR_VEHICLE_NAME_TRAIN_WAGON_RAIL_CANDY_VAN                     :Furgón de Caramelos
@@ -5228,20 +5242,20 @@ STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COAL_CAR                  :Coche de Carbó
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_OIL_TANKER                :Tanque de Petróleo
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_LIVESTOCK_VAN             :Furgón de Gando
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_GOODS_VAN                 :Furgón de Mercadorías
-STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_GRAIN_HOPPER              :Tolva de Gran
+STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_GRAIN_HOPPER              :Tremoia de Gran
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_WOOD_TRUCK                :Vagón de Madeira
-STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_IRON_ORE_HOPPER           :Tolva de Hematita
+STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_IRON_ORE_HOPPER           :Tremoia de Hematita
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_STEEL_TRUCK               :Vagón de Aceiro
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_ARMORED_VAN               :Furgón Blindado
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_FOOD_VAN                  :Furgón de Comida
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_PAPER_TRUCK               :Vagón de Papel
-STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COPPER_ORE_HOPPER         :Tolva de Mineral de Cobre
+STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COPPER_ORE_HOPPER         :Tremoia de Mineral de Cobre
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_WATER_TANKER              :Tanque de Auga
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_FRUIT_TRUCK               :Vagón de Froitas
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_RUBBER_TRUCK              :Vagón de Caucho
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_SUGAR_TRUCK               :Vagón de Azucre
-STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COTTON_CANDY_HOPPER       :Tolva de Algodón de Azucre
-STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_TOFFEE_HOPPER             :Tolva de Toffee
+STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COTTON_CANDY_HOPPER       :Tremoia de Algodón de Azucre
+STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_TOFFEE_HOPPER             :Tremoia de Toffee
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_BUBBLE_VAN                :Furgón de Burbullas
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_COLA_TANKER               :Tanque de Cola
 STR_VEHICLE_NAME_TRAIN_WAGON_MONORAIL_CANDY_VAN                 :Furgón de Caramelos
@@ -5260,20 +5274,20 @@ STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_COAL_CAR                    :Coche de Carbó
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_OIL_TANKER                  :Tanque de Petróleo
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_LIVESTOCK_VAN               :Furgón de Gando
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_GOODS_VAN                   :Furgón de Mercadorías
-STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_GRAIN_HOPPER                :Tolva de Gran
+STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_GRAIN_HOPPER                :Tremoia de Gran
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_WOOD_TRUCK                  :Vagón de Madeira
-STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_IRON_ORE_HOPPER             :Tolva de Hematita
+STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_IRON_ORE_HOPPER             :Tremoia de Hematita
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_STEEL_TRUCK                 :Vagón de Aceiro
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_ARMORED_VAN                 :Furgón Blindado
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_FOOD_VAN                    :Furgón de Comida
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_PAPER_TRUCK                 :Vagón de Papel
-STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_COPPER_ORE_HOPPER           :Tolva de Mineral de Cobre
+STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_COPPER_ORE_HOPPER           :Tremoia de Mineral de Cobre
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_WATER_TANKER                :Tanque de Auga
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_FRUIT_TRUCK                 :Vagón de Froitas
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_RUBBER_TRUCK                :Vagón de Caucho
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_SUGAR_TRUCK                 :Vagón de Azucre
-STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_COTTON_CANDY_HOPPER         :Tolva de Algodón de Azucre
-STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_TOFFEE_HOPPER               :Tolva de Toffee
+STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_COTTON_CANDY_HOPPER         :Tremoia de Algodón de Azucre
+STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_TOFFEE_HOPPER               :Tremoia de Toffee
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_BUBBLE_VAN                  :Furgón de Burbullas
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_COLA_TANKER                 :Tanque de Cola
 STR_VEHICLE_NAME_TRAIN_WAGON_MAGLEV_CANDY_VAN                   :Furgón de Caramelos

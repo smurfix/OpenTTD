@@ -310,6 +310,7 @@ struct GameOptionsWindow : Window {
 			case WID_GO_BASE_SFX_DROPDOWN:     SetDParamStr(0, BaseSounds::GetUsedSet()->name); break;
 			case WID_GO_BASE_MUSIC_DROPDOWN:   SetDParamStr(0, BaseMusic::GetUsedSet()->name); break;
 			case WID_GO_BASE_MUSIC_STATUS:     SetDParam(0, BaseMusic::GetUsedSet()->GetNumInvalid()); break;
+			case WID_GO_VIDEO_DRIVER_INFO:     SetDParamStr(0, VideoDriver::GetInstance()->GetInfoString()); break;
 			case WID_GO_REFRESH_RATE_DROPDOWN: SetDParam(0, _settings_client.gui.refresh_rate); break;
 			case WID_GO_RESOLUTION_DROPDOWN: {
 				auto current_resolution = GetCurrentResolutionIndex();
@@ -690,6 +691,9 @@ static const NWidgetPart _nested_game_options_widgets[] = {
 						NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_GO_VIDEO_VSYNC_BUTTON), SetMinimalSize(21, 9), SetDataTip(STR_EMPTY, STR_GAME_OPTIONS_VIDEO_VSYNC_TOOLTIP),
 					EndContainer(),
 #endif
+					NWidget(NWID_HORIZONTAL),
+						NWidget(WWT_TEXT, COLOUR_GREY, WID_GO_VIDEO_DRIVER_INFO), SetMinimalSize(0, 12), SetFill(1, 0), SetDataTip(STR_GAME_OPTIONS_VIDEO_DRIVER_INFO, STR_NULL),
+					EndContainer(),
 				EndContainer(),
 			EndContainer(),
 		EndContainer(),
@@ -1573,6 +1577,7 @@ static SettingsContainer &GetSettingsTree()
 			graphics->Add(new SettingEntry("gui.zoom_max"));
 			graphics->Add(new SettingEntry("gui.sprite_zoom_min"));
 			graphics->Add(new SettingEntry("gui.smallmap_land_colour"));
+			graphics->Add(new SettingEntry("gui.linkgraph_colours"));
 			graphics->Add(new SettingEntry("gui.graph_line_thickness"));
 		}
 
@@ -1638,7 +1643,6 @@ static SettingsContainer &GetSettingsTree()
 			interface->Add(new SettingEntry("gui.advanced_vehicle_list"));
 			interface->Add(new SettingEntry("gui.timetable_in_ticks"));
 			interface->Add(new SettingEntry("gui.timetable_arrival_departure"));
-			interface->Add(new SettingEntry("gui.expenses_layout"));
 			interface->Add(new SettingEntry("gui.show_newgrf_name"));
 		}
 

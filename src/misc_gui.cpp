@@ -26,6 +26,7 @@
 #include "zoom_func.h"
 #include "guitimer_func.h"
 #include "viewport_func.h"
+#include "landscape_cmd.h"
 #include "rev.h"
 
 #include "widgets/misc_widget.h"
@@ -191,7 +192,7 @@ public:
 		Company *c = Company::GetIfValid(_local_company);
 		if (c != nullptr) {
 			assert(_current_company == _local_company);
-			CommandCost costclear = DoCommand(tile, 0, 0, DC_QUERY_COST, CMD_LANDSCAPE_CLEAR);
+			CommandCost costclear = Command<CMD_LANDSCAPE_CLEAR>::Do(DC_QUERY_COST, tile);
 			if (costclear.Succeeded()) {
 				Money cost = costclear.GetCost();
 				if (cost < 0) {
@@ -564,7 +565,7 @@ void ShowEstimatedCostOrIncome(Money cost, int x, int y)
 }
 
 /**
- * Display animated income or costs on the map.
+ * Display animated income or costs on the map. Does nothing if cost is zero.
  * @param x    World X position of the animation location.
  * @param y    World Y position of the animation location.
  * @param z    World Z position of the animation location.
@@ -572,6 +573,9 @@ void ShowEstimatedCostOrIncome(Money cost, int x, int y)
  */
 void ShowCostOrIncomeAnimation(int x, int y, int z, Money cost)
 {
+	if (cost == 0) {
+		return;
+	}
 	Point pt = RemapCoords(x, y, z);
 	StringID msg = STR_INCOME_FLOAT_COST;
 

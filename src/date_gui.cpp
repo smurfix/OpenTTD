@@ -24,6 +24,7 @@
 /** Window to select a date graphically by using dropdowns */
 struct SetDateWindow : Window {
 	SetDateCallback *callback; ///< Callback to call when a date has been selected
+	void *callback_data;       ///< Callback data pointer.
 	YearMonthDay date; ///< The currently selected date
 	uint8 hour;        ///< The currently selected hour
 	uint8 minute;      ///< The currently selected minute
@@ -47,10 +48,12 @@ struct SetDateWindow : Window {
 		Date initial_date,
 		uint8 initial_hour, uint8 initial_minute,
 		Year min_year, Year max_year,
-		SetDateCallback *callback
+		SetDateCallback *callback,
+		void *callback_data
 	) :
 			Window(desc),
 			callback(callback),
+			callback_data(callback_data),
 			hour(initial_hour),
 			minute(initial_minute),
 			min_year(std::max(MIN_YEAR, min_year)),
@@ -210,7 +213,7 @@ struct SetDateWindow : Window {
 				auto game_fract = HourMinuteToTicks(this->hour, this->minute);
 				auto [vanilla_date, _] = GameDateToVanillaDate(game_date, game_fract);
 
-				if (this->callback != nullptr) this->callback(this, vanilla_date);
+				if (this->callback != nullptr) this->callback(this, vanilla_date, this->callback_data);
 				this->Close();
 				break;
 			}
@@ -290,6 +293,7 @@ static WindowDesc _set_date_desc(
  * @param min_year the minimum year to show in the year dropdown
  * @param max_year the maximum year (inclusive) to show in the year dropdown
  * @param callback the callback to call once a date has been selected
+ * @param callback_data extra callback data
  */
 void ShowSetDateWindow(
 	Window *parent,
@@ -298,7 +302,8 @@ void ShowSetDateWindow(
 	uint8 initial_hour, uint8 initial_minute,
 	Year min_year,
 	Year max_year,
-	SetDateCallback *callback
+	SetDateCallback *callback,
+	void *callback_data
 )
 {
 	CloseWindowByClass(WC_SET_DATE);
@@ -310,6 +315,7 @@ void ShowSetDateWindow(
 		initial_date,
 		initial_hour, initial_minute,
 		min_year, max_year,
-		callback
+		callback,
+		callback_data
 	);
 }

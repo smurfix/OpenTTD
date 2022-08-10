@@ -33,6 +33,7 @@
 #include "guitimer_func.h"
 #include "error.h"
 #include "news_gui.h"
+#include "misc_cmd.h"
 
 #include "saveload/saveload.h"
 
@@ -76,7 +77,7 @@ bool HandlePlacePushButton(Window *w, int widget, CursorID cursor, HighLightStyl
 }
 
 
-void CcPlaySound_EXPLOSION(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
+void CcPlaySound_EXPLOSION(Commands cmd, const CommandCost &result, TileIndex tile)
 {
 	if (result.Succeeded() && _settings_client.sound.confirm) SndPlayTileFx(SND_12_EXPLOSION, tile);
 }
@@ -326,7 +327,7 @@ struct MainWindow : Window
 
 			case GHK_MONEY: // Gimme money
 				/* You can only cheat for money in singleplayer mode. */
-				if (!_networking) DoCommandP(0, 10000000, 0, CMD_MONEY_CHEAT);
+				if (!_networking) Command<CMD_MONEY_CHEAT>::Post(10000000);
 				break;
 
 			case GHK_UPDATE_COORDS: // Update the coordinates of all station signs
