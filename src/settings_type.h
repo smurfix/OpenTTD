@@ -330,6 +330,7 @@ struct GameCreationSettings {
 	byte   river_route_random;               ///< the amount of randomicity for the route finding
 	byte   amount_of_rivers;                 ///< the amount of rivers
 	byte   year_pace_option;                 ///< game year speed, will be converted into pace factor
+	uint16   year_pace_custom_15minutes;         ///< custom game year speed given in quarter of minutes
 };
 
 /** Settings related to construction in-game */

@@ -352,8 +352,9 @@ static DropDownList BuildTownNameDropDown()
 static DropDownList BuildGameYearDropDown()
 {
 	DropDownList list;
-	for (uint i = 0; i < 4; i++) {
-		list.emplace_back(new DropDownListStringItem(STR_GAME_OPTIONS_GAMEYEAR_DEFAULT + i, i, false));
+	for (int i = 0; i < 5; i++) {
+		// STR_GAME_OPTIONS_GAMEYEAR_CUSTOM - is a first item in strings, so start from it.
+		list.emplace_back(new DropDownListStringItem(STR_GAME_OPTIONS_GAMEYEAR_CUSTOM + i, i, false));
 	}
 
 	return list;
@@ -893,9 +894,15 @@ struct GenerateLandscapeWindow : public Window {
 				}
 				break;
 
-			case WID_GL_GAMEYEAR_DROPDOWN: // Town names
+			case WID_GL_GAMEYEAR_DROPDOWN: // Game year
 				if (_game_mode == GM_MENU || Town::GetNumItems() == 0) {
 					_settings_newgame.game_creation.year_pace_option = index;
+					if (!index) {
+						// TODO: show dialog for custom pace factor.
+						//   create span_gui.cpp
+						//   (very similar to date_gui.cpp)
+						NOT_REACHED();
+					}
 					SetWindowDirty(WC_GAME_OPTIONS, WN_GAME_OPTIONS_GAME_OPTIONS);
 				}
 				break;

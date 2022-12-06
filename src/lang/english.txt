@@ -1000,6 +1000,7 @@ STR_GAME_OPTIONS_TOWN_NAME_CATALAN                              :Catalan
 ############ start of game pace dropdown
 STR_GAME_OPTIONS_GAMEYEAR_FRAME                                :{BLACK}Game year lasts:
 STR_GAME_OPTIONS_GAMEYEAR_DROPDOWN_TOOLTIP                     :{BLACK}Choose how fast game year goes in real time
+STR_GAME_OPTIONS_GAMEYEAR_CUSTOM                               :Custom
 STR_GAME_OPTIONS_GAMEYEAR_DEFAULT                              :15 mins (original)
 STR_GAME_OPTIONS_GAMEYEAR_HOUR                                 :One hour
 STR_GAME_OPTIONS_GAMEYEAR_DAY                                  :One day
