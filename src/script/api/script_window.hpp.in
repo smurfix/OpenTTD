@@ -50,6 +50,7 @@
 #include "../../widgets/object_widget.h"
 #include "../../widgets/order_widget.h"
 #include "../../widgets/osk_widget.h"
+#include "../../widgets/pace_factor_widget.h"
 #include "../../widgets/rail_widget.h"
 #include "../../widgets/road_widget.h"
 #include "../../widgets/screenshot_widget.h"

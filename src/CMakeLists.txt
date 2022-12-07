@@ -312,6 +312,8 @@ add_files(
     order_gui.cpp
     order_type.h
     osk_gui.cpp
+    pace_factor_gui.cpp
+    pace_factor_gui.h
     pbs.cpp
     pbs.h
     progress.cpp

@@ -20,6 +20,7 @@
 #include "string_func.h"
 #include "widgets/dropdown_type.h"
 #include "widgets/dropdown_func.h"
+#include "pace_factor_gui.h"
 #include "querystring_gui.h"
 #include "town.h"
 #include "core/geometry_func.hpp"
@@ -898,10 +899,13 @@ struct GenerateLandscapeWindow : public Window {
 				if (_game_mode == GM_MENU || Town::GetNumItems() == 0) {
 					_settings_newgame.game_creation.year_pace_option = index;
 					if (!index) {
-						// TODO: show dialog for custom pace factor.
-						//   create span_gui.cpp
-						//   (very similar to date_gui.cpp)
-						NOT_REACHED();
+						ShowSetPaceFactorWindow(
+						    this, 0,
+							_settings_newgame.game_creation.year_pace_custom_15minutes,
+							[](const Window*, void*, int pace_factor) {
+								_settings_newgame.game_creation.year_pace_custom_15minutes = pace_factor;
+							}
+						);
 					}
 					SetWindowDirty(WC_GAME_OPTIONS, WN_GAME_OPTIONS_GAME_OPTIONS);
 				}

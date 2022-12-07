@@ -154,6 +154,11 @@ enum WindowClass {
 	WC_OSK,
 
 	/**
+	 * Set custom pace factor
+	 */
+	WC_PACE_FACTOR,
+
+	/**
 	 * Set date; %Window numbers:
 	 *   - #VehicleID = #SetDateWidgets
 	 */
