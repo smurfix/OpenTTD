@@ -17,12 +17,12 @@
  * @param w the window that sends the callback
  * @param pace_factor the date that has been chosen
  */
-typedef void SetPaceFactorCallback(int pace_factor);
+using SetPaceFactorCallback = std::function<void(int)>;
 
 void ShowSetPaceFactorWindow(
 	Window *parent,
 	int initial_pace_factor,
-	SetPaceFactorCallback *callback
+	SetPaceFactorCallback&& callback
 );
 
 #endif /* PACE_FACTOR_H */

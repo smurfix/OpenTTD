@@ -22,25 +22,12 @@
 #include "string_func.h"
 #include "querystring_gui.h"
 
-// TODO SLOWPACE: Refactor to QueryString method may be?
-static void SetEditBoxInt(QueryString& box, int v) {
-    SetDParam(0, v);
-    char *last_of = &box.text.buf[box.text.max_bytes - 1];
-    GetString(box.text.buf, STR_JUST_INT, last_of);
-	box.orig = stredup(box.text.buf);
-}
-
-// TODO SLOWPACE: Refactor to QueryString method may be?
-static int GetEditBoxInt(const QueryString& box) {
-    int v = atoi(box.text.buf);
-    return v;
-}
-
 /** Window to select a custom pace factor */
 struct SetPaceFactorWindow : Window {
-	SetPaceFactorCallback *callback; ///< Callback to call when a pace factor has been seletect
+	SetPaceFactorCallback callback; ///< Callback to call when a pace factor has been seletect
 	int pace_factor_minutes;         ///< Storage for minutes fractures of game year
-	int pace_factor;                 ///< Pace factor value
+	int pace_factor_hours;         ///< Storage for minutes fractures of game year
+	int pace_factor_days;         ///< Storage for minutes fractures of game year
 	QueryString hours_editbox;               ///< Subwidget of hours edit field
 	QueryString days_editbox;                ///< Subwidget of days edit field
 
@@ -56,23 +43,25 @@ struct SetPaceFactorWindow : Window {
 		WindowDesc *desc,
 		Window *parent,
 		int initial_pace_factor,
-		SetPaceFactorCallback *callback
+		SetPaceFactorCallback&& callback
 	) :
 			Window(desc),
-			callback(callback),
-			pace_factor(initial_pace_factor),
+			callback(std::move(callback)),
 			hours_editbox(4),
 			days_editbox(3)
 	{
 		this->parent = parent;
 
-		if (pace_factor == 0) pace_factor = 1;
+		if (initial_pace_factor == 0) initial_pace_factor = 1;
+		this->pace_factor_minutes = initial_pace_factor % 4;
+		this->pace_factor_minutes = initial_pace_factor % 4;
+		this->pace_factor_minutes = initial_pace_factor % 4;
 
-		int hours = (pace_factor / 4) % 24;
-		int days = pace_factor / 4 / 24;
+		this->pace_factor_hours = (initial_pace_factor / 4) % 24;
+		this->pace_factor_days = initial_pace_factor / 4 / 24;
 
-		InitEditBox(this->hours_editbox, WID_SPF_HOUR, hours);
-		InitEditBox(this->days_editbox, WID_SPF_DAY, days);
+		InitEditBox(this->hours_editbox, WID_SPF_HOUR, this->pace_factor_hours);
+		InitEditBox(this->days_editbox, WID_SPF_DAY, this->pace_factor_days);
 
 		this->InitNested(WN_PACE_FACTOR);
 
@@ -101,6 +90,10 @@ struct SetPaceFactorWindow : Window {
 		box.ok_button = WID_SPF_APPLY;
 		box.text.afilter = CS_NUMERAL;
 		this->flags = flags;
+	}
+
+	int GetPaceFactor() const {
+		return this->pace_factor_minutes + this->pace_factor_hours * 4 + this->pace_factor_days  * 4 * 24;
 	}
 
 	Point OnInitialPosition(int16 sm_width, int16 sm_height, int window_number) override
@@ -161,10 +154,7 @@ struct SetPaceFactorWindow : Window {
 	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
-			case WID_SPF_MINUTE: SetDParam(0, STR_PACE_FACTOR_MINUTE_0 + this->pace_factor % 4); break;
-			// FIXME SLOWPACE: I think these two will never happen
-			case WID_SPF_HOUR: SetDParam(0, (this->pace_factor / 4) % 24); break;
-			case WID_SPF_DAY:   SetDParam(0, this->pace_factor / (4*24)); break;
+			case WID_SPF_MINUTE: SetDParam(0, STR_PACE_FACTOR_MINUTE_0 + this->pace_factor_minutes % 4); break;
 		}
 	}
 
@@ -176,11 +166,7 @@ struct SetPaceFactorWindow : Window {
 				break;
 
 			case WID_SPF_APPLY: {
-				int pace_factor =
-					this->pace_factor_minutes
-					+ GetEditBoxInt(this->hours_editbox) * 4
-					+ GetEditBoxInt(this->days_editbox) * 4 * 24;
-
+				int pace_factor = GetPaceFactor();
 				if (this->callback != nullptr) this->callback(pace_factor);
 				this->Close();
 				break;
@@ -191,6 +177,30 @@ struct SetPaceFactorWindow : Window {
 				break;
 			}
 		}
+	}
+
+	void CheckResultCandidate() {
+		auto pace_factor = GetPaceFactor();
+
+		// TODO SLOWPACE: If pace_factor is 0, set string to warning
+		//    otherwise set string which will tell how much it will be slower that
+		//    legacy version.
+	}
+
+	void OnEditboxChanged(int widget) override {
+		Window::OnEditboxChanged(widget);
+		switch (widget) {
+			case WID_SPF_HOUR:
+				this->pace_factor_hours = atoi(this->hours_editbox.text.buf);
+				break;
+			case WID_SPF_DAY:
+				this->pace_factor_days = atoi(this->days_editbox.text.buf);
+				break;
+			default:
+				break;
+		}
+
+		CheckResultCandidate();
 	}
 
 	void OnDropdownSelect(int widget, int index) override
@@ -244,7 +254,7 @@ static WindowDesc _set_pace_factor_desc(
 );
 
 /**
- * Create the new 'set date' window
+ * Create the new 'set pace factor' window
  * @param window_number number for the window
  * @param parent the parent window, i.e. if this closes we should close too
  * @param initial_date the initial date to show
@@ -256,7 +266,7 @@ static WindowDesc _set_pace_factor_desc(
 void ShowSetPaceFactorWindow(
 	Window *parent,
 	int initial_pace_factor,
-	SetPaceFactorCallback *callback
+	SetPaceFactorCallback&& callback
 )
 {
 	CloseWindowByClass(WC_PACE_FACTOR);
@@ -265,6 +275,6 @@ void ShowSetPaceFactorWindow(
 		&_set_pace_factor_desc,
 		parent,
 		initial_pace_factor,
-		callback
+		std::move(callback)
 	);
 }
