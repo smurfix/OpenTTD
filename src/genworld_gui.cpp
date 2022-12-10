@@ -900,9 +900,9 @@ struct GenerateLandscapeWindow : public Window {
 					_settings_newgame.game_creation.year_pace_option = index;
 					if (!index) {
 						ShowSetPaceFactorWindow(
-						    this, 0,
+						    this,
 							_settings_newgame.game_creation.year_pace_custom_15minutes,
-							[](const Window*, void*, int pace_factor) {
+							[](int pace_factor) {
 								_settings_newgame.game_creation.year_pace_custom_15minutes = pace_factor;
 							}
 						);

@@ -17,14 +17,12 @@
  * @param w the window that sends the callback
  * @param pace_factor the date that has been chosen
  */
-typedef void SetPaceFactorCallback(const Window *w, void *data, int pace_factor);
+typedef void SetPaceFactorCallback(int pace_factor);
 
 void ShowSetPaceFactorWindow(
 	Window *parent,
-	int window_number,
 	int initial_pace_factor,
-	SetPaceFactorCallback *callback,
-	void *callback_data = nullptr
+	SetPaceFactorCallback *callback
 );
 
 #endif /* PACE_FACTOR_H */

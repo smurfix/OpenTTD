@@ -19,6 +19,7 @@
 #include "widgets/pace_factor_widget.h"
 
 #include "safeguards.h"
+#include "string_func.h"
 #include "querystring_gui.h"
 
 // TODO SLOWPACE: Refactor to QueryString method may be?
@@ -26,6 +27,7 @@ static void SetEditBoxInt(QueryString& box, int v) {
     SetDParam(0, v);
     char *last_of = &box.text.buf[box.text.max_bytes - 1];
     GetString(box.text.buf, STR_JUST_INT, last_of);
+	box.orig = stredup(box.text.buf);
 }
 
 // TODO SLOWPACE: Refactor to QueryString method may be?
@@ -37,7 +39,6 @@ static int GetEditBoxInt(const QueryString& box) {
 /** Window to select a custom pace factor */
 struct SetPaceFactorWindow : Window {
 	SetPaceFactorCallback *callback; ///< Callback to call when a pace factor has been seletect
-	void *callback_data;             ///< Callback data pointer.
 	int pace_factor_minutes;         ///< Storage for minutes fractures of game year
 	int pace_factor;                 ///< Pace factor value
 	QueryString hours_editbox;               ///< Subwidget of hours edit field
@@ -53,37 +54,54 @@ struct SetPaceFactorWindow : Window {
 	 */
 	SetPaceFactorWindow(
 		WindowDesc *desc,
-		WindowNumber window_number,
 		Window *parent,
 		int initial_pace_factor,
-		SetPaceFactorCallback *callback,
-		void *callback_data
+		SetPaceFactorCallback *callback
 	) :
 			Window(desc),
 			callback(callback),
-			callback_data(callback_data),
 			pace_factor(initial_pace_factor),
 			hours_editbox(4),
 			days_editbox(3)
 	{
 		this->parent = parent;
-		this->InitNested(window_number);
-
-		this->querystrings[WID_SPF_HOUR] = &this->hours_editbox;
-		this->querystrings[WID_SPF_DAY] = &this->days_editbox;
-
-		this->hours_editbox.text.afilter = CS_NUMERAL;
-		this->days_editbox.text.afilter = CS_NUMERAL;
 
 		if (pace_factor == 0) pace_factor = 1;
 
 		int hours = (pace_factor / 4) % 24;
 		int days = pace_factor / 4 / 24;
 
-		SetEditBoxInt(this->hours_editbox, hours);
-		SetEditBoxInt(this->days_editbox, days);
+		InitEditBox(this->hours_editbox, WID_SPF_HOUR, hours);
+		InitEditBox(this->days_editbox, WID_SPF_DAY, days);
+
+		this->InitNested(WN_PACE_FACTOR);
+
+		this->SetFocusedWidget(WID_SPF_MINUTE);
 	}
 
+	void InitEditBox(QueryString& box, int widget_id, int initialValue) {
+		char *last_of = &box.text.buf[box.text.max_bytes - 1];
+		SetDParam(0, initialValue);
+		GetString(box.text.buf, STR_JUST_INT, last_of);
+		StrMakeValidInPlace(box.text.buf, last_of, SVS_NONE);
+
+		/* Make sure the name isn't too long for the text buffer in the number of
+		 * characters (not bytes). max_chars also counts the '\0' characters. */
+		while (Utf8StringLength(box.text.buf) + 1 > box.text.max_chars) {
+			*Utf8PrevChar(box.text.buf + strlen(box.text.buf)) = '\0';
+		}
+
+		box.text.UpdateSize();
+
+		if ((flags & QSF_ACCEPT_UNCHANGED) == 0) box.orig = stredup(box.text.buf);
+
+		this->querystrings[widget_id] = &box;
+		// box.caption = caption;
+		box.cancel_button = WID_SPF_CANCEL;
+		box.ok_button = WID_SPF_APPLY;
+		box.text.afilter = CS_NUMERAL;
+		this->flags = flags;
+	}
 
 	Point OnInitialPosition(int16 sm_width, int16 sm_height, int window_number) override
 	{
@@ -103,11 +121,8 @@ struct SetPaceFactorWindow : Window {
 		switch (widget) {
 			default: NOT_REACHED();
 			case WID_SPF_MINUTE:
-				for (int i = 0; i < 60; i++) {
-					auto *item = new DropDownListParamStringItem(STR_PACE_FACTOR_MINUTE_0, i, false);
-					item->SetParam(0, i);
-					list.emplace_back(item);
-				}
+				for (int i = 0; i < 4; i++)
+					list.emplace_back(new DropDownListParamStringItem(STR_PACE_FACTOR_MINUTE_0 + i, i, false));
 				// In minutes drop-down we hold 0, 15, 30, or 45 values, in our
 				// case it is a remainder after division by 4.
 				selected = this->pace_factor_minutes % 4;
@@ -146,8 +161,7 @@ struct SetPaceFactorWindow : Window {
 	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
-			case WID_SPF_MINUTE: SetDParam(0, this->pace_factor % 4); break;
-
+			case WID_SPF_MINUTE: SetDParam(0, STR_PACE_FACTOR_MINUTE_0 + this->pace_factor % 4); break;
 			// FIXME SLOWPACE: I think these two will never happen
 			case WID_SPF_HOUR: SetDParam(0, (this->pace_factor / 4) % 24); break;
 			case WID_SPF_DAY:   SetDParam(0, this->pace_factor / (4*24)); break;
@@ -167,7 +181,12 @@ struct SetPaceFactorWindow : Window {
 					+ GetEditBoxInt(this->hours_editbox) * 4
 					+ GetEditBoxInt(this->days_editbox) * 4 * 24;
 
-				if (this->callback != nullptr) this->callback(this, this->callback_data, pace_factor);
+				if (this->callback != nullptr) this->callback(pace_factor);
+				this->Close();
+				break;
+			}
+
+			case WID_SPF_CANCEL: {
 				this->Close();
 				break;
 			}
@@ -195,24 +214,22 @@ static const NWidgetPart _nested_set_pace_factor_widgets[] = {
 		NWidget(NWID_VERTICAL), SetPIP(6, 6, 6),
 			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(6, 6, 6),
 				NWidget(WWT_EDITBOX, COLOUR_BROWN, WID_SPF_DAY),
-					SetMinimalSize(80, 12), SetResize(1, 0), SetFill(1, 0), SetPadding(2, 2, 2, 2),
+					SetMinimalSize(20, 12), SetResize(1, 0), SetFill(1, 0), SetPadding(2, 2, 2, 2),
 					SetDataTip(STR_JUST_STRING, STR_PACE_FACTOR_DAY_TOOLTIP),
 				NWidget(WWT_EDITBOX, COLOUR_BROWN, WID_SPF_HOUR),
-					SetMinimalSize(80, 12), SetResize(1, 0), SetFill(1, 0), SetPadding(2, 2, 2, 2),
+					SetMinimalSize(20, 12), SetResize(1, 0), SetFill(1, 0), SetPadding(2, 2, 2, 2),
 					SetDataTip(STR_JUST_STRING, STR_PACE_FACTOR_HOUR_TOOLTIP),
 				NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_SPF_MINUTE),
 				    SetFill(1, 0), SetDataTip(STR_JUST_STRING, STR_PACE_FACTOR_MINUTE_TOOLTIP),
 			EndContainer(),
 			NWidget(NWID_HORIZONTAL),
 				NWidget(NWID_SPACER), SetFill(1, 0),
-				NWidget(WWT_CAPTION, COLOUR_RED, WID_SPF_ERROR_CAPTION), SetDataTip(STR_WHITE_STRING, STR_NULL),
+				NWidget(WWT_CAPTION, COLOUR_BROWN, WID_SPF_ERROR_CAPTION), SetDataTip(STR_PACE_FACTOR_NON_ZERO_ERROR, STR_NULL),
 				NWidget(NWID_SPACER), SetFill(1, 0),
 			EndContainer(),
-			NWidget(NWID_HORIZONTAL),
-				NWidget(NWID_SPACER), SetFill(1, 0),
-				NWidget(WWT_CAPTION, COLOUR_RED, WID_SPF_ERROR_CAPTION), SetDataTip(STR_WHITE_STRING, STR_NULL),
-				NWidget(WWT_PUSHTXTBTN, COLOUR_BROWN, WID_SPF_APPLY), SetMinimalSize(100, 12), SetDataTip(STR_PACE_FACTOR_APPLY, STR_PACE_FACTOR_APPLY_TOOLTIP),
-				NWidget(NWID_SPACER), SetFill(1, 0),
+			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
+				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_SPF_CANCEL), SetMinimalSize(30, 12), SetFill(1, 1), SetDataTip(STR_BUTTON_CANCEL, STR_NULL),
+				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_SPF_APPLY), SetMinimalSize(30, 12), SetFill(1, 1), SetDataTip(STR_BUTTON_OK, STR_NULL),
 			EndContainer(),
 		EndContainer(),
 	EndContainer()
@@ -238,20 +255,16 @@ static WindowDesc _set_pace_factor_desc(
  */
 void ShowSetPaceFactorWindow(
 	Window *parent,
-	int window_number,
 	int initial_pace_factor,
-	SetPaceFactorCallback *callback,
-	void *callback_data
+	SetPaceFactorCallback *callback
 )
 {
 	CloseWindowByClass(WC_PACE_FACTOR);
 
 	new SetPaceFactorWindow(
 		&_set_pace_factor_desc,
-		window_number,
 		parent,
 		initial_pace_factor,
-		callback,
-		callback_data
+		callback
 	);
 }
