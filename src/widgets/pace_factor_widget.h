@@ -15,10 +15,13 @@ enum SetPaceFactorWidgets {
 	WID_SPF_DAY,              ///< Text field for the day.
 	WID_SPF_HOUR,             ///< Text field for hour.
 	WID_SPF_MINUTE,           ///< Dropdown for minute.
-	WID_SPF_ERROR_PANEL,      ///< Error panel
+	//	WID_SPF_ERROR_PANEL,      ///< Error panel
 	WID_SPF_APPLY,            ///< Apply pace factor
-	WID_SPF_CANCEL,
-	WID_SPF_ERROR_CAPTION,    ///< If user tries to set invalid value (0)
+	WID_SPF_CANCEL,           ///< Cancel
+	//	WID_SPF_HOUR_CAPTION,
+	//	WID_SPF_DAY_CAPTION,
+	//	WID_SPF_ERROR_CAPTION,       ///< If user tries to set invalid value (0)
+	//	WID_SPF_ERROR_CAPTION_PANEL, ///< If user tries to set invalid value (0)
 };
 
 #endif /* WIDGETS_PACE_FACTOR_WIDGET_H */

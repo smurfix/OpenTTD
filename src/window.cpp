@@ -1327,7 +1327,6 @@ static uint GetWindowZPriority(WindowClass wc)
 
 		case WC_QUERY_STRING:
 		case WC_SEND_NETWORK_MSG:
-		case WC_PACE_FACTOR:
 			++z_priority;
 			FALLTHROUGH;
 
@@ -1337,6 +1336,10 @@ static uint GetWindowZPriority(WindowClass wc)
 		case WC_MODAL_PROGRESS:
 		case WC_NETWORK_STATUS_WINDOW:
 		case WC_SAVE_PRESET:
+			++z_priority;
+			FALLTHROUGH;
+
+		case WC_PACE_FACTOR:
 			++z_priority;
 			FALLTHROUGH;
 

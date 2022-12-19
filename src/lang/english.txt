@@ -4537,7 +4537,7 @@ STR_PACE_FACTOR_APPLY_TOOLTIP                                   :{BLACK}Use the 
 STR_PACE_FACTOR_MINUTE_TOOLTIP                                  :{BLACK}Select minute
 STR_PACE_FACTOR_HOUR_TOOLTIP                                    :{BLACK}Set hours
 STR_PACE_FACTOR_DAY_TOOLTIP                                     :{BLACK}Set days
-STR_PACE_FACTOR_NON_ZERO_ERROR                                  :{RED}We can't apply zero-length game year, please set some non-zero value at least in one of fields.
+STR_PACE_FACTOR_NON_ZERO_ERROR                                  :{WHITE}We can't apply zero-length game year, please set some non-zero value at least in one of fields.
 
 # AI debug window
 STR_AI_DEBUG                                                    :{WHITE}AI/Game Script Debug

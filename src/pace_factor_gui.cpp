@@ -21,6 +21,8 @@
 #include "safeguards.h"
 #include "string_func.h"
 #include "querystring_gui.h"
+#include "error.h"
+#include "table/sprites.h"
 
 /** Window to select a custom pace factor */
 struct SetPaceFactorWindow : Window {
@@ -66,6 +68,8 @@ struct SetPaceFactorWindow : Window {
 		this->InitNested(WN_PACE_FACTOR);
 
 		this->SetFocusedWidget(WID_SPF_MINUTE);
+
+		CheckResultCandidate();
 	}
 
 	void InitEditBox(QueryString& box, int widget_id, int initialValue) {
@@ -92,7 +96,7 @@ struct SetPaceFactorWindow : Window {
 		this->flags = flags;
 	}
 
-	int GetPaceFactor() const {
+	int GetCustomPaceFactor() const {
 		return this->pace_factor_minutes + this->pace_factor_hours * 4 + this->pace_factor_days  * 4 * 24;
 	}
 
@@ -125,6 +129,14 @@ struct SetPaceFactorWindow : Window {
 		ShowDropDownList(this, std::move(list), selected, widget);
 	}
 
+	static Dimension GetClearButtonSize() {
+		// SLOWPACE: stolen from QueryString::DrawEditBox
+		bool rtl = _current_text_dir == TD_RTL;
+		Dimension sprite_size = GetSpriteSize(rtl ? SPR_IMG_DELETE_RIGHT : SPR_IMG_DELETE_LEFT);
+		int clearbtn_width = sprite_size.width + WD_IMGBTN_LEFT + WD_IMGBTN_RIGHT;
+		return clearbtn_width;
+	}
+
 	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		Dimension d = {0, 0};
@@ -135,15 +147,17 @@ struct SetPaceFactorWindow : Window {
 				d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
 				break;
 
-			case WID_SPF_HOUR:
-				SetDParamMaxValue(0, 4369);
-				d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
-				break;
+				case WID_SPF_HOUR:
+					SetDParamMaxValue(0, 4369);
+					d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
+					d.width += GetClearButtonSize().width;
+					break;
 
-			case WID_SPF_DAY:
-				SetDParamMaxValue(0, 183);
-				d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
-				break;
+				case WID_SPF_DAY:
+					SetDParamMaxValue(0, 183);
+					d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
+					d.width += GetClearButtonSize().width;
+					break;
 		}
 
 		d.width += padding.width;
@@ -166,7 +180,14 @@ struct SetPaceFactorWindow : Window {
 				break;
 
 			case WID_SPF_APPLY: {
-				int pace_factor = GetPaceFactor();
+				if (!IsPaceFactorValid()) {
+					ShowErrorMessage(
+						STR_PACE_FACTOR_NON_ZERO_ERROR,
+						INVALID_STRING_ID, WL_INFO
+					);
+					break;
+				}
+				int pace_factor = GetCustomPaceFactor();
 				if (this->callback != nullptr) this->callback(pace_factor);
 				this->Close();
 				break;
@@ -179,12 +200,19 @@ struct SetPaceFactorWindow : Window {
 		}
 	}
 
-	void CheckResultCandidate() {
-		auto pace_factor = GetPaceFactor();
+	bool IsPaceFactorValid() const {
+		return GetCustomPaceFactor() != 0;
+	}
 
-		// TODO SLOWPACE: If pace_factor is 0, set string to warning
-		//    otherwise set string which will tell how much it will be slower that
-		//    legacy version.
+	void CheckResultCandidate() {
+		// SLOWPACE: as possible option is to show label instead of error message.
+		//	this->GetWidget<NWidgetStacked>(WID_SPF_ERROR_CAPTION_PANEL)->SetDisplayedPlane(
+		//		IsPaceFactorValid() ? SZSP_NONE : 0
+		//	);
+
+		this->SetWidgetDisabledState(WID_SPF_APPLY, !IsPaceFactorValid());
+
+		this->SetDirty();
 	}
 
 	void OnEditboxChanged(int widget) override {
@@ -200,7 +228,7 @@ struct SetPaceFactorWindow : Window {
 				break;
 		}
 
-		CheckResultCandidate();
+		this->CheckResultCandidate();
 	}
 
 	void OnDropdownSelect(int widget, int index) override
@@ -208,9 +236,10 @@ struct SetPaceFactorWindow : Window {
 		switch (widget) {
 			case WID_SPF_MINUTE:
 				this->pace_factor_minutes = index;
+				this->CheckResultCandidate();
+				this->SetDirty();
 				break;
 		}
-		this->SetDirty();
 	}
 };
 
@@ -223,20 +252,30 @@ static const NWidgetPart _nested_set_pace_factor_widgets[] = {
 	NWidget(WWT_PANEL, COLOUR_BROWN),
 		NWidget(NWID_VERTICAL), SetPIP(6, 6, 6),
 			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(6, 6, 6),
+				//	NWidget(NWID_VERTICAL), SetPIP(6, 6, 6),
+				//		NWidget(WWT_CAPTION, COLOUR_BROWN, WID_SPF_DAY_CAPTION), SetDataTip(STR_PACE_FACTOR_DETAILS_DAY, STR_NULL),
+				//		NWidget(WWT_EDITBOX, COLOUR_BROWN, WID_SPF_DAY),
+				//			SetMinimalSize(20, 12), SetFill(1, 0), SetPadding(2, 30, 2, 10),
+				//			SetDataTip(STR_JUST_STRING, STR_PACE_FACTOR_DAY_TOOLTIP),
+				//	EndContainer(),
 				NWidget(WWT_EDITBOX, COLOUR_BROWN, WID_SPF_DAY),
-					SetMinimalSize(20, 12), SetResize(1, 0), SetFill(1, 0), SetPadding(2, 2, 2, 2),
+					SetMinimalSize(20, 12), SetFill(1, 0), SetPadding(2, 30, 2, 10),
 					SetDataTip(STR_JUST_STRING, STR_PACE_FACTOR_DAY_TOOLTIP),
 				NWidget(WWT_EDITBOX, COLOUR_BROWN, WID_SPF_HOUR),
-					SetMinimalSize(20, 12), SetResize(1, 0), SetFill(1, 0), SetPadding(2, 2, 2, 2),
+					SetMinimalSize(20, 12), SetFill(1, 0), SetPadding(2, 30, 2, 2),
 					SetDataTip(STR_JUST_STRING, STR_PACE_FACTOR_HOUR_TOOLTIP),
 				NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_SPF_MINUTE),
 				    SetFill(1, 0), SetDataTip(STR_JUST_STRING, STR_PACE_FACTOR_MINUTE_TOOLTIP),
+					SetPadding(2, 10, 2, 2),
 			EndContainer(),
-			NWidget(NWID_HORIZONTAL),
-				NWidget(NWID_SPACER), SetFill(1, 0),
-				NWidget(WWT_CAPTION, COLOUR_BROWN, WID_SPF_ERROR_CAPTION), SetDataTip(STR_PACE_FACTOR_NON_ZERO_ERROR, STR_NULL),
-				NWidget(NWID_SPACER), SetFill(1, 0),
-			EndContainer(),
+			// SLOWPACE: as possible option is to show label instead of error message.
+			//	NWidget(NWID_SELECTION, INVALID_COLOUR, WID_SPF_ERROR_CAPTION_PANEL),
+			//		NWidget(NWID_HORIZONTAL),
+			//			NWidget(NWID_SPACER), SetFill(1, 0),
+			//			NWidget(WWT_CAPTION, COLOUR_BROWN, WID_SPF_ERROR_CAPTION), SetDataTip(STR_PACE_FACTOR_NON_ZERO_ERROR, STR_NULL),
+			//			NWidget(NWID_SPACER), SetFill(1, 0),
+			//		EndContainer(),
+			//	EndContainer(),
 			NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
 				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_SPF_CANCEL), SetMinimalSize(30, 12), SetFill(1, 1), SetDataTip(STR_BUTTON_CANCEL, STR_NULL),
 				NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_SPF_APPLY), SetMinimalSize(30, 12), SetFill(1, 1), SetDataTip(STR_BUTTON_OK, STR_NULL),
