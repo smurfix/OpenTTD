@@ -11,6 +11,7 @@
 #define PACE_FACTOR_H
 
 #include "window_type.h"
+#include <functional>
 
 /**
  * Callback for when a pace factor has been set
