@@ -1,3 +1,15 @@
+openttd (13.0+jgrpp-0.51.1-2) smurf; urgency=medium
+
+  * Fix version stupidity
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Sat, 11 Mar 2023 19:15:14 +0100
+
+openttd (13.0+jgrpp-0.51.1-1) smurf; urgency=medium
+
+  * Current JGRPP patch version.
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Sat, 11 Mar 2023 18:02:01 +0100
+
 openttd (13.0-2) unstable; urgency=medium
 
   * [c3e16af] Fix cross-compilation by building build-time tools in a

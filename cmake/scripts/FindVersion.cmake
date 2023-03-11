@@ -13,7 +13,7 @@ endif()
 
 find_package(Git QUIET)
 # ${CMAKE_SOURCE_DIR}/.git may be a directory or a regular file
-if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+if(FALSE AND GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
     # Make sure LC_ALL is set to something desirable
     set(SAVED_LC_ALL "$ENV{LC_ALL}")
     set(ENV{LC_ALL} C)
@@ -113,7 +113,7 @@ if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 
     # Restore LC_ALL
     set(ENV{LC_ALL} "${SAVED_LC_ALL}")
-elseif(EXISTS "${CMAKE_SOURCE_DIR}/.ottdrev-vc")
+elseif(FALSE AND EXISTS "${CMAKE_SOURCE_DIR}/.ottdrev-vc")
     file(READ "${CMAKE_SOURCE_DIR}/.ottdrev-vc" OTTDREVVC)
     string(REPLACE "\n" ";" OTTDREVVC "${OTTDREVVC}")
     list(GET OTTDREVVC 0 OTTDREV)
