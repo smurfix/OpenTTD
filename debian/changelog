@@ -1,0 +1,863 @@
+openttd (13.0-2) unstable; urgency=medium
+
+  * [c3e16af] Fix cross-compilation by building build-time tools in a
+    separate pass. Thanks to Helmut Grohne for the initial patch. (Closes:
+    #1020921)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sun, 19 Feb 2023 15:38:12 +0100
+
+openttd (13.0-1) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * [521c8eb] Remove constraints unnecessary since buster
+
+  [ Matthijs Kooijman ]
+  * [8805ef2] New upstream release 13.0
+  * [56910c6] Bump standards version to 4.6.2 (no changes required)
+  * [866fa62] Use new libfreetype-dev name in build-depends
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 15 Feb 2023 18:46:13 +0100
+
+openttd (12.2-1) unstable; urgency=medium
+
+  * [789d2fd] Fix typo in Suggests: timidity (Closes: #1003269)
+  * [265efa6] New upstream release 12.2
+  * [1298c72] Recommend openttd-opensfx instead of just suggesting it
+  * [772d473] Remove install-openttd.32.bmp patch which was merged
+    upstream
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 20 Apr 2022 15:17:01 +0200
+
+openttd (12.1-2) unstable; urgency=medium
+
+  * [6b4811a] Use dh_install again instead of dh_cmake during build
+  * [3980212] Fix arch-indep builds (Closes: #1002913)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sat, 01 Jan 2022 20:30:43 +0100
+
+openttd (12.1-1) unstable; urgency=medium
+
+  [ Erik Renes ]
+  * [14e4ab9] Fix typo in README.Debian
+
+  [ Matthijs Kooijman ]
+  * [9940ea1] Update watch file
+  * [6146e90] New upstream release 12.1
+  * [1a5c0f3] Remove libxdg-basedir-dev build dependency
+  * [a99692a] Adapt to upstream now using cmake
+  * [9a26661] Bump standards version to 4.6.0 (no changes required)
+  * [adcd43a] Enable fluidsynth backend for music playback
+  * [4a18b77] Enable SDL-OpenGL backend for video rendering
+  * [312f1e9] Update copyright for newly added 3rdparty code
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 28 Dec 2021 17:57:11 +0100
+
+openttd (1.10.3-1) unstable; urgency=medium
+
+  * [ea0dcf7] New upstream release 1.10.3
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 12 Aug 2020 20:42:00 +0200
+
+openttd (1.10.2-1) unstable; urgency=medium
+
+  [ Matthijs Kooijman ]
+  * [7b0ae8f] New upstream release 1.10.2
+
+  [ Debian Janitor ]
+  * [6e7a889] Use secure URI in Homepage field
+  * [0b1fac7] Add upstream metadata file
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 12 Jun 2020 21:33:26 +0200
+
+openttd (1.10.1-1) unstable; urgency=medium
+
+  * [abf2d77] New upstream release 1.10.1
+  * [0013681] Bump standards version to 4.5.0 (no changes required)
+  * [7049408] Bump debhelper version to v13
+  * [fa3c261] Compile against libsdl2 instead of 1.2
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 13 May 2020 10:37:52 +0200
+
+openttd (1.9.3-1) unstable; urgency=medium
+
+  * [45f1987] New upstream release 1.9.3 (Closes: #941446)
+  * [c0e1406] Bump standards version to 4.4.1 (no changes required)
+  * [48c58a7] Set Rules-Requires-Root: no for building
+  * [96bf28f] Remove Replaces/Breaks on openttd-dbg
+  * [81b7300] Bump debhelper version to v12 (no changes required)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 15 Oct 2019 12:40:41 +0200
+
+openttd (1.9.1-1) unstable; urgency=medium
+
+  * [736762f] Mark openttd-data as Multi-Arch: foreign
+  * [78e919c] Update watch file, upstream changed download urls.
+  * [2c3695d] New upstream release 1.9.1
+  * [e07397d] Bump standards version to 4.3.0 (no changes required)
+  * [326d3f5] Remove fix-build-with-icu-61.patch, which was merged
+    upstream
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 09 Apr 2019 21:26:18 +0200
+
+openttd (1.8.0-2) unstable; urgency=medium
+
+  * [6a1c164] Backport upstream changes to fix compilation with ICU 61 and
+    above (Closes: #913509)
+  * [4dd1430] Bump debhelper version to v11
+  * [ed01c93] Support DEB_BUILD_OPTIONS=terse
+  * [c2e35e2] Bump standards version to 4.2.1
+  * [9b9605a] Stop using the ICU layout engine (Closes: #897233)
+  * [d5bec9d] Fix cross-building: Supply --pkg-config to ./configure.
+    Thanks to Helmut Grohne for the patch (Closes: #910990)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sat, 17 Nov 2018 19:44:28 +0100
+
+openttd (1.8.0-1) unstable; urgency=medium
+
+  * [4c62ea5] New upstream release 1.8.0
+  * [863cb24] Bump standards version to 4.1.4
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Mon, 30 Apr 2018 15:46:44 +0200
+
+openttd (1.7.1-1) unstable; urgency=medium
+
+  * [0d3644c] New upstream release 1.7.1.
+  * [49b0827] Bump debhelper version to v10
+  * [05de209] Remove the menu file in favor of the FDO .desktop file
+  * [aa98c12] Bump standards version to 4.1.2
+  * [ce1dbbe] Migrate from manual -dbg to automatic -dbgsym packages
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 05 Dec 2017 13:15:32 +0100
+
+openttd (1.7.0-1) unstable; urgency=medium
+
+  * [d6e90de] New upstream release 1.7.0.
+  * [57471ad] Bump standards version to 3.9.8
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Mon, 03 Apr 2017 17:01:42 +0200
+
+openttd (1.6.1-1) unstable; urgency=medium
+
+  * [8cb8348] New upstream release 1.6.1.
+    - Fix arbitrary compilation order, to improve build reproducibility.
+      (Closes: #828993)
+  * [eeb1139] Add openttd to the StrategyGame menu category. (Closes:
+    #825681)
+  * [9270dc2] Remove patches for reproducibility that are contained
+    upstream.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sun, 03 Jul 2016 10:37:08 +0200
+
+openttd (1.6.0-1) unstable; urgency=medium
+
+  * [899a443] New upstream release 1.6.0.
+  * [d56ce46] Backport upstream changes to improve reproducibility of
+    builds
+  * [107a530] Bump debhelper version to v9
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 11 May 2016 22:58:34 +0200
+
+openttd (1.5.3-1) unstable; urgency=medium
+
+  * [545acc6] New upstream release 1.5.3.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 04 Dec 2015 11:14:07 +0100
+
+openttd (1.5.2-1) unstable; urgency=medium
+
+  * [d97d3a0] New upstream release 1.5.2.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 03 Sep 2015 13:07:54 +0200
+
+openttd (1.5.1-1) unstable; urgency=medium
+
+  * [26903ab] New upstream release 1.5.1.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 19 Jun 2015 19:16:40 +0200
+
+openttd (1.5.0-1) unstable; urgency=medium
+
+  * [7f3855b] New upstream release 1.5.0.
+    - Compiles with GCC 5. (Closes: #778048)
+    - Compiles with Freetype 2.5.4 and above. (Closes: #783841)
+  * [249de37] Remove zipped-textfiles.patch, this was merged upstream.
+  * [97e2e72] Minimum grfcodec version is now 6.0.5.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sat, 09 May 2015 22:48:11 +0200
+
+openttd (1.4.4-2) unstable; urgency=medium
+
+  * [4d35107] Add patch to allow gzipped txt files in basesets, newgrfs,
+    etc.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 23 Oct 2014 16:28:59 +0200
+
+openttd (1.4.4-1) unstable; urgency=medium
+
+  * [9779da7] New upstream release 1.4.4.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 21 Oct 2014 23:13:00 +0200
+
+openttd (1.4.3-1) unstable; urgency=medium
+
+  * [129d1ab] New upstream release 1.4.3.
+  * [5346983] Bump Standards-Version to 3.9.6, no changes required.
+  * [4e7955a] Fix invalid license names from debian/copyright.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 24 Sep 2014 22:30:28 +0200
+
+openttd (1.4.2-1) unstable; urgency=medium
+
+  * [b786d4f] New upstream release 1.4.2. (Closes: #758766)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 21 Aug 2014 09:02:37 +0200
+
+openttd (1.4.1-1) unstable; urgency=medium
+
+  * [7ddef46] New upstream release 1.4.1.
+    - Fixed segfault during load on big endian machines. (Closes: #754676)
+  * [54bf392] Remove build-with-libpng16.patch, which is included
+    upstream.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 17 Jul 2014 09:31:51 +0200
+
+openttd (1.4.0-1) unstable; urgency=medium
+
+  * [11c26d3] New upstream release 1.4.0. (Closes: #745420)
+  * [16a06a1] Bump Standards-Version to 3.9.5, no changes required.
+  * [e891c7b] Add build-with-libpng16.patch. (Closes: #742581)
+  * [2e4b618] Enable support for libxdg-basedir.
+  * [0b02d47] Bump openttd-opengfx recommends to 0.5.0 or above.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Mon, 12 May 2014 18:58:45 +0200
+
+openttd (1.3.3-1) unstable; urgency=high
+
+  * [05541be] New upstream release 1.3.3. This fixes CVE-2013-6411 (Denial of
+    service using forcefully crashed aircrafts).
+  * [b6be83f] Update changed paths in debian/copyright.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 29 Nov 2013 15:39:45 +0100
+
+openttd (1.3.2-1) unstable; urgency=low
+
+  * [ad93a63] New upstream release 1.3.2.
+  * [4bfd2e6] Use canonical Vcs urls (on anonscm.debian.org).
+  * [744ea46] Document licensing of exe2coff and cwsdpmi in the tarball.
+  * [6c40277] Override lintian warnings about DOS helper binaries in the
+    source package
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 18 Sep 2013 16:14:26 +0200
+
+openttd (1.3.1-1) unstable; urgency=low
+
+  * [1ba99d9] New upstream release 1.3.1.
+  * [fbf5bdc] Recommend a newer version of openttd-opengfx (>= 0.4.6).
+  * [a688f77] Remove nforenum clean up code from debian/rules.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 04 Jun 2013 09:09:02 +0200
+
+openttd (1.3.0-1) unstable; urgency=low
+
+  * [3e9e10e] New upstream release 1.3.0.
+  * Upload to unstable again.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 12 Apr 2013 09:14:06 +0200
+
+openttd (1.3.0~rc3-1) experimental; urgency=low
+
+  * [cce726c] New upstream release 1.3.0~rc3.
+    - Upstream fixed compilation with gcc 4.8 (Closes: #701333)
+  * [02f2eb5] Pass CXXFLAGS to configure.
+  * [595ef81] Remove openttd-wrapper, OpenTTD has a bootstrap mode now.
+  * [ebc7ebc] Depend on grfcodec >= 6.0.2.
+  * [5b41f63] Update watch file, upstream changed download urls.
+  * [0d573e4] Add lintian override since openttd manpage is in openttd-
+    data.
+
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Mon, 18 Mar 2013 13:05:05 +0100
+
+openttd (1.2.3-1) experimental; urgency=low
+
+  * [7f86702] New upstream release 1.2.3. (Closes: #689372)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 01 Nov 2012 21:58:27 +0100
+
+openttd (1.2.2-1) experimental; urgency=low
+
+  * [6aae009] New upstream release 1.2.2. (Closes: #686497)
+  * [10ecdc0] Use dpkg-buildflags for utilities running on the build
+    machine as well.
+  * [f7ed1ab] Bump Standards-Version to 3.9.4, no changes required.
+  * [d49940e] Remove patch for CVE-2012-3436, which is included upstream.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 19 Sep 2012 11:27:07 +0200
+
+openttd (1.2.1-2) unstable; urgency=high
+
+  * [e7a5026] Fix CVE-2012-3436 (Denial of service using ships on half
+    tiles and landscaping). See
+    http://security.openttd.org/en/CVE-2012-3436 for details.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 01 Aug 2012 23:20:31 +0200
+
+openttd (1.2.1-1) unstable; urgency=low
+
+  * [306c3ac] New upstream release 1.2.1.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 01 Jun 2012 21:23:48 +0200
+
+openttd (1.2.0-1) unstable; urgency=low
+
+  * [72924af] New upstream release 1.2.0. (Closes: #667666)
+  * [100a482] Remove fix-make-dry-run.patch and clean-openttd.32.bmp.patch
+    which got incorporated upstream.
+  * [2385e4d] Build-Depend on grfcodec >= 5.1.4.
+  * [dac35dc] Recommend openttd-opengfx >= 0.4.3.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 18 Apr 2012 13:50:28 +0200
+
+openttd (1.1.5-2) unstable; urgency=low
+
+  * [a060ac1] Add openttd-dbg package containing debug symbols.
+  * [9ebdb47] Pass $CPPFLAGS from dpkg-buildflags to configure, this fixes
+    some missing hardening flags.
+    Thanks to Simon Ruderich for providing a patch (Closes: #659194)
+  * [0e6d613] Enable verbose builds.
+  * [3d8d30d] Bump Standards-Version to 3.9.3, no changes required.
+  * [09229b6] Update copyright file to use the new copyright-format-1.0.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 15 Mar 2012 12:06:03 +0100
+
+openttd (1.1.5-1) unstable; urgency=low
+
+  * [5911954] New upstream release 1.1.5. This fixes CVE-2012-0049.
+  * [a3af4b0] Use dpkg-buildflags / buildflags.mk for determining buildflags.
+  * [ff1043c] Enable all hardening options (since openttd offers a
+    network-listening service that handles untrusted data).
+  * [f9fd5bc] Support parallel building (enable using DEB_BUILD_OPTIONS).
+  * [00931be] Add fix-make-dry-run.patch to make dh_auto_clean work.
+  * [7f36925] Add clean-openttd.32.bmp.patch to completely clean the tree.
+  * [6768883] Enable regression testing during package build.
+  * [afc862f] Move more arch-indep data files to openttd-data.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 08 Feb 2012 15:04:51 +0100
+
+openttd (1.1.4-1) unstable; urgency=low
+
+  * [9f68818] New upstream release 1.1.4.
+  * [8779d75] Require grfcodec >= 5.1.2.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 06 Dec 2011 15:01:37 +0100
+
+openttd (1.1.3-1) unstable; urgency=low
+
+  * [4d74263] New upstream release 1.1.3. Fixes three security issues:
+    - CVE-2011-3341 (Denial of service via improperly validated commands)
+    - CVE-2011-3342 (Buffer overflows in savegame loading)
+    - CVE-2011-3343 (Multiple buffer overflows in validation of external data)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 16 Sep 2011 15:12:38 +0200
+
+openttd (1.1.2-1) unstable; urgency=low
+
+  * [6a2923c] New upstream release 1.1.2.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sun, 21 Aug 2011 11:42:13 +0200
+
+openttd (1.1.1-1) unstable; urgency=low
+
+  * [275d525] New upstream release 1.1.1.
+  * [e031058] Add support for lzma-compressed savegames.
+  * [8658e0f] Recommend openttd-opengfx >= 0.3.2, OpenTTD will not run with
+    older versions.
+  * [ec059f2] Remove patch for CVE-2010-4168, it was included in 1.0.5.
+  * [2fd255d] No longer depend on nforenum.
+  * [b43c10f] Bump Standards-Version to 3.9.2, no changes required.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 04 Aug 2011 23:22:46 +0200
+
+openttd (1.0.4-3) unstable; urgency=high
+
+  * [0b3fd35] Make sure the CVE 2010-4168 patch actually applies.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 19 Nov 2010 09:56:36 +0100
+
+openttd (1.0.4-2) unstable; urgency=high
+
+  * [31f64cb] Add patch for CVE-2010-4168. (Closes: #603752)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 18 Nov 2010 21:45:54 +0100
+
+openttd (1.0.4-1) unstable; urgency=low
+
+  * [0303577] New upstream release 1.0.4.
+  * [ac0e0c9] Build-depend on grfcodec and nforenum, openttd ships grf
+    sources now.
+  * [ae70a98] Rebuild the grf files instead of using the prebuilt
+    versions. (Closes: #595738)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 14 Sep 2010 18:58:34 +0200
+
+openttd (1.0.3-2) unstable; urgency=low
+
+  * [04a8646] Don't suggest freepats, since timidity recommends it now.
+  * [4d36395] Recommend openttd-openmsx.
+  * [34c1754] Recommend timidy instead of suggesting it.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 01 Sep 2010 09:15:26 +0200
+
+openttd (1.0.3-1) unstable; urgency=high
+
+  * [581c91e] New upstream release 1.0.3. This release fixes CVE-2010-2534.
+  * [9051ead] Bump standards version to 3.9.1.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 03 Aug 2010 22:28:49 +0200
+
+openttd (1.0.2-1) unstable; urgency=low
+
+  * [00c4efe] New upstream release 1.0.2.
+  * [c7b38fd] Break older openttd versions instead of Conflicting with
+    them.
+  * [36bd61f] Bump standards version to 3.9.0.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 01 Jul 2010 08:14:02 +0200
+
+openttd (1.0.1-1) unstable; urgency=high
+
+  * [6efdf17] New upstream release 1.0.1. This release fixes CVE-2010-0401,
+    CVE-2010-0402 and CVE-2010-0406.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sat, 01 May 2010 17:02:36 +0200
+
+openttd (1.0.0-2) unstable; urgency=low
+
+  * [07bda20] Fix Replaces clause of openttd-data. (Closes: #576960)
+  * [cfecf6a] Let openttd-data conflict with (the non-split) openttd <<
+    0.7.5-2.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 08 Apr 2010 20:58:42 +0200
+
+openttd (1.0.0-1) unstable; urgency=low
+
+  * [30a2162] New upstream release 1.0.0. (Closes: #570104)
+  * [102698a] Make openttd-wrapper work with older mktemp versions.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 02 Apr 2010 23:36:21 +0200
+
+openttd (1.0.0~rc3-2) unstable; urgency=low
+
+  * [279c5ef] Recommend openttd-opengfx and suggest openttd-opensfx.
+  * [9330ad7] Update README.Debian concerning music files.
+  * [07bde24] Move openttd from contrib to main. (Closes: #560810)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 18 Mar 2010 13:16:32 +0100
+
+openttd (1.0.0~rc3-1) unstable; urgency=low
+
+  * [412d153] New upstream release 1.0.0~rc3.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 18 Mar 2010 10:09:33 +0100
+
+openttd (1.0.0~rc2-1) unstable; urgency=low
+
+  * [9c99af4] New upstream release 1.0.0~rc2.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 04 Mar 2010 12:22:28 +0100
+
+openttd (1.0.0~rc1-1) unstable; urgency=low
+
+  * [fe4eb51] New upstream release 1.0.0~rc1.
+  * [6aa2be0] Note that the embedded md5 implementation has a different
+    license.
+  * [39eb336] Remove lintian override for empty gm directory.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 19 Feb 2010 13:00:53 +0100
+
+openttd (1.0.0~beta4-1) unstable; urgency=low
+
+  * [6718224] New upstream release 1.0.0~beta4.
+  * [7b0fa8d] Remove some more docs that we don't want in the package.
+  * [bb9d744] Use liblzo2 instead of an embedded minilzo version.
+  * [949c06b] Explicitly disable iconv support.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 19 Feb 2010 12:59:27 +0100
+
+openttd (0.7.5-4) unstable; urgency=low
+
+  * [174d0b1] Don't use deprecated < in Replaces.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Mon, 15 Feb 2010 00:35:33 +0100
+
+openttd (0.7.5-3) unstable; urgency=low
+
+  * [d12fc5a] Make openttd-data replace openttd (< 0.7.5-2).
+    (Closes: #569679)
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sun, 14 Feb 2010 16:56:31 +0100
+
+openttd (0.7.5-2) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * [fbab21d] Switch to source format 3.0 (quilt).
+  * [85c0c7d] No longer check for (and complain about missing) datafiles
+    on installation and upgrades. (Closes: #524651, 562574)
+  * [827eb61] Split the architecture independent data into openttd-data.
+    (Closes: #492462)
+  * [6fbd9c7] Update README.Debian.
+  * [76a5148] Support cross compilation. (Closes: #550951)
+  * [2005bf8] Simplify the rules file, make debhelper do more stuff.
+  * [fc0500e] Remove some configure arguments.
+  * [8ca38bb] Explicitly enable or disable all of the dependencies.
+  * [e38fb3e] Let the upstream Makefile install documentation.
+  * [5954fcf] Update the watch file to the new upstream url scheme.
+  * [7249594] Fix typo in copyright file.
+  * [660fb61] Bump the Standards-Version to 3.8.4, with no changes
+    required.
+  * [f94ab89] Move the packaging git repository to git.debian.org.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 09 Feb 2010 21:40:24 +0100
+
+openttd (0.7.5-1) unstable; urgency=high
+
+  * [cdcb73a] Imported Upstream version 0.7.5. This release fixes
+    CVE-2009-4007.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 24 Dec 2009 00:55:45 +0100
+
+openttd (0.7.4-1) unstable; urgency=low
+
+  * [a2c297b0] Imported Upstream version 0.7.4
+  * [0232a645] Make Debian-specific patches executable.
+  * [76be04b] Switch the Debian packaging to git.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Tue, 15 Dec 2009 22:11:52 +0100
+
+openttd (0.7.3-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release
+  * Use printf instead of echo -en in openttd-wrapper to make it POSIX
+    compatible (Closes: #547758).
+  * Remove three patches that are now included in upstream.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 01 Oct 2009 22:52:59 +0200
+
+openttd (0.7.2-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release
+  * Bump Standards-Version to 3.8.3, with no changes required.
+  * Clean up the rules file a bit and add some lintian overrides.
+  * Explain why openttd is in contrib (Closes: #539381).
+  * Add the DM-Upload-Allowed control field.
+  * Re-add dpatch infrastructure.
+  * Fix the copyright file, since upstream only allows GPLv2, not later
+    versions.
+  * Add a section to the copyright file on the different license used by the
+    "Squirrel" programming language, which is shipped with OpenTTD since
+     0.7.0.
+  * Backport upstream r17226, which removes the deprecated Encoding entry from
+    the .desktop file.
+  * Add a wrapper script for openttd, which captures any stderr output and
+    displays it when openttd returns an error code (Closes: #533557).
+  * Recommend x11-utils, since we use xmessage for displaying errors. Don't
+    depend on it, since openttd will still run fine without it, you just won't
+    see any errors.
+  * Backport upstream r17227 and r17229, which prevents terminal escape codes
+    from ending up in the captured error output.
+  * Backport upstream r17240, which improves stderr output when files are
+    missing or corrupt.
+
+ -- Jordi Mallach <jordi@debian.org>  Fri, 21 Aug 2009 15:27:26 +0200
+
+openttd (0.7.1-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release.
+  * Link against libicu to enable right-to-left language support.
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 09 Jun 2009 21:46:28 +0200
+
+openttd (0.7.0-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release.
+  * Remove Debian specific desktop file, upstream provides one now.
+  * Add debian/watch file.
+
+  [ Jordi Mallach ]
+  * Bump Standards-Version to 3.8.1, with no changes required.
+  * Move to debhelper compat 7. Bump Build-Depends accordingly.
+  * Use dh_prep.
+  * Add "set -e" to config script.
+  * Remove a few extra doc files that get installed by upstream Makefile.
+  * Add more complete copyright information.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 15 Apr 2009 18:22:10 +0200
+
+openttd (0.6.3-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release.
+
+  [ Jordi Mallach ]
+  * Add Spanish Debconf template translation, after fixing its corrupted
+    encoding (thanks, Germana Oliveira, closes: #499214).
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 02 Oct 2008 16:59:03 +0200
+
+openttd (0.6.2-1) unstable; urgency=low
+
+  * New upstream release.
+    - Fixes remote crash vulnerability CVE-2008-3547. Closes: #493714
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Fri, 08 Aug 2008 11:07:05 +0200
+
+openttd (0.6.2~rc2-1) experimental; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release.
+
+  [ Jordi Mallach ]
+  * Fix typo in README.Debian (lintian).
+  * Remove dpatch build-dep and the empty debian/patches dir.
+  * Don't ignore possible "make distclean" errors.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 26 Jul 2008 01:35:30 +0200
+
+openttd (0.6.2~rc1-1) experimental; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 24 Jul 2008 16:09:57 +0200
+
+openttd (0.6.1-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release.
+  * Remove no_install_personal.dpatch, it is included upstream now.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 05 Jun 2008 00:47:36 +0200
+
+openttd (0.6.0-2) unstable; urgency=low
+
+  [ Jordi Mallach ]
+  * Rename XS-Vcs-* to the official Vcs-* fields.
+
+  [ Matthijs Kooijman ]
+  * Don't install anything into ~ during make install, this prevented
+    successful builds on some architectures. Fix imported from upstream.
+  * Put the homepage in its own Homepage field instead of in the description.
+  * Bump Standards-Version to 3.7.3
+
+ -- Jordi Mallach <jordi@debian.org>  Thu, 03 Apr 2008 00:07:10 +0200
+
+openttd (0.6.0-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release:
+    - Adds note about font-configuration for non-latin languages.
+      Closes: #462604
+  * Add .desktop file, provided by Andrea Colangelo.
+    Closes: #460073
+  * Add Finnish Debconf translation, provided by Esko Arajärvi.
+    Closes: #456956
+
+  [ Jordi Mallach ]
+  * Fixes and improvements for the .desktop file according to the spec.
+
+ -- Jordi Mallach <jordi@debian.org>  Wed, 02 Apr 2008 14:04:40 +0200
+
+openttd (0.5.3-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release
+
+ -- Jordi Mallach <jordi@debian.org>  Tue, 18 Sep 2007 12:05:28 +0200
+
+openttd (0.5.2-1) unstable; urgency=low
+
+  [ Jordi Mallach ]
+  * New upstream release.
+  * Debconf translation updates:
+    - Catalan.
+
+  [ Christian Perrier ]
+  * Debconf templates and debian/control reviewed by the debian-l10n-
+    english team as part of the Smith review project.
+    Closes: #422183, #419096.
+  * Debconf translation updates:
+    - Swedish. Closes: #422780
+    - Basque. Closes: #422786
+    - Czech. Closes: #422809
+    - Galician. Closes: #422831
+    - German. Closes: #422908
+    - Tamil. Closes: #423079
+    - Russian. Closes: #423224
+    - Portuguese. Closes: #423413
+    - French. Closes: #424436
+    - Brazilian Portuguese. Closes: #425585
+    - Dutch. Closes: #425707
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 02 Jun 2007 06:24:34 +0200
+
+openttd (0.5.1-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release
+  * Add German and Swedish translations (Closes: #420258, #419097)
+  * Remove bogus fuzzy mark from the Catalan translation
+
+  [ Jordi Mallach ]
+  * debian/control: add XS-Vcs-Svn and XS-Vcs-Browser fields.
+
+ -- Jordi Mallach <jordi@debian.org>  Mon, 23 Apr 2007 21:03:06 +0200
+
+openttd (0.5.0-2) unstable; urgency=low
+
+  * Upload to Debian.
+
+ -- Jordi Mallach <jordi@debian.org>  Sun, 11 Mar 2007 14:12:37 +0100
+
+openttd (0.5.0-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release
+
+  [ Jordi Mallach ]
+  * Depend on ${misc:Depends}, not debconf directly.
+
+ -- Jordi Mallach <jordi@debian.org>  Thu,  8 Mar 2007 15:34:54 +0100
+
+openttd (0.5.0~rc5-1) unstable; urgency=low
+
+  [ Matthijs Kooijman ]
+  * New upstream release
+  * Compile with freetype and fontconfig support.
+
+  [ Jordi Mallach ]
+  * Convert debconf templates to podebconf.
+  * Add a Catalan translation.
+  * Minor packaging cleanups.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Mon, 12 Feb 2007 09:25:41 +0100
+
+openttd (0.5.0~rc4-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Thu, 18 Jan 2007 21:17:28 +0100
+
+openttd (0.5.0~rc3-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Thu, 18 Jan 2007 20:21:04 +0100
+
+openttd (0.5.0~rc2-1) unstable; urgency=low
+
+  * New upstream release
+  * Removed fix for empty scenarios dir, openttd Makefile now properly handles
+    this.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Sun, 31 Dec 2006 12:24:37 +0100
+
+openttd (0.5.0~rc1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Fri, 22 Dec 2006 11:03:46 +0100
+
+openttd (0.4.8-1) unstable; urgency=low
+
+  * New upstream release
+  * Bump standards version to 3.7.2
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Mon, 14 Aug 2006 16:28:50 +0200
+
+openttd (0.4.7-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Mon, 27 Mar 2006 23:40:00 +0200
+
+openttd (0.4.6-1) unstable; urgency=low
+
+  * New upstream release.
+  * Remove old terminal messages and make sure that debconf is always called.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Wed,  8 Mar 2006 23:57:35 +0100
+
+openttd (0.4.5-1) unstable; urgency=low
+
+  * New upstream release
+  * Bump Standards-Version to 3.6.2
+  * s/timdity/timidity/ in README.Debian.
+  * Use debconf for prompting instead of terminal.
+  * Fix makefile to create icon dir if necessary.
+  * Fix syntax error in manpage.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Wed,  1 Feb 2006 01:56:39 +0100
+
+openttd (0.4.0.1-5) unstable; urgency=low
+
+  * Fixed capitalization of menu item.
+  * Install xpm icon to /usr/share/pixmaps and don't install png icon, since
+    it is not used.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Thu, 22 Sep 2005 10:35:09 +0200
+
+openttd (0.4.0.1-4) unstable; urgency=low
+
+  * Changelog was distributed twice.
+  * Put openttd in contrib.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Mon, 19 Sep 2005 23:49:18 +0200
+
+openttd (0.4.0.1-3) unstable; urgency=low
+
+  * Clarified installing instructions in README.Debian
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Thu, 16 Jun 2005 03:51:13 +0200
+
+openttd (0.4.0.1-2) unstable; urgency=low
+
+  * Added Suggests: timidity, freepats
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Thu, 16 Jun 2005 03:34:03 +0200
+
+openttd (0.4.0.1-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Mon, 23 May 2005 13:04:24 +0200
+
+openttd (0.4.0-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Mon, 16 May 2005 00:16:17 +0200
+
+openttd (0.3.6-1) unstable; urgency=low
+
+  * New upstream release
+  * Modifed Makefile to install xpm icon and scenarios in /usr/share/games/openttd/
+  * Added openttd.32.xpm, openttd.64.xpm was too big
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Tue, 25 Jan 2005 19:21:08 +0100
+
+openttd (0.3.5-2) unstable; urgency=low
+
+  * Fixed some lintian warnings.
+  * Added openttd.64.xpm (icon for menu).
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Mon, 27 Dec 2004 01:51:36 +0100
+
+openttd (0.3.5-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Matthijs Kooijman <m.kooijman@student.utwente.nl>  Fri, 24 Dec 2004 02:58:47 +0100

@@ -1,0 +1,18 @@
+# Convention for changelog is full message on a single file
+very-long-line-length-in-source-file * [changelog.txt:*]
+# Language files cannot be wrapped, whitespace is significant
+very-long-line-length-in-source-file * [src/lang/*:*]
+# These are binary files, not source files
+very-long-line-length-in-source-file * [*.dat:*]
+very-long-line-length-in-source-file * [*.grf:*]
+very-long-line-length-in-source-file * [*.sav:*]
+very-long-line-length-in-source-file * [docs/palettes/palette.act:*]
+# Long CSS data uri, which also triggers source-is-missing (it seems
+# lintian assumes a html/js files are auto-generated if they have a long
+# line).
+very-long-line-length-in-source-file * [os/emscripten/shell.html:*]
+source-is-missing [os/emscripten/shell.html]
+# 3rd party unmodified file
+very-long-line-length-in-source-file * [src/3rdparty/opengl/glext.h:*]
+# Long comment that is parsed by the build process so cannot be wrapped
+very-long-line-length-in-source-file * [src/script/api/script_error.hpp:*]

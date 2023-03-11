@@ -1,0 +1,6 @@
+# Manpages are in openttd-data, which openttd depends on.
+no-manual-page [usr/games/openttd]
+# These are not typo, but actually used to generate townnames (like in
+# "Greenwich").
+spelling-error-in-binary wich which [usr/games/openttd]
+spelling-error-in-binary Foll Follow [usr/games/openttd]

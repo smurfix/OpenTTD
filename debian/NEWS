@@ -1,0 +1,77 @@
+openttd (1.8.0-2) unstable; urgency=medium
+
+    Historically, OpenTTD used the ICU library to provide support for
+    non-Western languages, such as Chinese, Japanese, Arabic and Hebrew.
+    Since ICU 58, some of the required parts for layouting these languages
+    were removed from that library. A replacement using the Harfbuzz library
+    was in place for a few versions, but this was not well maintained and
+    was a fuss to build Debian packages for.
+
+    Since OpenTTD 1.8.0-2, the ICU library is no longer used for layouting
+    and OpenTTD falls back to a very basic implementation of its own. For
+    Chinese and Japanese, the result should be usable, though line-wrapping
+    might not be perfect. For Arabic, no proper context-aware glyph-shaping
+    happens. For Hebrew and Arabic, text is rendered reversed
+    (left-to-right, rather the right-to-left), making these languages pretty
+    much unusable for now.
+
+    Hopefully OpenTTD can provide a better solution of its own (possibly
+    using some parts of ICU or the Harfbuzz library) in the future. Until
+    that happens, not all languages are completely supported anymore.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Sat, 17 Nov 2018 18:33:24 +0100
+
+openttd (1.4.3-1) unstable; urgency=medium
+
+    Since version 1.4.0-1, openttd has support for using XDG data and config
+    directories.
+
+    Short version: If ~/.openttd/openttd.cfg exists, ~/.openttd/ will be used
+    for configuration and data files. Otherwise (so for new installations),
+    ~/.config/openttd is used for configuration and ~/.local/share/openttd for
+    data files.
+
+    Longer version: ~/.local/share/openttd and ~/.openttd (among others) are
+    always included in the search path for data files (ais, newgrfs, basesets,
+    etc). Data files in those locations are always available in the game
+    (except for downloaded content, which is only loaded from the directory
+    where it would be written).
+
+    Where openttd writes its data files (downloaded content, (crash) log
+    files, screenshots, savegames, config files) depends on where it found
+    your openttd.cfg file. If ~/.openttd/openttd.cfg exists, data and config
+    files will be written under ~/.openttd/. If ~/.config/openttd/openttd.cfg
+    exists, data files will be written under ~/.local/share/openttd/ and
+    config files will be under ~/.config/openttd/.
+
+    In reality, things are even a little more complicated, but unless you do
+    unlikely things like put an openttd.cfg in /usr/share/games/openttd, the
+    above should apply as-is.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Wed, 24 Sep 2014 18:51:51 +0200
+
+openttd (1.0.0~rc3-2) unstable; urgency=low
+
+    The openttd package has been moved from contrib into main. Since the
+    OpenGFX free graphics set has been packaged for Debian, one can now run
+    OpenTTD without needing any of the resources from the original game
+    (though the original resources are still supported).
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 18 Mar 2010 13:09:35 +0100
+
+openttd (0.7.0-1) unstable; urgency=low
+
+    Handling of AI players has changed in 0.7.0. This package no longer
+    contains any AI players, so playing against the computer is not possible
+    out of the box any longer. However, you can easily download AI players
+    through the new "Content Downloading Service", after which playing with
+    computer players is possible.
+
+    Loading old savegames with computer players is supported (AI players will
+    be converted according to the current AI settings), but at this moment
+    there are no AIs that completely handle any existing infrastructure built
+    by the old AI, so starting a new game might be more fun (especially since
+    most of the new AIs are a lot less erratic).
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Mon, 13 Apr 2009 15:11:20 +0200
+

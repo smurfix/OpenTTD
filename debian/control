@@ -1,0 +1,40 @@
+Source: openttd
+Section: games
+Priority: optional
+Maintainer: Matthijs Kooijman <matthijs@stdin.nl>
+Uploaders: Jordi Mallach <jordi@debian.org>
+Build-Depends: debhelper-compat (= 13), libsdl2-dev, zlib1g-dev, libpng-dev,
+ libfreetype-dev, libfontconfig-dev, libicu-dev, liblzo2-dev, liblzma-dev,
+ libfluidsynth-dev, libopengl-dev,
+ grfcodec, openttd-opengfx,
+ cmake
+Standards-Version: 4.6.2
+Vcs-Browser: https://salsa.debian.org/openttd-team/openttd
+Vcs-Git: https://salsa.debian.org/openttd-team/openttd.git
+Homepage: https://www.openttd.org/
+Rules-Requires-Root: no
+
+Package: openttd
+Architecture: any
+Multi-Arch: no
+Depends: ${shlibs:Depends}, ${misc:Depends}, openttd-data (= ${source:Version})
+Recommends: openttd-opengfx, openttd-openmsx, openttd-opensfx
+Suggests: timidity
+Description: reimplementation of Transport Tycoon Deluxe with enhancements
+ OpenTTD is a reimplementation of the Microprose game "Transport
+ Tycoon Deluxe" with lots of new features and enhancements.
+ .
+ OpenTTD is playable with the free graphics files from the openttd-opengfx
+ package and optional sound and music files from the openttd-opensfx and
+ openttd-openmsx packages Alternatively, OpenTTD can use the graphics files
+ from the original Transport Tycoon Deluxe game (See README.Debian on how to set
+ this up).
+
+Package: openttd-data
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: common data files for the OpenTTD game
+ This package contains data files like language files, scripts and some
+ auxiliary graphics.  It does not include any full graphics or sound sets,
+ which still need to be installed separately to play OpenTTD.

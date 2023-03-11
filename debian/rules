@@ -1,0 +1,75 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Makefile to build the openttd debian package.
+
+include /usr/share/dpkg/architecture.mk
+
+# Use debhelper default for all targets (but some are overridden below).
+%:
+	dh $@ --buildsystem=cmake
+
+# This prevents linking uselessly to libicudata and silences a warning
+# in the build process.
+export DEB_LDFLAGS_MAINT_APPEND=-Wl,-as-needed
+
+# Enable all hardening options (since openttd offers a network-listening
+# service that handles untrusted data).
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+
+# Build release
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_BUILD_TYPE=RelWithDebInfo
+# Explicitly mark dependencies as required or disabled, so an issue with
+# build dependencies does not silently remove a feature or add a
+# dependency
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_LibLZMA=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_LZO=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_PNG=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_Freetype=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_SDL2=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_Fontconfig=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_ICU=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_Grfcodec=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_Fluidsynth=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_REQUIRE_FIND_PACKAGE_OpenGL=TRUE
+CMAKE_CONFIG_ARGUMENTS += -DCMAKE_DISABLE_FIND_PACKAGE_Allegro=TRUE
+
+# When crosscompiling, prebuild tools that need to run on the build
+# machine in a different build directory, and pass that build directory
+# to the regular build so it can use those brebuilt ones.
+ifneq ($(DEB_BUILD_ARCH),$(DEB_HOST_ARCH))
+TOOLS_DIR=$(CURDIR)/build-native
+CMAKE_CONFIG_ARGUMENTS += "-DHOST_BINARY_DIR=$(TOOLS_DIR)"
+endif
+
+# Pass custom options to configure. Since it's not autoconf but a custom
+# script, some of the option names are slightly different. We also need
+# to be explicit about the dependencies, in case we're not running in a
+# clean build root.
+override_dh_auto_configure:
+ifneq ($(TOOLS_DIR),)
+	dpkg-architecture -a"$(DEB_BUILD_ARCH)" -f -c dh_auto_configure -B"$(TOOLS_DIR)" -- -DOPTION_TOOLS_ONLY=ON
+endif
+	dh_auto_configure -- $(CMAKE_CONFIG_ARGUMENTS)
+
+override_dh_auto_build:
+ifneq ($(TOOLS_DIR),)
+	dpkg-architecture -a"$(DEB_BUILD_ARCH)" -f -c dh_auto_build -B"$(TOOLS_DIR)"
+endif
+	dh_auto_build
+
+execute_after_dh_install-arch:
+	# Prevent installing duplicate license file
+	rm debian/openttd/usr/share/doc/openttd/COPYING.md
+
+GRF=media/baseset/openttd.grf
+GRF_BACKUP=debian/openttd.grf
+
+execute_before_dh_auto_build:
+	# Remove the prebuilt grf file, to force a rebuild from source
+	# (but do keep a backup, so the clean rule can restore it as
+	# required by the policy).
+	[ -f "$(GRF_BACKUP)" ] || mv "$(GRF)" "$(GRF_BACKUP)"
+
+execute_after_dh_auto_clean:
+	[ ! -f "$(GRF_BACKUP)" ] || mv "$(GRF_BACKUP)" "$(GRF)"

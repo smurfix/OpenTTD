@@ -1,0 +1,5 @@
+# Put the actual binary, menu file (installed by dh_installmenu),
+# desktop file and docs in openttd, the rest goes into openttd-data
+debian/tmp/usr/games
+debian/tmp/usr/share/applications
+debian/tmp/usr/share/doc
