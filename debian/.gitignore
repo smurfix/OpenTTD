@@ -1,0 +1,8 @@
+files
+/*.substvars
+/.debhelper/
+/openttd/
+/openttd-data/
+/*-stamp
+/tmp/
+/openttd.grf
