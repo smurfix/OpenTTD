@@ -3364,11 +3364,11 @@ CommandCost CmdExpandTown(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
 	if (flags & DC_EXEC) {
 		/* The more houses, the faster we grow */
 		if (p2 == 0) {
-			uint amount = RandomRange(ClampToU16(t->cache.num_houses / 25)) + 3;
+			uint amount = RandomRange(ClampToU16(t->cache.num_houses / 16)) + 2;
 			t->cache.num_houses += amount;
 			UpdateTownRadius(t);
 
-			uint n = amount * 10;
+			uint n = amount * 4;
 			do GrowTown(t); while (--n);
 
 			t->cache.num_houses -= amount;
