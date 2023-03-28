@@ -147,17 +147,17 @@ struct SetPaceFactorWindow : Window {
 				d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
 				break;
 
-				case WID_SPF_HOUR:
-					SetDParamMaxValue(0, 4369);
-					d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
-					d.width += GetClearButtonSize().width;
-					break;
+			case WID_SPF_HOUR:
+				SetDParamMaxValue(0, 4369);
+				d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
+				d.width += GetClearButtonSize().width;
+				break;
 
-				case WID_SPF_DAY:
-					SetDParamMaxValue(0, 183);
-					d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
-					d.width += GetClearButtonSize().width;
-					break;
+			case WID_SPF_DAY:
+				SetDParamMaxValue(0, 183);
+				d = maxdim(d, GetStringBoundingBox(STR_JUST_INT));
+				d.width += GetClearButtonSize().width;
+				break;
 		}
 
 		d.width += padding.width;
