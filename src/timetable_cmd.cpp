@@ -283,12 +283,18 @@ static bool VehicleTimetableSorter(Vehicle * const &a, Vehicle * const &b)
 	return b->unitnumber < a->unitnumber;
 }
 
+// FIXME, SLOWPACE: for all commands we use vanilla days.
+//   Ideally as a timetable time unit we should use
+//   Greatest common divisor of vanilla day and game minimal time unit.
+//   Game minimal time unit might a day, hour or minute. It is in turn should be
+//   maximum of those but less than vanilla day in ticks.
+
 /**
  * Set the start date of the timetable.
  * @param flags Operation to perform.
  * @param veh_id Vehicle ID.
  * @param timetable_all Set to set timetable start for all vehicles sharing this order
- * @param start_date The timetable start date.
+ * @param start_date The timetable start date. Given in amount of vanilla days.
  * @return The error or cost of the operation.
  */
 CommandCost CmdSetTimetableStart(DoCommandFlag flags, VehicleID veh_id, bool timetable_all, Date start_date)
@@ -302,9 +308,11 @@ CommandCost CmdSetTimetableStart(DoCommandFlag flags, VehicleID veh_id, bool tim
 	int total_duration = v->orders->GetTimetableTotalDuration();
 
 	/* Don't let a timetable start more than 15 years into the future or 1 year in the past. */
-	if (start_date < 0 || start_date > MAX_DAY) return CMD_ERROR;
-	if (start_date - _date > 15 * DAYS_IN_LEAP_YEAR) return CMD_ERROR;
-	if (_date - start_date > DAYS_IN_LEAP_YEAR) return CMD_ERROR;
+
+	auto [game_start_date, _] = VanillaDateToGameDate(start_date);
+	if (game_start_date < 0 || start_date > MAX_DAY) return CMD_ERROR;
+	if (game_start_date - _date > 15 * DAYS_IN_LEAP_YEAR) return CMD_ERROR;
+	if (_date - game_start_date > DAYS_IN_LEAP_YEAR) return CMD_ERROR;
 	if (timetable_all && !v->orders->IsCompleteTimetable()) return CMD_ERROR;
 	if (timetable_all && start_date + total_duration / DAY_TICKS > MAX_DAY) return CMD_ERROR;
 
@@ -332,7 +340,7 @@ CommandCost CmdSetTimetableStart(DoCommandFlag flags, VehicleID veh_id, bool tim
 			w->lateness_counter = 0;
 			ClrBit(w->vehicle_flags, VF_TIMETABLE_STARTED);
 			/* Do multiplication, then division to reduce rounding errors. */
-			w->timetable_start = start_date + idx * total_duration / num_vehs / DAY_TICKS;
+			w->timetable_start = start_date + idx * total_duration / num_vehs / VANILLA_DAY_TICKS;
 			SetWindowDirty(WC_VEHICLE_TIMETABLE, w->index);
 			++idx;
 		}
@@ -425,7 +433,13 @@ void UpdateVehicleTimetable(Vehicle *v, bool travelling)
 		just_started = !HasBit(v->vehicle_flags, VF_TIMETABLE_STARTED);
 
 		if (v->timetable_start != 0) {
-			v->lateness_counter = (_date - v->timetable_start) * DAY_TICKS + _date_fract;
+
+			auto [vanilla_date, vanilla_date_fract] = GameDateToVanillaDate(_date, _date_fract);
+
+			v->lateness_counter =
+				(vanilla_date - v->timetable_start) * VANILLA_DAY_TICKS
+				+ vanilla_date_fract;
+
 			v->timetable_start = 0;
 		}
 
@@ -459,7 +473,7 @@ void UpdateVehicleTimetable(Vehicle *v, bool travelling)
 		 * the timetable entry like is done for road vehicles/ships.
 		 * Thus always make sure at least one tick is used between the
 		 * processing of different orders when filling the timetable. */
-		uint time_to_set = CeilDiv(std::max(time_taken, 1U), DAY_TICKS) * DAY_TICKS;
+		uint time_to_set = CeilDiv(std::max(time_taken, 1U), VANILLA_DAY_TICKS) * VANILLA_DAY_TICKS;
 
 		if (travelling && (autofilling || !real_current_order->IsTravelTimetabled())) {
 			ChangeTimetable(v, v->cur_real_order_index, time_to_set, MTF_TRAVEL_TIME, autofilling);

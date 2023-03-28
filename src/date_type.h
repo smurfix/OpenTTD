@@ -18,6 +18,8 @@ typedef int32  Ticks;     ///< The type to store ticks in
 typedef int32  Year;  ///< Type for the year, note: 0 based, i.e. starts at the year 0.
 typedef uint8  Month; ///< Type for the month, note: 0 based, i.e. 0 = January, 11 = December.
 typedef uint8  Day;   ///< Type for the day of the month, note: 1 based, first day of a month is 1.
+typedef uint8  Hour;   ///< Type for the hour of day, note: 0 based, 0 12am
+typedef uint8  Minute; ///< Type for the minute of hour, note: 0 based
 
 /**
  * 1 day is 74 ticks; _date_fract used to be uint16 and incremented by 885. On
@@ -25,15 +27,42 @@ typedef uint8  Day;   ///< Type for the day of the month, note: 1 based, first d
  * 1 tick is approximately 30 ms.
  * 1 day is thus about 2 seconds (74 * 30 = 2220) on a machine that can run OpenTTD normally
  */
-static const int DAY_TICKS         =  74; ///< ticks per day
+
+// SLOWPACE: "pace factor" is how many times game's clock
+// should go slower comparing to vanilla version.
+
+// Some pace factor values:
+// 1   - game day is equal to vanilla day
+// 4   - 4 times slower, game year is ~1 user's hour
+// 96  - game year is ~1 user's day
+// 672 - game year is ~1 user's week.
+
+// We keep this pseudo-constant to reduce diffs with master branch.
+// Ideally e should replace it everywhere with GetDayTicks call.
+#define DAY_TICKS ::GetDayTicks()
+
+static const int VANILLA_DAY_TICKS = 74; ///< ticks per vanilla day. Used as a primary time unit for animation.
+
 static const int DAYS_IN_YEAR      = 365; ///< days per year
 static const int DAYS_IN_LEAP_YEAR = 366; ///< sometimes, you need one day more...
 static const int MONTHS_IN_YEAR    =  12; ///< months per year
 
+// Slowpace, NOTE: we don't scale station ratings
+// ticks, because it is addicted to user's clock.
+// So it should happen with same rate from user perspective.
 static const int STATION_RATING_TICKS     = 185; ///< cycle duration for updating station rating
-static const int STATION_ACCEPTANCE_TICKS = 250; ///< cycle duration for updating station acceptance
-static const int STATION_LINKGRAPH_TICKS  = 504; ///< cycle duration for cleaning dead links
+
+#define STATION_ACCEPTANCE_TICKS (250 * GetPaceFactor()) ///< cycle duration for updating station acceptance
+#define STATION_LINKGRAPH_TICKS  (504 * GetPaceFactor()) ///< cycle duration for cleaning dead links
+
+// SLOWPACE: also prevent cargo aging from scale, here it rather
+// depends in distance and visual vehicle speed.
 static const int CARGO_AGING_TICKS        = 185; ///< cycle duration for aging cargo
+
+// SLOWPACE: we don't scale industry production ticks,
+// but monthly numbers will be increased of course.
+// Industry growth though depends on percent of transported
+// cargo, so not a problem for us.
 static const int INDUSTRY_PRODUCE_TICKS   = 256; ///< cycle duration for industry production
 static const int TOWN_GROWTH_TICKS        = 70;  ///< cycle duration for towns trying to grow. (this originates from the size of the town array in TTD
 static const int INDUSTRY_CUT_TREE_TICKS  = INDUSTRY_PRODUCE_TICKS * 2; ///< cycle duration for lumber mill's extra action

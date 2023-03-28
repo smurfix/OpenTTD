@@ -290,6 +290,7 @@ public:
 	Date age;                           ///< Age in days
 	Date max_age;                       ///< Maximum age
 	Date date_of_last_service;          ///< Last date the vehicle had a service at a depot.
+	DateFract fract_of_last_service;    ///< Last date fract the vehicle had a service at a depot.
 	uint16 reliability;                 ///< Reliability.
 	uint16 reliability_spd_dec;         ///< Reliability decrease speed.
 	byte breakdown_ctr;                 ///< Counter for managing breakdown events. @see Vehicle::HandleBreakdown
@@ -343,8 +344,8 @@ public:
 	int8 trip_occupancy;                ///< NOSAVE: Occupancy of vehicle of the current trip (updated after leaving a station).
 
 	byte day_counter;                   ///< Increased by one for each day
-	byte tick_counter;                  ///< Increased by one for each tick
-	byte running_ticks;                 ///< Number of ticks this vehicle was not stopped this day
+	byte tick_counter;                  ///< Increased by one for each tick, used for animation
+	uint32 running_ticks;               ///< Number of ticks this vehicle was not stopped this day
 
 	byte vehstatus;                     ///< Status
 	Order current_order;                ///< The current order (+ status, like: loading)
@@ -395,6 +396,8 @@ public:
 	void GetConsistFreeCapacities(SmallMap<CargoID, uint> &capacities) const;
 
 	uint GetConsistTotalCapacity() const;
+
+	void SetLastServiceNow();
 
 	/**
 	 * Marks the vehicles to be redrawn and updates cached variables
@@ -570,6 +573,11 @@ public:
 	 * @return is this vehicle still valid?
 	 */
 	virtual bool Tick() { return true; };
+
+	/**
+	 * Calls the new vanilla day handler of the vehicle
+	 */
+	virtual void OnNewVanillaDay() {};
 
 	/**
 	 * Calls the new day handler of the vehicle

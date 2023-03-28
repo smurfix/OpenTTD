@@ -36,6 +36,7 @@
 #include "network/network_content_gui.h"
 #include "newgrf_engine.h"
 #include <stack>
+#include <cmath>
 
 #include "table/strings.h"
 #include "table/control_codes.h"
@@ -458,6 +459,73 @@ static char *FormatTinyOrISODate(char *buff, Date date, StringID str, const char
 	return FormatString(buff, GetStringPtr(str), &tmp_params, last);
 }
 
+static char *FormatTinyTime(char *buff, DateFract date_fract, StringID str, const char *last)
+{
+	auto [hh, mm] = TicksToHourMinute(date_fract);
+
+	char hour[3];
+	char minute[3];
+	/* We want to zero-pad the days and months */
+	seprintf(hour,   lastof(hour),   "%02i", hh);
+	seprintf(minute, lastof(minute), "%02i", mm);
+
+	int64 args[] = {(int64)(size_t)hour, (int64)(size_t)minute};
+	StringParameters tmp_params(args);
+	return FormatString(buff, GetStringPtr(str), &tmp_params, last);
+}
+
+/**
+ *   Hide money scaling for user.  Internally we will
+ *   operate with amounts multiplied on PACE_FACTOR. For user though we want to show
+ *   regular amounts.
+ *
+ *   * for pace factor in range (1-10] we will show currencies with 1 digit after decimal point.
+ *   * for pace factor in range (10-100] - with 2 digits after decimal point.
+ *   * for higher pace factors with 3 digits after decimal point.
+ *
+ * @param number - money amount to be normalized
+ * @param need_fractional_part - whether we want to keep fractional part
+ * @return pair:
+ *   * first - normalized money number
+ *   * second - amount of fractional digits in money number
+ */
+static std::pair<Money, int> NormalizeMoney(Money number, bool need_fractional_part) {
+	auto pf = ::GetPaceFactor();
+	auto cr = _currency->rate;
+	auto pfcr = pf / cr;
+
+	int num_fractional_digits;
+	int fractional_factor;
+    if (pfcr <= 1) {
+		num_fractional_digits = 0;
+		fractional_factor = 1;
+	} else if (pfcr > 1 && pfcr <= 100) {
+		num_fractional_digits = 2;
+		fractional_factor = 100;
+	} else {
+		num_fractional_digits = 3;
+		fractional_factor = 1000;
+	}
+
+	// We still believe that overflow won't happen with int64 and highest
+	// possible pace factor (which, as we believe is ~1000).
+
+	Money number_new;
+	if (need_fractional_part)
+		number_new = number * fractional_factor;
+	else
+		num_fractional_digits = 0;
+
+	double fnumber = (double)number_new / pf;
+	double intpart;
+	double rem = std::modf(fnumber, &intpart);
+
+	if (rem > 0.999 || rem < 0.001)
+		return {number / pf, 0};
+
+	return {(Money)fnumber, num_fractional_digits};
+}
+
 static char *FormatGenericCurrency(char *buff, const CurrencySpec *spec, Money number, bool compact, const char *last)
 {
 	/* We are going to make number absolute for printing, so
@@ -466,6 +534,10 @@ static char *FormatGenericCurrency(char *buff, const CurrencySpec *spec, Money n
 	const char *multiplier = "";
 
 	number *= spec->rate;
+
+	// kaomoneus/OpenTTD/issues#10
+	auto [norm_number, fractional_digits] = NormalizeMoney(number, !compact);
+	number = norm_number;
 
 	/* convert from negative */
 	if (number < 0) {
@@ -498,7 +570,7 @@ static char *FormatGenericCurrency(char *buff, const CurrencySpec *spec, Money n
 	const char *separator = _settings_game.locale.digit_group_separator_currency.c_str();
 	if (StrEmpty(separator)) separator = _currency->separator.c_str();
 	if (StrEmpty(separator)) separator = _langpack.langpack->digit_group_separator_currency;
-	buff = FormatNumber(buff, number, last, separator);
+	buff = FormatNumber(buff, number, last, separator, /*zerofill=*/1, fractional_digits);
 	buff = strecpy(buff, multiplier, last);
 
 	/* Add suffix part, following symbol_pos specification.
@@ -1226,6 +1298,10 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 
 			case SCC_DATE_TINY: // {DATE_TINY}
 				buff = FormatTinyOrISODate(buff, args->GetInt32(SCC_DATE_TINY), STR_FORMAT_DATE_TINY, last);
+				break;
+
+			case SCC_TIME_TINY: // {TIME_TINY}
+				buff = FormatTinyTime(buff, args->GetInt32(SCC_TIME_TINY), STR_FORMAT_TIME_TINY, last);
 				break;
 
 			case SCC_DATE_SHORT: // {DATE_SHORT}

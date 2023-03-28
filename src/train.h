@@ -122,6 +122,7 @@ struct Train FINAL : public GroundVehicle<Train, VEH_TRAIN> {
 	int GetDisplayImageWidth(Point *offset = nullptr) const;
 	bool IsInDepot() const override { return this->track == TRACK_BIT_DEPOT; }
 	bool Tick() override;
+	void OnNewVanillaDay() override;
 	void OnNewDay() override;
 	uint Crash(bool flooded = false) override;
 	Trackdir GetVehicleTrackdir() const override;

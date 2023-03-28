@@ -44,7 +44,11 @@
 #include "hotkeys.h"
 
 #include "safeguards.h"
+#include "date_func.h"
+#include <array>
 
+// TODO SLOWPACE: Update "Last Service" string to show time as well.
+//   Also update service period selection to use hours and minutes if needed.
 
 BaseVehicleListWindow::GroupBy _grouping[VLT_END][VEH_COMPANY_END];
 Sorting _sorting[BaseVehicleListWindow::GB_END];
@@ -2292,20 +2296,61 @@ extern void DrawRoadVehDetails(const Vehicle *v, const Rect &r);
 extern void DrawShipDetails(const Vehicle *v, const Rect &r);
 extern void DrawAircraftDetails(const Aircraft *v, const Rect &r);
 
-static StringID _service_interval_dropdown[] = {
-	STR_VEHICLE_DETAILS_DEFAULT,
-	STR_VEHICLE_DETAILS_DAYS,
-	STR_VEHICLE_DETAILS_PERCENT,
-	INVALID_STRING_ID,
-};
+static StandardTimeUnits GetServiceIntervalTimeUnit() {
+	return GetStandardTimeUnitFor(5 * VANILLA_DAY_TICKS);
+}
+
+static int GetServiceIntervalInTimeUnits(uint16 vanilla_days) {
+	Ticks service_interval_ticks = vanilla_days * VANILLA_DAY_TICKS;
+	auto time_unit = GetServiceIntervalTimeUnit();
+	return TicksToTimeUnits(service_interval_ticks, time_unit);
+}
+
+static int GetServiceIntervalInTimeUnits(const Vehicle *v) {
+	return GetServiceIntervalInTimeUnits(v->GetServiceInterval());
+}
+
+static StringID GetTimeUnitsStringId() {
+	switch (GetServiceIntervalTimeUnit()) {
+		case StandardTimeUnits::MINUTES:
+			return STR_VEHICLE_DETAILS_MINUTES;
+		case StandardTimeUnits::HOURS:
+			return STR_VEHICLE_DETAILS_HOURS;
+		case StandardTimeUnits::DAYS:
+			return STR_VEHICLE_DETAILS_DAYS;
+		default:
+			NOT_REACHED();
+	}
+}
+
+static StringID GetServicingIntervalTimeUnitsStringId() {
+	switch (GetServiceIntervalTimeUnit()) {
+		case StandardTimeUnits::MINUTES:
+			return STR_VEHICLE_DETAILS_SERVICING_INTERVAL_MINUTES;
+		case StandardTimeUnits::HOURS:
+			return STR_VEHICLE_DETAILS_SERVICING_INTERVAL_HOURS;
+		case StandardTimeUnits::DAYS:
+			return STR_VEHICLE_DETAILS_SERVICING_INTERVAL_DAYS;
+		default:
+			NOT_REACHED();
+	}
+}
 
 /** Class for managing the vehicle details window. */
 struct VehicleDetailsWindow : Window {
 	TrainDetailsWindowTabs tab; ///< For train vehicles: which tab is displayed.
 	Scrollbar *vscroll;
+	std::array<StringID, 4> service_interval_dropdown;
 
 	/** Initialize a newly created vehicle details window */
-	VehicleDetailsWindow(WindowDesc *desc, WindowNumber window_number) : Window(desc)
+	VehicleDetailsWindow(WindowDesc *desc, WindowNumber window_number) :
+		Window(desc),
+		service_interval_dropdown({
+			STR_VEHICLE_DETAILS_DEFAULT,
+			GetTimeUnitsStringId(),
+			STR_VEHICLE_DETAILS_PERCENT,
+			INVALID_STRING_ID,
+		})
 	{
 		const Vehicle *v = Vehicle::Get(window_number);
 
@@ -2413,7 +2458,7 @@ struct VehicleDetailsWindow : Window {
 				break;
 
 			case WID_VD_SERVICE_INTERVAL_DROPDOWN: {
-				StringID *strs = _service_interval_dropdown;
+				StringID *strs = this->service_interval_dropdown.data();
 				while (*strs != INVALID_STRING_ID) {
 					*size = maxdim(*size, GetStringBoundingBox(*strs++));
 				}
@@ -2425,9 +2470,11 @@ struct VehicleDetailsWindow : Window {
 			case WID_VD_SERVICING_INTERVAL:
 				SetDParamMaxValue(0, MAX_SERVINT_DAYS); // Roughly the maximum interval
 				SetDParamMaxValue(1, MAX_YEAR * DAYS_IN_YEAR); // Roughly the maximum year
+				SetDParamMaxValue(2, GetDayTicks()-1);
+
 				size->width = std::max(
 					GetStringBoundingBox(STR_VEHICLE_DETAILS_SERVICING_INTERVAL_PERCENT).width,
-					GetStringBoundingBox(STR_VEHICLE_DETAILS_SERVICING_INTERVAL_DAYS).width
+					GetStringBoundingBox(GetServicingIntervalTimeUnitsStringId()).width
 				) + padding.width;
 				size->height = FONT_HEIGHT_NORMAL + padding.height;
 				break;
@@ -2565,10 +2612,13 @@ struct VehicleDetailsWindow : Window {
 			case WID_VD_SERVICING_INTERVAL: {
 				/* Draw service interval text */
 				Rect tr = r.Shrink(WidgetDimensions::scaled.framerect);
-				SetDParam(0, v->GetServiceInterval());
+				SetDParam(0, GetServiceIntervalInTimeUnits(v));
 				SetDParam(1, v->date_of_last_service);
-				DrawString(tr.left, tr.right, CenterBounds(r.top, r.bottom, FONT_HEIGHT_NORMAL),
-						v->ServiceIntervalIsPercent() ? STR_VEHICLE_DETAILS_SERVICING_INTERVAL_PERCENT : STR_VEHICLE_DETAILS_SERVICING_INTERVAL_DAYS);
+
+				if (GetServiceIntervalTimeUnit() != StandardTimeUnits::DAYS)
+					SetDParam(2, v->fract_of_last_service);
+				DrawString(tr.left, r.right - WidgetDimensions::scaled.framerect.right, r.top + (r.bottom - r.top + 1 - FONT_HEIGHT_NORMAL) / 2,
+						v->ServiceIntervalIsPercent() ? STR_VEHICLE_DETAILS_SERVICING_INTERVAL_PERCENT : GetServicingIntervalTimeUnitsStringId());
 				break;
 			}
 		}
@@ -2591,7 +2641,7 @@ struct VehicleDetailsWindow : Window {
 			WIDGET_LIST_END);
 
 		StringID str = v->ServiceIntervalIsCustom() ?
-			(v->ServiceIntervalIsPercent() ? STR_VEHICLE_DETAILS_PERCENT : STR_VEHICLE_DETAILS_DAYS) :
+			(v->ServiceIntervalIsPercent() ? STR_VEHICLE_DETAILS_PERCENT : GetTimeUnitsStringId()) :
 			STR_VEHICLE_DETAILS_DEFAULT;
 		this->GetWidget<NWidgetCore>(WID_VD_SERVICE_INTERVAL_DROPDOWN)->widget_data = str;
 
@@ -2616,7 +2666,12 @@ struct VehicleDetailsWindow : Window {
 
 			case WID_VD_SERVICE_INTERVAL_DROPDOWN: {
 				const Vehicle *v = Vehicle::Get(this->window_number);
-				ShowDropDownMenu(this, _service_interval_dropdown, v->ServiceIntervalIsCustom() ? (v->ServiceIntervalIsPercent() ? 2 : 1) : 0, widget, 0, 0);
+				ShowDropDownMenu(
+					this,
+					this->service_interval_dropdown.data(),
+					v->ServiceIntervalIsCustom() ? (v->ServiceIntervalIsPercent() ? 2 : 1) : 0,
+					widget, 0, 0
+				);
 				break;
 			}
 
@@ -2795,7 +2850,7 @@ void CcStartStopVehicle(Commands cmd, const CommandCost &result, VehicleID veh_i
 
 	StringID msg = (v->vehstatus & VS_STOPPED) ? STR_VEHICLE_COMMAND_STOPPED : STR_VEHICLE_COMMAND_STARTED;
 	Point pt = RemapCoords(v->x_pos, v->y_pos, v->z_pos);
-	AddTextEffect(msg, pt.x, pt.y, DAY_TICKS, TE_RISING);
+	AddTextEffect(msg, pt.x, pt.y, VANILLA_DAY_TICKS, TE_RISING);
 }
 
 /**

@@ -34,6 +34,7 @@
 #include "genworld.h"
 #include "window_func.h"
 #include "company_func.h"
+#include "date_func.h"
 #include "rev.h"
 #include "error.h"
 #include "gamelog.h"
@@ -1741,4 +1742,29 @@ void IConsoleListSettings(const char *prefilter)
 	}
 
 	IConsolePrint(CC_HELP, "Use 'setting' command to change a value.");
+}
+
+int GetPaceFactor() {
+	static const uint16 factors[] = {
+			// Game year lasts
+			0,          // Custom, read year_pace_custom_15minutes
+			1,          // same as vanilla year (~15 minutes)
+			4,          // 4 times slower (one hour)
+			4 * 24,     // 96 times slower (one day)
+			4 * 24 * 7, // 672 times slower (one week)
+		};
+
+	auto pace_factor = factors[_settings_game.game_creation.year_pace_option];
+	if (!pace_factor) {
+		pace_factor = _settings_game.game_creation.year_pace_custom_15minutes;
+
+		// There is a case, when we use GetPaceFactor before any settings will be loaded
+		// from anywhere. Thus we have a _settings_game with default initialized values.
+		// It means, that both year_pace_option and year_pace_custom_15minutes
+		// will be 0. In this case we should return default pace factor, which is 1.
+		if (!pace_factor)
+			return 1;
+	}
+
+	return pace_factor;
 }

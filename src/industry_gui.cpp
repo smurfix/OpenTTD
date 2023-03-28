@@ -1560,7 +1560,7 @@ protected:
 		/* Get industry productions (CargoID, production, suffix, transported) */
 		struct CargoInfo {
 			CargoID cargo_id;
-			uint16 production;
+			uint32 production;
 			const char *suffix;
 			uint transported;
 		};

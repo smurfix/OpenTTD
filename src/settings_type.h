@@ -335,6 +335,8 @@ struct GameCreationSettings {
 	byte   min_river_length;                 ///< the minimum river length
 	byte   river_route_random;               ///< the amount of randomicity for the route finding
 	byte   amount_of_rivers;                 ///< the amount of rivers
+	byte   year_pace_option;                 ///< game year speed, will be converted into pace factor
+	uint16   year_pace_custom_15minutes;         ///< custom game year speed given in quarter of minutes
 };
 
 /** Settings related to construction in-game */
@@ -628,6 +630,16 @@ extern VehicleDefaultSettings _old_vds;
 static inline GameSettings &GetGameSettings()
 {
 	return (_game_mode == GM_MENU) ? _settings_newgame : _settings_game;
+}
+
+int GetPaceFactor();
+
+inline int GetDayTicks() {
+	return GetPaceFactor() * VANILLA_DAY_TICKS;
+}
+
+inline bool IsTimeRequired() {
+	return (VANILLA_DAY_TICKS < GetDayTicks());
 }
 
 #endif /* SETTINGS_TYPE_H */

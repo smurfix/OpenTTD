@@ -606,6 +606,8 @@ STR_GRAPH_COMPANY_PERFORMANCE_RATINGS_CAPTION                   :{WHITE}Company 
 STR_GRAPH_COMPANY_VALUES_CAPTION                                :{WHITE}Company values
 
 STR_GRAPH_CARGO_PAYMENT_RATES_CAPTION                           :{WHITE}Cargo Payment Rates
+STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL_MINUTES                   :{TINY_FONT}{BLACK}Minutes in transit
+STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL_HOURS                     :{TINY_FONT}{BLACK}Hours in transit
 STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL                           :{TINY_FONT}{BLACK}Days in transit
 STR_GRAPH_CARGO_PAYMENT_RATES_TITLE                             :{TINY_FONT}{BLACK}Payment for delivering 10 units (or 10,000 litres) of cargo a distance of 20 squares
 STR_GRAPH_CARGO_ENABLE_ALL                                      :{TINY_FONT}{BLACK}Enable all
@@ -975,6 +977,16 @@ STR_GAME_OPTIONS_CURRENCY_HKD                                   :Hong Kong Dolla
 STR_GAME_OPTIONS_CURRENCY_INR                                   :Indian Rupee (INR)
 STR_GAME_OPTIONS_CURRENCY_IDR                                   :Indonesian Rupiah (IDR)
 STR_GAME_OPTIONS_CURRENCY_MYR                                   :Malaysian Ringgit (MYR)
+
+##### game pace dropdown
+STR_GAME_OPTIONS_GAMEYEAR_FRAME                                :{BLACK}Game year lasts:
+STR_GAME_OPTIONS_GAMEYEAR_DROPDOWN_TOOLTIP                     :{BLACK}Choose how fast game year goes in real time
+STR_GAME_OPTIONS_GAMEYEAR_CUSTOM_NUMBER                        :Custom (x{NUM})
+STR_GAME_OPTIONS_GAMEYEAR_CUSTOM                               :Custom
+STR_GAME_OPTIONS_GAMEYEAR_DEFAULT                              :15 mins (original)
+STR_GAME_OPTIONS_GAMEYEAR_HOUR                                 :One hour
+STR_GAME_OPTIONS_GAMEYEAR_DAY                                  :One day
+STR_GAME_OPTIONS_GAMEYEAR_WEEK                                 :One week
 
 STR_GAME_OPTIONS_AUTOSAVE_FRAME                                 :{BLACK}Autosave
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_TOOLTIP                      :{BLACK}Select interval between automatic game saves
@@ -4254,6 +4266,8 @@ STR_VEHICLE_INFO_CAPACITY_CAPACITY                              :{BLACK}Capacity
 
 STR_VEHICLE_INFO_FEEDER_CARGO_VALUE                             :{BLACK}Transfer Credits: {LTBLUE}{CURRENCY_LONG}
 
+STR_VEHICLE_DETAILS_SERVICING_INTERVAL_MINUTES                  :{BLACK}Servicing interval: {LTBLUE}{COMMA}{NBSP}minutes{BLACK}   Last service: {LTBLUE}{DATE_LONG} {TIME_TINY}
+STR_VEHICLE_DETAILS_SERVICING_INTERVAL_HOURS                    :{BLACK}Servicing interval: {LTBLUE}{COMMA}{NBSP}hours{BLACK}   Last service: {LTBLUE}{DATE_LONG} {TIME_TINY}
 STR_VEHICLE_DETAILS_SERVICING_INTERVAL_DAYS                     :{BLACK}Servicing interval: {LTBLUE}{COMMA}{NBSP}days{BLACK}   Last service: {LTBLUE}{DATE_LONG}
 STR_VEHICLE_DETAILS_SERVICING_INTERVAL_PERCENT                  :{BLACK}Servicing interval: {LTBLUE}{COMMA}%{BLACK}   Last service: {LTBLUE}{DATE_LONG}
 STR_VEHICLE_DETAILS_INCREASE_SERVICING_INTERVAL_TOOLTIP         :{BLACK}Increase servicing interval by 10. Ctrl+Click increases servicing interval by 5
@@ -4261,6 +4275,8 @@ STR_VEHICLE_DETAILS_DECREASE_SERVICING_INTERVAL_TOOLTIP         :{BLACK}Decrease
 
 STR_SERVICE_INTERVAL_DROPDOWN_TOOLTIP                           :{BLACK}Change servicing interval type
 STR_VEHICLE_DETAILS_DEFAULT                                     :Default
+STR_VEHICLE_DETAILS_MINUTES                                     :Minutes
+STR_VEHICLE_DETAILS_HOURS                                       :Hours
 STR_VEHICLE_DETAILS_DAYS                                        :Days
 STR_VEHICLE_DETAILS_PERCENT                                     :Percentage
 
@@ -4502,6 +4518,8 @@ STR_TIMETABLE_STAY_FOR_ESTIMATED                                :(stay for {STRI
 STR_TIMETABLE_AND_TRAVEL_FOR_ESTIMATED                          :(travel for {STRING1}, not timetabled)
 STR_TIMETABLE_STAY_FOR                                          :and stay for {STRING1}
 STR_TIMETABLE_AND_TRAVEL_FOR                                    :and travel for {STRING1}
+STR_TIMETABLE_MINUTES                                           :{COMMA}{NBSP}minute{P "" s}
+STR_TIMETABLE_HOURS                                             :{COMMA}{NBSP}hour{P "" s}
 STR_TIMETABLE_DAYS                                              :{COMMA}{NBSP}day{P "" s}
 STR_TIMETABLE_TICKS                                             :{COMMA}{NBSP}tick{P "" s}
 
@@ -4513,6 +4531,7 @@ STR_TIMETABLE_STATUS_LATE                                       :{BLACK}This veh
 STR_TIMETABLE_STATUS_EARLY                                      :{BLACK}This vehicle is currently running {STRING1} early
 STR_TIMETABLE_STATUS_NOT_STARTED                                :{BLACK}This timetable has not yet started
 STR_TIMETABLE_STATUS_START_AT                                   :{BLACK}This timetable will start at {STRING1}
+STR_TIMETABLE_STATUS_START_AT_DATETIME                          :{BLACK}This timetable will start at {STRING2}
 
 STR_TIMETABLE_STARTING_DATE                                     :{BLACK}Start date
 STR_TIMETABLE_STARTING_DATE_TOOLTIP                             :{BLACK}Select a date as starting point of this timetable. Ctrl+Click distributes all vehicles sharing this order evenly from the given date based on their relative order, if the order is completely timetabled
@@ -4547,10 +4566,24 @@ STR_TIMETABLE_DEPARTURE_ABBREVIATION                            :D:
 STR_DATE_CAPTION                                                :{WHITE}Set date
 STR_DATE_SET_DATE                                               :{BLACK}Set date
 STR_DATE_SET_DATE_TOOLTIP                                       :{BLACK}Use the selected date as starting date for the timetable
+STR_DATE_MINUTE_TOOLTIP                                         :{BLACK}Select minute
+STR_DATE_HOUR_TOOLTIP                                           :{BLACK}Select hour
 STR_DATE_DAY_TOOLTIP                                            :{BLACK}Select day
 STR_DATE_MONTH_TOOLTIP                                          :{BLACK}Select month
 STR_DATE_YEAR_TOOLTIP                                           :{BLACK}Select year
 
+# Pace factor window
+STR_PACE_FACTOR_CAPTION                                         :{WHITE}Set game year duration
+STR_PACE_FACTOR_MINUTE_0                                        :0
+STR_PACE_FACTOR_MINUTE_15                                       :15
+STR_PACE_FACTOR_MINUTE_30                                       :30
+STR_PACE_FACTOR_MINUTE_45                                       :45
+STR_PACE_FACTOR_APPLY                                           :{BLACK}Apply
+STR_PACE_FACTOR_APPLY_TOOLTIP                                   :{BLACK}Use the selected span as a game year period
+STR_PACE_FACTOR_MINUTE_TOOLTIP                                  :{BLACK}Select minute
+STR_PACE_FACTOR_HOUR_TOOLTIP                                    :{BLACK}Set hours
+STR_PACE_FACTOR_DAY_TOOLTIP                                     :{BLACK}Set days
+STR_PACE_FACTOR_NON_ZERO_ERROR                                  :{WHITE}We can't apply zero-length game year, please set some non-zero value at least in one of fields.
 
 # AI debug window
 STR_AI_DEBUG                                                    :{WHITE}AI/Game Script Debug
@@ -5519,6 +5552,8 @@ STR_FORMAT_DATE_SHORT                                           :{STRING} {NUM}
 STR_FORMAT_DATE_LONG                                            :{STRING} {STRING} {NUM}
 STR_FORMAT_DATE_ISO                                             :{2:NUM}-{1:RAW_STRING}-{0:RAW_STRING}
 
+STR_FORMAT_TIME_TINY                                            :{RAW_STRING}:{RAW_STRING}
+
 STR_FORMAT_COMPANY_NUM                                          :(Company {COMMA})
 STR_FORMAT_GROUP_NAME                                           :Group {COMMA}
 STR_FORMAT_GROUP_VEHICLE_NAME                                   :{GROUP} #{COMMA}
@@ -5592,6 +5627,7 @@ STR_JUST_DATE_TINY                                              :{DATE_TINY}
 STR_JUST_DATE_SHORT                                             :{DATE_SHORT}
 STR_JUST_DATE_LONG                                              :{DATE_LONG}
 STR_JUST_DATE_ISO                                               :{DATE_ISO}
+STR_JUST_DATE_TIME_TINY                                         :{DATE_TINY} {TIME_TINY}
 STR_JUST_STRING                                                 :{STRING}
 STR_JUST_STRING_STRING                                          :{STRING}{STRING}
 STR_JUST_RAW_STRING                                             :{RAW_STRING}
@@ -5608,6 +5644,7 @@ STR_TINY_BLACK_DECIMAL                                          :{TINY_FONT}{BLA
 STR_COMPANY_MONEY                                               :{WHITE}{CURRENCY_LONG}
 STR_BLACK_DATE_LONG                                             :{BLACK}{DATE_LONG}
 STR_WHITE_DATE_LONG                                             :{WHITE}{DATE_LONG}
+STR_WHITE_DATE_TIME_LONG                                        :{WHITE}{DATE_LONG} {TIME_TINY}
 STR_SHORT_DATE                                                  :{WHITE}{DATE_TINY}
 STR_DATE_LONG_SMALL                                             :{TINY_FONT}{BLACK}{DATE_LONG}
 STR_TINY_GROUP                                                  :{TINY_FONT}{GROUP}

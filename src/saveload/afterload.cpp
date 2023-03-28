@@ -3211,6 +3211,23 @@ bool AfterLoadGame()
 		for (Station *st : Station::Iterate()) UpdateStationAcceptance(st, false);
 	}
 
+	if (IsSavegameVersionBefore(SLV_SLOWPACE)) {
+		for (Vehicle *v : Vehicle::Iterate()) {
+			v->fract_of_last_service = 0;
+		}
+
+		/* When "slow pace" mode is active we store money multiplied on pace factor.
+		 * We do it due to difference rates of spends/incomes per game year.
+		 * Mean while, scenario hold money for legacy game pace.
+		 * So here apply corrections for company money.
+		 */
+		if (_file_to_saveload.abstract_ftype == FT_SCENARIO) {
+			for (Company *c : Company::Iterate()) {
+				c->money *= GetPaceFactor();
+			}
+		}
+	}
+
 	AfterLoadLabelMaps();
 	AfterLoadCompanyStats();
 	AfterLoadStoryBook();

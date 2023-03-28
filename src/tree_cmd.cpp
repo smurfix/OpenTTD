@@ -707,6 +707,9 @@ static void TileLoop_Trees(TileIndex tile)
 
 	AmbientSoundEffect(tile);
 
+	if ((_date_fract % GetPaceFactor()) != 0)
+		return;
+
 	/* _tick_counter is incremented by 256 between each call, so ignore lower 8 bits.
 	 * Also, we use a simple hash to spread the updates evenly over the map.
 	 * 11 and 9 are just some co-prime numbers for better spread.
@@ -832,6 +835,9 @@ void OnTick_Trees()
 {
 	/* Don't spread trees if that's not allowed */
 	if (_settings_game.construction.extra_tree_placement == ETP_NO_SPREAD || _settings_game.construction.extra_tree_placement == ETP_NO_GROWTH_NO_SPREAD) return;
+
+	if ((_date_fract % GetPaceFactor()) != 0)
+		return;
 
 	uint32 r;
 	TileIndex tile;

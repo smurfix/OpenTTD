@@ -28,6 +28,7 @@
 #include "language.h"
 #include "rev.h"
 #include "highscore.h"
+#include "pace_factor_gui.h"
 #include "signs_base.h"
 #include "viewport_func.h"
 #include "vehicle_base.h"
@@ -95,6 +96,25 @@ struct IntroGameViewportCommand {
 	}
 };
 
+static const StringID _game_years[] = {
+	STR_GAME_OPTIONS_GAMEYEAR_CUSTOM,
+	STR_GAME_OPTIONS_GAMEYEAR_DEFAULT,
+	STR_GAME_OPTIONS_GAMEYEAR_HOUR,
+	STR_GAME_OPTIONS_GAMEYEAR_DAY,
+	STR_GAME_OPTIONS_GAMEYEAR_WEEK,
+	INVALID_STRING_ID
+};
+
+static DropDownList BuildGameYearDropDown()
+{
+	DropDownList list;
+	for (int i = 0; i < 5; i++) {
+		// STR_GAME_OPTIONS_GAMEYEAR_CUSTOM - is a first item in strings, so start from it.
+		list.emplace_back(new DropDownListStringItem(STR_GAME_OPTIONS_GAMEYEAR_CUSTOM + i, i, false));
+	}
+
+	return list;
+}
 
 struct SelectGameWindow : public Window {
 	/** Vector of viewport commands parsed. */
@@ -186,6 +206,24 @@ struct SelectGameWindow : public Window {
 		this->cur_viewport_command_time = 0;
 		this->mouse_idle_time = 0;
 		this->mouse_idle_pos = _cursor.pos;
+	}
+
+	void SetStringParameters(int widget) const override {
+		switch (widget) {
+			case WID_SGI_GAMEYEAR_DROPDOWN: {
+				uint gen = _settings_newgame.game_creation.year_pace_option;
+				if (!gen) {
+					// TODO SLOWPACE: Show it like "Custom (1d 2h 30mins)"
+					//    we need SCC_TIME_INTERVAL_TINY or something...
+					SetDParam(0, STR_GAME_OPTIONS_GAMEYEAR_CUSTOM_NUMBER);
+					SetDParam(1, _settings_newgame.game_creation.year_pace_custom_15minutes);
+				} else {
+					SetDParam(0, _game_years[gen]);
+				}
+				break;
+			}
+		}
+		Window::SetStringParameters(widget);
 	}
 
 	void OnRealtimeTick(uint delta_ms) override
@@ -298,6 +336,7 @@ struct SelectGameWindow : public Window {
 	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		StringID str = 0;
+
 		switch (widget) {
 			case WID_SGI_BASESET:
 				SetDParam(0, _missing_extra_graphics);
@@ -307,6 +346,15 @@ struct SelectGameWindow : public Window {
 			case WID_SGI_TRANSLATION:
 				SetDParam(0, _current_language->missing);
 				str = STR_INTRO_TRANSLATION;
+				break;
+			case WID_SGI_GAMEYEAR_DROPDOWN: {
+					auto *strs = _game_years;
+					SetDParamMaxValue(0, 65535);
+					*size = maxdim(*size, GetStringBoundingBox(STR_NUM_CUSTOM_NUMBER));
+					while (*strs != INVALID_STRING_ID) {
+						*size = maxdim(*size, GetStringBoundingBox(*strs++));
+					}
+				}
 				break;
 		}
 
@@ -370,8 +418,39 @@ struct SelectGameWindow : public Window {
 				break;
 			case WID_SGI_AI_SETTINGS:     ShowAIConfigWindow(); break;
 			case WID_SGI_GS_SETTINGS:     ShowGSConfigWindow(); break;
+			case WID_SGI_GAMEYEAR_DROPDOWN: // Game Year generator
+				ShowDropDownList(
+					this,
+					BuildGameYearDropDown(),
+					_settings_newgame.game_creation.year_pace_option,
+					WID_SGI_GAMEYEAR_DROPDOWN
+				);
+				break;
 			case WID_SGI_EXIT:            HandleExitGameRequest(); break;
 		}
+	}
+
+	void OnDropdownSelect(int widget, int index) override {
+		switch (widget) {
+			case WID_SGI_GAMEYEAR_DROPDOWN: // Game year
+				if (_game_mode == GM_MENU) {
+					_settings_newgame.game_creation.year_pace_option = index;
+					if (!index) {
+						ShowSetPaceFactorWindow(
+						    this,
+							_settings_newgame.game_creation.year_pace_custom_15minutes,
+							[this](int pace_factor) {
+								_settings_newgame.game_creation.year_pace_custom_15minutes = pace_factor;
+								SetWindowDirty(WC_GAME_OPTIONS, WN_GAME_OPTIONS_GAME_OPTIONS);
+								this->InvalidateData();
+							}
+						);
+					}
+				}
+				break;
+		}
+
+		this->InvalidateData();
 	}
 };
 
@@ -438,6 +517,21 @@ static const NWidgetPart _nested_select_game_widgets[] = {
 			NWidget(WWT_EMPTY, COLOUR_ORANGE, WID_SGI_TRANSLATION), SetMinimalSize(316, 12), SetFill(1, 0), SetPadding(0, 10, 7, 10),
 		EndContainer(),
 	EndContainer(),
+
+	/* Slowpace: set pace factor*/
+	NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
+		NWidget(WWT_TEXT, COLOUR_ORANGE),
+			SetDataTip(STR_GAME_OPTIONS_GAMEYEAR_FRAME, STR_NULL),
+			SetFill(1, 0),
+			SetPadding(0, 0, 0, 10),
+		NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_SGI_GAMEYEAR_DROPDOWN),
+		    SetDataTip(STR_BLACK_STRING, STR_GAME_OPTIONS_GAMEYEAR_DROPDOWN_TOOLTIP),
+			SetFill(1, 0),
+			SetPadding(0, 10, 0, 0),
+		NWidget(NWID_SPACER), SetFill(1, 0),
+	EndContainer(),
+
+	NWidget(NWID_SPACER), SetMinimalSize(0, 6),
 
 	/* 'Game Options' and 'Settings' buttons */
 	NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),

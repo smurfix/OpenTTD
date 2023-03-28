@@ -822,7 +822,7 @@ static void TownTickHandler(Town *t)
 				i = t->growth_rate;
 			} else {
 				/* If growth failed wait a bit before retrying */
-				i = std::min<uint16>(t->growth_rate, TOWN_GROWTH_TICKS - 1);
+				i = (int)std::min<uint32>(t->growth_rate, TOWN_GROWTH_TICKS - 1);
 			}
 		}
 		t->grow_counter = i;
@@ -1850,8 +1850,8 @@ static void DoCreateTown(Town *t, TileIndex tile, uint32 townnameparts, TownSize
 	t->cache.population = 0;
 	/* Spread growth across ticks so even if there are many
 	 * similar towns they're unlikely to grow all in one tick */
-	t->grow_counter = t->index % TOWN_GROWTH_TICKS;
-	t->growth_rate = TownTicksToGameTicks(250);
+	t->grow_counter = GetPaceFactor() * t->index % TOWN_GROWTH_TICKS;
+	t->growth_rate = GetPaceFactor() * TownTicksToGameTicks(250);
 	t->show_zone = false;
 
 	_town_kdtree.Insert(t->index);
@@ -3213,7 +3213,7 @@ static CommandCost TownActionFundBuildings(Town *t, DoCommandFlag flags)
 		 * tick-perfect and gives player some time window where they can
 		 * spam funding with the exact same efficiency.
 		 */
-		t->grow_counter = std::min<uint16>(t->grow_counter, 2 * TOWN_GROWTH_TICKS - (t->growth_rate - t->grow_counter) % TOWN_GROWTH_TICKS);
+		t->grow_counter = std::min<uint32>(t->grow_counter, 2 * TOWN_GROWTH_TICKS - (t->growth_rate - t->grow_counter) % TOWN_GROWTH_TICKS);
 
 		SetWindowDirty(WC_TOWN_VIEW, t->index);
 	}
@@ -3417,14 +3417,14 @@ static void UpdateTownRating(Town *t)
  * @param t The town to calculate grow counter for
  * @param prev_growth_rate Town growth rate before it changed (one that was used with grow counter to be updated)
  */
-static void UpdateTownGrowCounter(Town *t, uint16 prev_growth_rate)
+static void UpdateTownGrowCounter(Town *t, uint32 prev_growth_rate)
 {
 	if (t->growth_rate == TOWN_GROWTH_RATE_NONE) return;
 	if (prev_growth_rate == TOWN_GROWTH_RATE_NONE) {
 		t->grow_counter = std::min<uint16>(t->growth_rate, t->grow_counter);
 		return;
 	}
-	t->grow_counter = RoundDivSU((uint32)t->grow_counter * (t->growth_rate + 1), prev_growth_rate + 1);
+	t->grow_counter = RoundDivSU(t->grow_counter * (t->growth_rate + 1), prev_growth_rate + 1);
 }
 
 /**
@@ -3480,7 +3480,7 @@ static void UpdateTownGrowthRate(Town *t)
 {
 	if (HasBit(t->flags, TOWN_CUSTOM_GROWTH)) return;
 	uint old_rate = t->growth_rate;
-	t->growth_rate = GetNormalGrowthRate(t);
+	t->growth_rate = GetPaceFactor() * GetNormalGrowthRate(t);
 	UpdateTownGrowCounter(t, old_rate);
 	SetWindowDirty(WC_TOWN_VIEW, t->index);
 }

@@ -1361,6 +1361,10 @@ static uint GetWindowZPriority(WindowClass wc)
 			++z_priority;
 			FALLTHROUGH;
 
+		case WC_PACE_FACTOR:
+			++z_priority;
+			FALLTHROUGH;
+
 		case WC_GENERATE_LANDSCAPE:
 		case WC_SAVELOAD:
 		case WC_GAME_OPTIONS:

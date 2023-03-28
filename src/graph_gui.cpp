@@ -873,6 +873,23 @@ void ShowCompanyValueGraph()
 /*****************/
 
 struct PaymentRatesGraphWindow : BaseGraphWindow {
+	struct TransitUnitDesc {
+		// SLOWPACE: for slow pace mode we reduce max amount
+		// of transit days, by dividing it by PACE FACTOR.
+		// It might happen that "day" is too rough unit to draw an informative
+		// graph, perhaps we need to measure it in hours or even in minute.
+		//
+		// In another words:
+		//
+		// Graph width is always 200 time units (aka vanilla days)
+		// If we measure in game days it will be 200 / PACE_FACTOR
+		// Just because PACE_FACTOR might be > 200, we need to measure it in
+		// smaller units.
+
+		uint step_in_x_units;
+		StringID label_id;
+	};
+
 	uint line_height;   ///< Pixel height of each cargo type row.
 	Scrollbar *vscroll; ///< Cargo list scrollbar.
 	uint legend_width;  ///< Width of legend 'blob'.
@@ -880,15 +897,28 @@ struct PaymentRatesGraphWindow : BaseGraphWindow {
 	PaymentRatesGraphWindow(WindowDesc *desc, WindowNumber window_number) :
 			BaseGraphWindow(desc, WID_CPR_GRAPH, STR_JUST_CURRENCY_SHORT)
 	{
+		auto transit_units = GetTransitUnits();
+
 		this->num_on_x_axis = 20;
 		this->num_vert_lines = 20;
 		this->month = 0xFF;
-		this->x_values_start     = 10;
-		this->x_values_increment = 10;
+
+		// SLOWPACE: in this graph we about to go over 200 vanilla days
+		//    and draw prices lines for them.
+		//    For the user though we should display game days,
+		//    or hours, or minute and it depends on PACE FACTOR.
+
+		this->x_values_start     = transit_units.step_in_x_units * 1;
+		this->x_values_increment = transit_units.step_in_x_units;
 
 		this->CreateNestedTree();
 		this->vscroll = this->GetScrollbar(WID_CPR_MATRIX_SCROLLBAR);
 		this->vscroll->SetCount(static_cast<int>(_sorted_standard_cargo_specs.size()));
+
+		// SLOWPACE: setup footer hint dynamically depending on PACE FACTOR value.
+		this->GetWidget<NWidgetLeaf>(WID_CPR_FOOTER)->SetDataTip(
+			transit_units.label_id, STR_NULL
+		);
 
 		/* Initialise the dataset */
 		this->OnHundredthTick();
@@ -1046,6 +1076,38 @@ struct PaymentRatesGraphWindow : BaseGraphWindow {
 		}
 		this->num_dataset = i;
 	}
+
+	/**
+	 * Figure out time unit optimal to measure cargo payment rates in.
+	 * It depends on pace factor, and may be days, hours or minutes.
+	 * @return TransitUnitDesc structure with information about unit and
+	 *    proper footer string ID. In footer we say something like "days in transit"
+	 *    or "hours in transit" and so on.
+	 */
+	static TransitUnitDesc GetTransitUnits() {
+		uint width_in_minutes = 200 * 24 * 60 / GetPaceFactor();
+		uint step_in_minutes = width_in_minutes / 20;
+		auto transit_unit_type = GetStandardTimeUnitFor((Ticks)step_in_minutes);
+
+		switch (transit_unit_type) {
+			case StandardTimeUnits::MINUTES:
+				return TransitUnitDesc {
+					step_in_minutes,
+					STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL_MINUTES
+				};
+			case StandardTimeUnits::HOURS:
+				return TransitUnitDesc {
+					step_in_minutes / 60,
+					STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL_HOURS
+				};
+			case StandardTimeUnits::DAYS:
+			default:
+				return TransitUnitDesc {
+					step_in_minutes / (60 * 24),
+					STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL
+				};
+		}
+	}
 };
 
 static const NWidgetPart _nested_cargo_payment_rates_widgets[] = {
@@ -1079,7 +1141,13 @@ static const NWidgetPart _nested_cargo_payment_rates_widgets[] = {
 		EndContainer(),
 		NWidget(NWID_HORIZONTAL),
 			NWidget(NWID_SPACER), SetMinimalSize(12, 0), SetFill(1, 0), SetResize(1, 0),
-			NWidget(WWT_TEXT, COLOUR_BROWN, WID_CPR_FOOTER), SetMinimalSize(0, 6), SetPadding(2, 0, 2, 0), SetDataTip(STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL, STR_NULL),
+
+			NWidget(WWT_TEXT, COLOUR_BROWN, WID_CPR_FOOTER),
+				SetMinimalSize(0, 6), SetPadding(2, 0, 2, 0),
+				// SLOWPACE: Currently we print "Days in transit".. or "Hours in transit",
+				// or "minute in transit". And we should print it dynamically.
+				// So we don't define a DataTip here:
+				// SetDataTip(STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL, STR_NULL),
 			NWidget(NWID_SPACER), SetFill(1, 0), SetResize(1, 0),
 			NWidget(WWT_RESIZEBOX, COLOUR_BROWN, WID_CPR_RESIZE),
 		EndContainer(),
@@ -1123,7 +1191,7 @@ struct PerformanceRatingDetailWindow : Window {
 			UpdateCompanyRatingAndValue(c, false);
 		}
 
-		this->timeout = DAY_TICKS * 5;
+		this->timeout = VANILLA_DAY_TICKS * 5;
 	}
 
 	uint score_info_left;

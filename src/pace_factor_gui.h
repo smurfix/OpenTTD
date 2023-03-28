@@ -5,30 +5,25 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file date_gui.h Functions related to the graphical selection of a date. */
+/** @file pace_factor_gui.h Graphical selection of custom pace factor. */
 
-#ifndef DATE_GUI_H
-#define DATE_GUI_H
+#ifndef PACE_FACTOR_H
+#define PACE_FACTOR_H
 
-#include "date_type.h"
 #include "window_type.h"
+#include <functional>
 
 /**
- * Callback for when a date has been chosen
+ * Callback for when a pace factor has been set
  * @param w the window that sends the callback
- * @param date the date that has been chosen
+ * @param pace_factor the date that has been chosen
  */
-typedef void SetDateCallback(const Window *w, Date date, void *data);
+using SetPaceFactorCallback = std::function<void(int)>;
 
-void ShowSetDateWindow(
+void ShowSetPaceFactorWindow(
 	Window *parent,
-	int window_number,
-	Date initial_date,
-	uint8 intial_hour, uint8 initial_minute,
-	Year min_year,
-	Year max_year,
-	SetDateCallback *callback,
-	void *callback_data
+	int initial_pace_factor,
+	SetPaceFactorCallback&& callback
 );
 
-#endif /* DATE_GUI_H */
+#endif /* PACE_FACTOR_H */

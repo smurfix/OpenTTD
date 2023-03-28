@@ -1144,7 +1144,10 @@ static void ChopLumberMillTrees(Industry *i)
 
 	TileIndex tile = i->location.tile;
 	if (CircularTileSearch(&tile, 40, SearchLumberMillTrees, nullptr)) { // 40x40 tiles  to search.
-		i->produced_cargo_waiting[0] = std::min(0xffff, i->produced_cargo_waiting[0] + 45); // Found a tree, add according value to waiting cargo.
+		i->produced_cargo_waiting[0] = (uint32)std::min<uint64>(
+			0xffffffff,
+			i->produced_cargo_waiting[0] + 45 // Found a tree, add according value to waiting cargo.
+		);
 	}
 }
 
@@ -1176,7 +1179,10 @@ static void ProduceIndustryGoods(Industry *i)
 
 		IndustryBehaviour indbehav = indsp->behaviour;
 		for (size_t j = 0; j < lengthof(i->produced_cargo_waiting); j++) {
-			i->produced_cargo_waiting[j] = std::min(0xffff, i->produced_cargo_waiting[j] + i->production_rate[j]);
+			i->produced_cargo_waiting[j] = (uint32)std::min<uint64>(
+				0xffffffff,
+				i->produced_cargo_waiting[j] + i->production_rate[j]
+			);
 		}
 
 		if ((indbehav & INDUSTRYBEH_PLANT_FIELDS) != 0) {
@@ -2425,7 +2431,7 @@ static void UpdateIndustryStatistics(Industry *i)
 			byte pct = 0;
 			if (i->this_month_production[j] != 0) {
 				i->last_prod_year = _cur_year;
-				pct = std::min(i->this_month_transported[j] * 256 / i->this_month_production[j], 255);
+				pct = std::min<uint32>(i->this_month_transported[j] * 256 / i->this_month_production[j], 255);
 			}
 			i->last_month_pct_transported[j] = pct;
 

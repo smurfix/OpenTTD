@@ -31,6 +31,8 @@ enum WindowNumberEnum {
 
 	WN_NETWORK_STATUS_WINDOW_JOIN = 0,         ///< Network join status.
 	WN_NETWORK_STATUS_WINDOW_CONTENT_DOWNLOAD, ///< Network content download status.
+
+	WN_PACE_FACTOR = 0,
 };
 
 /** %Window classes. */
@@ -696,6 +698,11 @@ enum WindowClass {
 	 *   - 0 = #ScreenshotWidgets
 	 */
 	WC_SCREENSHOT,
+
+	/**
+	 * Set custom pace factor
+	 */
+	WC_PACE_FACTOR,
 
 	WC_INVALID = 0xFFFF, ///< Invalid window.
 };

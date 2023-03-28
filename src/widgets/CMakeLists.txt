@@ -41,6 +41,7 @@ add_files(
     object_widget.h
     order_widget.h
     osk_widget.h
+    pace_factor_widget.h
     rail_widget.h
     road_widget.h
     screenshot_widget.h
