@@ -578,7 +578,7 @@ struct VehicleDefaultSettings {
 struct CompanySettings {
 	bool engine_renew;                       ///< is autorenew enabled
 	int16 engine_renew_months;               ///< months before/after the maximum vehicle age a vehicle should be renewed
-	uint32 engine_renew_money;               ///< minimum amount of money before autorenew is used
+	uint32 engine_renew_money;               ///< minimum amount of money before autorenew is used. NOT Pace scaled
 	bool renew_keep_length;                  ///< sell some wagons if after autoreplace the train is longer than before
 	VehicleDefaultSettings vehicle;          ///< default settings for vehicles
 };

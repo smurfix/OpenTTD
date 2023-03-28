@@ -213,7 +213,7 @@ bool Vehicle::NeedsServicing() const
 	 * Note: We do this after the service-interval test.
 	 * There are a lot more reasons for autoreplace to fail than we can test here reasonably. */
 	bool pending_replace = false;
-	Money needed_money = c->settings.engine_renew_money;
+	Money needed_money = c->settings.engine_renew_money * GetPaceFactor();
 	if (needed_money > c->money) return false;
 
 	for (const Vehicle *v = this; v != nullptr; v = (v->type == VEH_TRAIN) ? Train::From(v)->GetNextUnit() : nullptr) {
@@ -1080,9 +1080,9 @@ void CallVehicleTicks()
 		int z = v->z_pos;
 
 		const Company *c = Company::Get(_current_company);
-		SubtractMoneyFromCompany(CommandCost(EXPENSES_NEW_VEHICLES, (Money)c->settings.engine_renew_money));
+		SubtractMoneyFromCompany(CommandCost(EXPENSES_NEW_VEHICLES, (Money)c->settings.engine_renew_money * GetPaceFactor()));
 		CommandCost res = Command<CMD_AUTOREPLACE_VEHICLE>::Do(DC_EXEC, v->index);
-		SubtractMoneyFromCompany(CommandCost(EXPENSES_NEW_VEHICLES, -(Money)c->settings.engine_renew_money));
+		SubtractMoneyFromCompany(CommandCost(EXPENSES_NEW_VEHICLES, -(Money)c->settings.engine_renew_money * GetPaceFactor()));
 
 		if (!IsLocalCompany()) continue;
 

@@ -305,6 +305,7 @@
 	EnforceCompanyModeValid(false);
 	EnforcePrecondition(false, money >= 0);
 	EnforcePrecondition(false, (int64)money <= UINT32_MAX);
+	money /= GetPaceFactor();
 	return ScriptObject::Command<CMD_CHANGE_COMPANY_SETTING>::Do("company.engine_renew_money", money);
 }
 
@@ -313,7 +314,7 @@
 	company = ResolveCompanyID(company);
 	if (company == COMPANY_INVALID) return 0;
 
-	return ::Company::Get(company)->settings.engine_renew_money;
+	return ::Company::Get(company)->settings.engine_renew_money * GetPaceFactor();
 }
 
 /* static */ bool ScriptCompany::SetPrimaryLiveryColour(LiveryScheme scheme, Colours colour)
