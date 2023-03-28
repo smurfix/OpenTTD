@@ -574,7 +574,7 @@ void ChangeOwnershipOfCompanyItems(Owner old_owner, Owner new_owner)
 static void CompanyCheckBankrupt(Company *c)
 {
 	/*  If the company has money again, it does not go bankrupt */
-	if (c->money - c->current_loan >= -_economy.max_loan) {
+	if (c->money - c->current_loan >= -_economy.max_loan * GetPaceFactor()) {
 		int previous_months_of_bankruptcy = CeilDiv(c->months_of_bankruptcy, 3);
 		c->months_of_bankruptcy = 0;
 		c->bankrupt_asked = 0;
@@ -766,9 +766,6 @@ void RecomputePrices()
 {
 	/* Setup maximum loan as a rounded down multiple of LOAN_INTERVAL. */
 	_economy.max_loan = ((uint64)_settings_game.difficulty.max_loan * _economy.inflation_prices >> 16) / LOAN_INTERVAL * LOAN_INTERVAL;
-
-	// SLOWPACE: money scaling
-	_economy.max_loan *= GetPaceFactor();
 
 	/* Setup price bases */
 	for (Price i = PR_BEGIN; i < PR_END; i++) {

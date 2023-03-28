@@ -198,7 +198,7 @@
 
 /* static */ Money ScriptCompany::GetMaxLoanAmount()
 {
-	return _economy.max_loan;
+	return _economy.max_loan * GetPaceFactor();
 }
 
 /* static */ Money ScriptCompany::GetLoanInterval()

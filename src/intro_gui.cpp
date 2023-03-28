@@ -434,18 +434,27 @@ struct SelectGameWindow : public Window {
 		switch (widget) {
 			case WID_SGI_GAMEYEAR_DROPDOWN: // Game year
 				if (_game_mode == GM_MENU) {
-					_settings_newgame.game_creation.year_pace_option = index;
+					// _newgame, because that's what this applies to.
+					// _game, because GetPaceFactor() uses values from that.
 					if (!index) {
 						ShowSetPaceFactorWindow(
 						    this,
 							_settings_newgame.game_creation.year_pace_custom_15minutes,
 							[this](int pace_factor) {
+								_settings_newgame.game_creation.year_pace_option = 0;
+								_settings_game.game_creation.year_pace_option = 0;
 								_settings_newgame.game_creation.year_pace_custom_15minutes = pace_factor;
+								_settings_game.game_creation.year_pace_custom_15minutes = pace_factor;
+
 								SetWindowDirty(WC_GAME_OPTIONS, WN_GAME_OPTIONS_GAME_OPTIONS);
 								this->InvalidateData();
 							}
 						);
+					} else {
+						_settings_newgame.game_creation.year_pace_option = index;
+						_settings_game.game_creation.year_pace_option = index;
 					}
+
 				}
 				break;
 		}

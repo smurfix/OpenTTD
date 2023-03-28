@@ -43,8 +43,8 @@ CommandCost CmdIncreaseLoan(DoCommandFlag flags, LoanCommand cmd, Money amount)
 {
 	Company *c = Company::Get(_current_company);
 
-	if (c->current_loan >= _economy.max_loan) {
-		SetDParam(0, _economy.max_loan);
+	if (c->current_loan >= _economy.max_loan * GetPaceFactor()) {
+		SetDParam(0, _economy.max_loan * GetPaceFactor());
 		return_cmd_error(STR_ERROR_MAXIMUM_PERMITTED_LOAN);
 	}
 
@@ -55,11 +55,11 @@ CommandCost CmdIncreaseLoan(DoCommandFlag flags, LoanCommand cmd, Money amount)
 			loan = LOAN_INTERVAL;
 			break;
 		case LoanCommand::Max: // Take a loan as big as possible
-			loan = _economy.max_loan - c->current_loan;
+			loan = _economy.max_loan * GetPaceFactor() - c->current_loan;
 			break;
 		case LoanCommand::Amount: // Take the given amount of loan
 			loan = amount;
-			if (loan < LOAN_INTERVAL || c->current_loan + loan > _economy.max_loan || loan % LOAN_INTERVAL != 0) return CMD_ERROR;
+			if (loan < LOAN_INTERVAL || c->current_loan + loan > _economy.max_loan * GetPaceFactor() || loan % LOAN_INTERVAL != 0) return CMD_ERROR;
 			break;
 	}
 
