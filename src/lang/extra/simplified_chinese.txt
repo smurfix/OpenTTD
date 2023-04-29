@@ -48,6 +48,9 @@ STR_CONFIG_SETTING_TOWN_GROWTH_VERY_SLOW                        :非常慢
 
 STR_ABOUT_MENU_SHOW_TOGGLE_MODIFIER_KEYS                        :修饰键软键盘
 
+STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_LABEL      :自定义间隔（按日）
+STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM_LABEL   :自定义间隔（按现实分钟）
+
 STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :英里/小时
 STR_UNIT_NAME_VELOCITY_METRIC                                   :千米/小时
 STR_UNIT_NAME_VELOCITY_SI                                       :米/秒
@@ -94,8 +97,6 @@ STR_SMALLMAP_SCREENSHOT                                         :{BLACK}截图
 STR_NEWS_VEHICLE_NO_DEPOT_ORDER                                 :{WHITE}{VEHICLE}的调度计划没有车站
 STR_NEWS_TRAIN_OVERSHOT_STATION                                 :{WHITE}{VEHICLE}由于超速无法停在{STRING}
 
-STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_LABEL      :自定义间隔（按日）
-STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM_LABEL   :自定义间隔（按现实分钟）
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM            :每{COMMA}{NBSP}日
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_SINGULAR   :每日
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM         :每{COMMA}现实分钟
@@ -152,7 +153,6 @@ STR_CONFIG_SETTING_REALISTIC_BRAKING_ASPECT_LIMITED_HELPTEXT    :在真实列车
 
 STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT                     :火车通过式装载最高速度：{STRING}
 STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT_HELPTEXT            :火车在通过车站时进行装载的所允许的最高速度
-STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT_VAL                 :{VELOCITY}
 
 STR_CONFIG_SETTING_BACK_ONE_WAY_PBS_SAFE_WAITING                :Pathfind up to back of one-way path signals：{STRING}
 STR_CONFIG_SETTING_BACK_ONE_WAY_PBS_SAFE_WAITING_HELPTEXT       :When enabled, the YAPF train pathfinder may pathfind up to the back of a one-way path signal.
@@ -1225,21 +1225,18 @@ STR_DEPARTURES_TIME_DEP                                         :{ORANGE}{DATE_W
 STR_DEPARTURES_TIME_ARR                                         :{ORANGE}{DATE_WALLCLOCK_TINY} {RED}{DOWN_ARROW}
 STR_DEPARTURES_TIME_BOTH                                        :{ORANGE}{1:DATE_WALLCLOCK_TINY} {RED}{DOWN_ARROW} {ORANGE}{0:DATE_WALLCLOCK_TINY} {GREEN}{UP_ARROW}
 STR_DEPARTURES_TERMINUS                                         :{ORANGE}{STATION}{STRING}
-STR_DEPARTURES_TERMINUS_VIA_STATION                             :{ORANGE}{STATION}{STRING}经由{STATION}{STRING}
+STR_DEPARTURES_TERMINUS_VIA_STATION                             :{ORANGE}{STATION}{STRING}经由{STRING}
 STR_DEPARTURES_TERMINUS_VIA                                     :{ORANGE}{STATION}{STRING}经由
-STR_DEPARTURES_VIA                                              :{ORANGE}经由{STATION}{STRING}
+STR_DEPARTURES_VIA                                              :{ORANGE}经由{STRING}
 STR_DEPARTURES_TOC                                              :{ORANGE}{COMPANY}
 STR_DEPARTURES_GROUP                                            :{ORANGE}{GROUP}
 STR_DEPARTURES_VEH                                              :{ORANGE}{VEHICLE}
-STR_DEPARTURES_CALLING_AT                                       :{TINY_FONT}{ORANGE}正在呼叫：
-STR_DEPARTURES_CALLING_AT_LARGE                                 :{ORANGE}正在呼叫:
+STR_DEPARTURES_CALLING_AT                                       :{ORANGE}正在呼叫：
 STR_DEPARTURES_CALLING_AT_FIRST_STATION                         :{STATION}
 STR_DEPARTURES_CALLING_AT_STATION                               :{STRING}、{STATION}
 STR_DEPARTURES_CALLING_AT_LAST_STATION                          :{STRING}和{STATION}
-STR_DEPARTURES_CALLING_AT_LIST                                  :{TINY_FONT}{ORANGE}{STRING}。
-STR_DEPARTURES_CALLING_AT_LIST_LARGE                            :{ORANGE}{STRING}。
-STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS                   :{TINY_FONT}{ORANGE}{STRING}。此服务延续到{STATION}。
-STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS_LARGE             :{ORANGE}{STRING}。此服务延续到{STATION}。
+STR_DEPARTURES_CALLING_AT_LIST                                  :{ORANGE}{STRING}。
+STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS                   :{ORANGE}{STRING}。此服务延续到{STATION}。
 
 STR_DEPARTURES_TYPE_TRAIN                                       :{ORANGE}{TRAIN}
 STR_DEPARTURES_TYPE_TRAIN_SILVER                                :{SILVER}{TRAIN}
@@ -1694,16 +1691,6 @@ STR_ERROR_DEPOT_HAS_WRONG_RAIL_TYPE                             :{WHITE}车库�
 
 STR_ERROR_CANNOT_MODIFY_TRACK_TRAIN_APPROACHING                 :{WHITE}移动中的火车正在接近...
 
-STR_ERROR_NO_RAIL_STATION                                       :{WHITE}没有火车站...
-STR_ERROR_NO_BUS_STATION                                        :{WHITE}没有公交站...
-STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}没有货车站...
-STR_ERROR_NO_DOCK                                               :{WHITE}没有港口...
-STR_ERROR_NO_AIRPORT                                            :{WHITE}没有机场或者直升机场...
-STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}没有兼容的道路/电车道类型的站点...
-STR_ERROR_NO_STOP_ARTIC_VEH                                     :{WHITE}这里没有适用于铰接式的道路车辆的站点。{}铰接式道路车辆需要一个直通式站点而不是港湾式站点...
-STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}这架飞机不能在这个直升机场着陆...
-STR_ERROR_AIRPORT_NO_HELIS                                      :{WHITE}这架直升机不能在这个机场着陆...
-STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}这里没有铁道路点...
 STR_ERROR_NO_ROAD_WAYPOINT                                      :{WHITE}这里没有公路路点...
 STR_ERROR_NO_BUOY                                               :{WHITE}这里没有浮漂...
 

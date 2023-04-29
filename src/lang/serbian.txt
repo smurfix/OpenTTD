@@ -2001,6 +2001,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Ako je omoguće
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Najmanja starost preduzeća za trgovinu akcijama: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Podesi najmanju starost preduzeća da bi drugi mogli da trguju akcijama sa njom.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Procenat prihoda koji će biti predan srednjim dionicama prevoza u fider sustavima: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Procenat prihoda koji će biti predan srednjim dionicama prevoza u fider sustavima, dajući više kontrole nad prihodima
@@ -2146,7 +2147,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Često postoji 
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Mere brzine: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Kada brzina bude pokazana u interfejsu, pokaži u željenoj meri
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Imperijalne mere (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Metričke mere (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -2551,7 +2552,6 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(novo preduzeć
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Napravi novo preduzeće i pridruži mu se
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Ovo si ti
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Ovo je domaćin igre
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} klijen{P t ata ata} / {NUM} preduzeć{P e a a}
 
 # Matches ConnectionType
 ###length 5
@@ -5284,6 +5284,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Deljenje
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Lista naredbi se ne može kopirati...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... previše udaljeno od prethodne destinacije
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... letelica nema dovoljan domet
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Raspored se ne može dodeliti vozilu...

@@ -418,7 +418,7 @@ static bool GenericEngineValueVsRunningCostSorter(const GUIEngineListItem &a, co
 	 * since we want consistent sorting.
 	 * Also if both have no power then sort with reverse of running cost to simulate
 	 * previous sorting behaviour for wagons. */
-	if (v_a == 0 && v_b == 0) return !EngineRunningCostSorter(a, b);
+	if (v_a == 0 && v_b == 0) return EngineRunningCostSorter(b, a);
 	if (v_a == v_b)  return EngineNumberSorter(a, b);
 	return _engine_sort_direction != (v_a < v_b);
 }
@@ -813,7 +813,7 @@ static int DrawRailWagonPurchaseInfo(int left, int right, int y, EngineID engine
 	if (_settings_game.vehicle.wagon_speed_limits) {
 		uint max_speed = e->GetDisplayMaxSpeed();
 		if (max_speed > 0) {
-			SetDParam(0, max_speed);
+			SetDParam(0, PackVelocity(max_speed, e->type));
 			DrawString(left, right, y, STR_PURCHASE_INFO_SPEED);
 			y += FONT_HEIGHT_NORMAL;
 		}
@@ -848,7 +848,7 @@ static int DrawRailEnginePurchaseInfo(int left, int right, int y, EngineID engin
 	y += FONT_HEIGHT_NORMAL;
 
 	/* Max speed - Engine power */
-	SetDParam(0, e->GetDisplayMaxSpeed());
+	SetDParam(0, PackVelocity(e->GetDisplayMaxSpeed(), e->type));
 	SetDParam(1, e->GetPower());
 	DrawString(left, right, y, STR_PURCHASE_INFO_SPEED_POWER);
 	y += FONT_HEIGHT_NORMAL;
@@ -903,7 +903,7 @@ static int DrawRoadVehPurchaseInfo(int left, int right, int y, EngineID engine_n
 		y += FONT_HEIGHT_NORMAL;
 
 		/* Max speed - Engine power */
-		SetDParam(0, e->GetDisplayMaxSpeed());
+		SetDParam(0, PackVelocity(e->GetDisplayMaxSpeed(), e->type));
 		SetDParam(1, e->GetPower());
 		DrawString(left, right, y, STR_PURCHASE_INFO_SPEED_POWER);
 		y += FONT_HEIGHT_NORMAL;
@@ -917,11 +917,11 @@ static int DrawRoadVehPurchaseInfo(int left, int right, int y, EngineID engine_n
 		if (te.cost != 0) {
 			SetDParam(0, e->GetCost() + te.cost);
 			SetDParam(1, te.cost);
-			SetDParam(2, e->GetDisplayMaxSpeed());
+			SetDParam(2, PackVelocity(e->GetDisplayMaxSpeed(), e->type));
 			DrawString(left, right, y, STR_PURCHASE_INFO_COST_REFIT_SPEED);
 		} else {
 			SetDParam(0, e->GetCost());
-			SetDParam(1, e->GetDisplayMaxSpeed());
+			SetDParam(1, PackVelocity(e->GetDisplayMaxSpeed(), e->type));
 			DrawString(left, right, y, STR_PURCHASE_INFO_COST_SPEED);
 		}
 		y += FONT_HEIGHT_NORMAL;
@@ -949,11 +949,11 @@ static int DrawShipPurchaseInfo(int left, int right, int y, EngineID engine_numb
 		if (te.cost != 0) {
 			SetDParam(0, e->GetCost() + te.cost);
 			SetDParam(1, te.cost);
-			SetDParam(2, ocean_speed);
+			SetDParam(2, PackVelocity(ocean_speed, e->type));
 			DrawString(left, right, y, STR_PURCHASE_INFO_COST_REFIT_SPEED);
 		} else {
 			SetDParam(0, e->GetCost());
-			SetDParam(1, ocean_speed);
+			SetDParam(1, PackVelocity(ocean_speed, e->type));
 			DrawString(left, right, y, STR_PURCHASE_INFO_COST_SPEED);
 		}
 		y += FONT_HEIGHT_NORMAL;
@@ -968,11 +968,11 @@ static int DrawShipPurchaseInfo(int left, int right, int y, EngineID engine_numb
 		}
 		y += FONT_HEIGHT_NORMAL;
 
-		SetDParam(0, ocean_speed);
+		SetDParam(0, PackVelocity(ocean_speed, e->type));
 		DrawString(left, right, y, STR_PURCHASE_INFO_SPEED_OCEAN);
 		y += FONT_HEIGHT_NORMAL;
 
-		SetDParam(0, canal_speed);
+		SetDParam(0, PackVelocity(canal_speed, e->type));
 		DrawString(left, right, y, STR_PURCHASE_INFO_SPEED_CANAL);
 		y += FONT_HEIGHT_NORMAL;
 	}
@@ -1009,11 +1009,11 @@ static int DrawAircraftPurchaseInfo(int left, int right, int y, EngineID engine_
 	if (te.cost != 0) {
 		SetDParam(0, e->GetCost() + te.cost);
 		SetDParam(1, te.cost);
-		SetDParam(2, e->GetDisplayMaxSpeed());
+		SetDParam(2, PackVelocity(e->GetDisplayMaxSpeed(), e->type));
 		DrawString(left, right, y, STR_PURCHASE_INFO_COST_REFIT_SPEED);
 	} else {
 		SetDParam(0, e->GetCost());
-		SetDParam(1, e->GetDisplayMaxSpeed());
+		SetDParam(1, PackVelocity(e->GetDisplayMaxSpeed(), e->type));
 		DrawString(left, right, y, STR_PURCHASE_INFO_COST_SPEED);
 	}
 	y += FONT_HEIGHT_NORMAL;
@@ -1244,7 +1244,12 @@ void DrawEngineList(VehicleType type, const Rect &r, const GUIEngineList &eng_li
 		StringID str = hidden ? STR_HIDDEN_ENGINE_NAME : STR_ENGINE_NAME;
 		TextColour tc = (item.engine_id == selected_id) ? TC_WHITE : (TC_NO_SHADE | ((hidden | shaded) ? TC_GREY : TC_BLACK));
 
-		SetDParam(0, PackEngineNameDParam(item.engine_id, EngineNameContext::PurchaseList, item.indent));
+		if (show_count) {
+			/* relies on show_count to find 'Vehicle in use' panel of autoreplace window */
+			SetDParam(0, PackEngineNameDParam(item.engine_id, EngineNameContext::AutoreplaceVehicleInUse, item.indent));
+		} else {
+			SetDParam(0, PackEngineNameDParam(item.engine_id, EngineNameContext::PurchaseList, item.indent));
+		}
 		Rect itr = tr.Indent(indent, rtl);
 		DrawString(itr.left, itr.right, y + normal_text_y_offset, str, tc);
 		int sprite_x = ir.Indent(indent + circle_width + WidgetDimensions::scaled.hsep_normal, rtl).WithWidth(sprite_width, rtl).left + sprite_left;
@@ -1807,6 +1812,7 @@ struct BuildVehicleWindow : BuildVehicleWindowBase {
 
 						InvalidateWindowData(WC_REPLACE_VEHICLE, this->vehicle_type, 0); // Update the autoreplace window
 						InvalidateWindowClassesData(WC_BUILD_VEHICLE); // The build windows needs updating as well
+						InvalidateWindowClassesData(WC_BUILD_VIRTUAL_TRAIN);
 						return;
 					}
 					if ((item.flags & EngineDisplayFlags::Shaded) == EngineDisplayFlags::None) e = item.engine_id;
@@ -1865,6 +1871,7 @@ struct BuildVehicleWindow : BuildVehicleWindowBase {
 					if (refresh) {
 						InvalidateWindowData(WC_REPLACE_VEHICLE, this->vehicle_type, 0); // Update the autoreplace window
 						InvalidateWindowClassesData(WC_BUILD_VEHICLE); // The build windows needs updating as well
+						InvalidateWindowClassesData(WC_BUILD_VIRTUAL_TRAIN);
 						return;
 					}
 				}
@@ -2563,6 +2570,7 @@ struct BuildVehicleWindowTrainAdvanced final : BuildVehicleWindowBase {
 			if (refresh) {
 				InvalidateWindowData(WC_REPLACE_VEHICLE, this->vehicle_type, 0); // Update the autoreplace window
 				InvalidateWindowClassesData(WC_BUILD_VEHICLE); // The build windows needs updating as well
+				InvalidateWindowClassesData(WC_BUILD_VIRTUAL_TRAIN);
 				return;
 			}
 		}
@@ -2584,6 +2592,7 @@ struct BuildVehicleWindowTrainAdvanced final : BuildVehicleWindowBase {
 
 				InvalidateWindowData(WC_REPLACE_VEHICLE, this->vehicle_type, 0); // Update the autoreplace window
 				InvalidateWindowClassesData(WC_BUILD_VEHICLE); // The build windows needs updating as well
+				InvalidateWindowClassesData(WC_BUILD_VIRTUAL_TRAIN);
 				return true;
 			}
 			if ((item.flags & EngineDisplayFlags::Shaded) == EngineDisplayFlags::None) e = item.engine_id;

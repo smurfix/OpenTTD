@@ -743,6 +743,7 @@ STR_CONFIG_SETTING_SMALLMAP_LAND_COLOUR_VIOLET                  :Violkolora
 ###length 3
 
 
+###setting-zero-is-special
 
 
 
@@ -778,7 +779,7 @@ STR_CONFIG_SETTING_SMALLMAP_LAND_COLOUR_VIOLET                  :Violkolora
 
 
 
-###length 4
+###length 5
 
 ###length 3
 
@@ -1581,6 +1582,8 @@ STR_ERROR_TOO_MANY_VEHICLES_IN_GAME                             :{WHITE}Tro mult
 
 # Order related errors
 
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 

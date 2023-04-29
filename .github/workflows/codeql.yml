@@ -14,6 +14,10 @@ on:
         description: 'Ref to build (for Pull Requests, use refs/pull/NNN/head)'
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   analyze:
     name: Analyze
@@ -43,6 +47,7 @@ jobs:
         echo "::group::Install dependencies"
         sudo apt-get install -y --no-install-recommends \
           liballegro4-dev \
+          libcurl4-openssl-dev \
           libfontconfig-dev \
           libicu-dev \
           liblzma-dev \

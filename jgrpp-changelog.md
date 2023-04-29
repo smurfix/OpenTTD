@@ -2,6 +2,71 @@
 
 * * *
 
+### v0.53.1 (2023-04-25)
+* Fix width of station cargo graph window.
+* Fix incorrect accounting of cargo time in transit values.
+* Fix crash when checking the consistency of cargo time in transit values, when removing/merging companies or after a multiplayer desync has occured.
+* Departure boards:
+  * Change vehicle names using the long format to the traditional format if the group name column is also shown.
+  * Fix position of vehicle type icon in right-to-left languages
+  * Fix hidden columns being included in the minimum window width.
+* Fix crash which could occur when sorting towns by rating or engines by power/running cost or cargo capacity/running cost on MacOS.
+* Bump trunk base from commit 97cfd40649abab832315f00e6a07e5b6b9a17e23 to commit e5af5907ecfe3845adc613a3312695ed8b40bffc.
+
+### v0.53.0 (2023-04-16)
+* Fix water infrastructure total when building multi-tile objects on unowned canal, and when building canals over unowned objects on canals.
+* Fix crash when showing vehicles with excessively large sprites in the build vehicle window.
+* Fix trains slowing down when part-way into a depot with realistic train braking.
+* Fix performance issues with order lists with high numbers of conditional order chains/loops.
+* Skip over dummy/invalid orders in destination/next order prediction.
+* Add setting for rail depot maximum speed.
+* Template-based train replacement:
+  * Add train information tooltips in template edit window.
+  * Fix crash when removing a company with template replacements applied to nested groups.
+* Departure boards:
+  * Fix handling of missing travel times with conditional orders.
+  * Fix terminus detection from via stops.
+  * Fix smart terminus detection with circular routes.
+  * Scroll departure boards at constant speed, even if paused or fast forwarding.
+  * Add departure board via order type, add support for dual via in departure board.
+* Vehicle orders:
+  * Allow changing colour of orders in order list and timetable windows.
+  * Add company setting for whether to remain at station if next order for same station.
+  * Add text label order type.
+* Add railtype and signals NewGRF variables for signal vertical clearance.
+* Routing restrictions: Add status test for if train is stopping at the current order's station/waypoint destination.
+* Fix viewport map mode not being refreshed when removing/merging company.
+* Allow generating new default name for station (ctrl-click default button in rename station query window).
+* Allow exchanging a station's name with another station in the same town.
+* Don't use occupancy of unload and leave empty orders for occupancy average.
+* Update OpenTTD content server vanilla compatibility to verison 13.0.
+* Only log each AI/GS text string error once.
+* Bump trunk base from commit 24e9af83aaca7093ca2ab7e5d54565ec63d42433 to commit 97cfd40649abab832315f00e6a07e5b6b9a17e23.
+
+### v0.52.1 (2023-03-25)
+* Fix AI/GS scripts which use text strings.
+* Add a "very reduced" mode to the vehicle breakdowns setting.
+* Template-based train replacement:
+  * Trigger early servicing of trains when a template is added/edited which requires the train to be replaced/modified.
+  * Fix wagons in a free wagon chain in the depot not always being used for replacement when this is enabled.
+  * Engines in the depot are no longer used for replacement if there are any wagons or other engines attached.
+* Bump trunk base from commit e5438891e27c0895964e1a030c91295d3b6ef474 to commit 24e9af83aaca7093ca2ab7e5d54565ec63d42433.
+
+### v0.52.0 (2023-03-19)
+* Fix template based train replacement build window not being refreshed for engine variant changes.
+* Fix building a road stop/waypoint over an existing road stop/waypoint clearing the one-way state.
+* Fix water flooding in the scenario editor at day lengths above 4.
+* Fix crash if screen resized to be smaller than confirmation window.
+* Fix tooltips for vertical link graph lines.
+* Fix dropdown strings for the the autosave setting in the settings window.
+* NewGRF:
+  * Allow ships to carry more than one cargo.
+  * Allow NewGRFs to set town zone radii.
+* Routing restrictions:
+  * Fix values not being fully initialised to their defaults when changing action type in some cases.
+  * Re-order action and condition dropdowns.
+* Bump trunk base from commit 09f7f32b8d85ea378984908b6a29764d8576284e to commit e5438891e27c0895964e1a030c91295d3b6ef474.
+
 ### v0.51.1 (2023-02-28)
 * Fix crash when looking at the town growth speed setting in the settings window.
 * Fix wrong texts in the about/question mark menu in the main toolbar.

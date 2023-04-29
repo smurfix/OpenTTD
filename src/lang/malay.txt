@@ -1521,6 +1521,7 @@ STR_CONFIG_SETTING_STARTING_YEAR                                :Tahun permulaan
 
 STR_CONFIG_SETTING_ALLOW_SHARES                                 :Benarkan membeli saham syarikat lain: {STRING}
 
+###setting-zero-is-special
 
 
 
@@ -1595,7 +1596,7 @@ STR_CONFIG_SETTING_CITY_SIZE_MULTIPLIER                         :Pengganda awal 
 
 
 
-###length 4
+###length 5
 
 ###length 3
 STR_CONFIG_SETTING_LOCALISATION_UNITS_POWER_IMPERIAL            :Sistem Imperial (kuasa kuda/hp)
@@ -4254,6 +4255,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Tidak da
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Senarai arahan tidak boleh disalin...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... terlalu jauh dari destinasi sebelumnya
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... pesawat tidak memiliki jarak mencukupi
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Kenderaan tidak boleh dijadualkan...

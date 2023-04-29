@@ -71,6 +71,8 @@ enum RoadStopSpecFlags {
 	RSF_NO_AUTO_ROAD_CONNECTION, ///< No auto road connection.
 	RSF_BUILD_MENU_ROAD_ONLY, ///< Only show in the road build menu (not tram).
 	RSF_BUILD_MENU_TRAM_ONLY, ///< Only show in the tram build menu (not road).
+	RSF_BUILD_MENU_DRAW_DISABLED_VIEWS, ///< Use custom road stop graphics for disabled views
+	RSF_DRAW_MODE_REGISTER,   ///< Use custom road stop graphics for disabled views
 };
 
 enum RoadStopSpecIntlFlags {
@@ -111,7 +113,7 @@ struct RoadStopResolverObject : public ResolverObject {
 	RoadStopResolverObject(const RoadStopSpec* roadstopspec, BaseStation* st, TileIndex tile, RoadType roadtype, StationType type, uint8 view, CallbackID callback = CBID_NO_CALLBACK, uint32 param1 = 0, uint32 param2 = 0);
 	~RoadStopResolverObject();
 
-	ScopeResolver* GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, byte relative = 0) override {
+	ScopeResolver* GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, VarSpriteGroupScopeOffset relative = 0) override {
 		switch (scope) {
 			case VSG_SCOPE_SELF: return &this->roadstop_scope;
 			case VSG_SCOPE_PARENT: {
@@ -144,7 +146,7 @@ struct RoadStopSpec {
 	RoadStopAvailabilityType stop_type = ROADSTOPTYPE_ALL;
 	RoadStopDrawMode draw_mode = ROADSTOP_DRAW_MODE_ROAD | ROADSTOP_DRAW_MODE_OVERLAY;
 	uint8 callback_mask = 0;
-	uint8 flags = 0;
+	uint16 flags = 0;
 	uint8 internal_flags = 0;      ///< Bitmask of internal spec flags (RoadStopSpecIntlFlags)
 
 	CargoTypes cargo_triggers = 0; ///< Bitmask of cargo types which cause trigger re-randomizing

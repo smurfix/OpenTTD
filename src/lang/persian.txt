@@ -1478,6 +1478,7 @@ STR_CONFIG_SETTING_STARTING_YEAR                                :سال شروع
 
 STR_CONFIG_SETTING_ALLOW_SHARES                                 :قابلیت خرید سهام بقیه شرکت‌ها: {STRING}
 
+###setting-zero-is-special
 
 
 
@@ -1551,7 +1552,7 @@ STR_CONFIG_SETTING_CITY_SIZE_MULTIPLIER                         :مضرب ابت
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :واحدهای سرعت: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :هر زمان که سرعت در محیط بازی نمایش داده شود، آن را با واحد انتخاب شده نمایش بده
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :امپریال (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :متریک (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -3790,6 +3791,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}نمی �
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}نمی توان برنامه حرکت را کپی کرد...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}از هدف قبلی بسیار دور است...
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... هواپیما برد کافی ندارد
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}نمی شود مدیریت زمانی وسیله را تغییر داد...

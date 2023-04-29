@@ -546,6 +546,7 @@ STR_CONFIG_SETTING_ENDING_YEAR_VALUE                            :{NUM}
 ###length 3
 
 
+###setting-zero-is-special
 
 
 
@@ -585,7 +586,7 @@ STR_CONFIG_SETTING_SPRITE_ZOOM_LVL_IN_2X                        :२x
 
 
 
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :अंतर्राष्ट्रीय मानक (m/s)
 
 ###length 3
@@ -1383,6 +1384,8 @@ STR_ERROR_CAN_T_SELL_TRAIN                                      :{WHITE}रे�
 # Order related errors
 STR_ERROR_CAN_T_COPY_SHARE_ORDER                                :{WHITE}... वाहन सभी स्टेशनों तक नहीं जा सकता
 
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 

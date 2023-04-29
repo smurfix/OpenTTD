@@ -53,7 +53,7 @@ static void ChangeTimetable(Vehicle *v, VehicleOrderID order_number, uint32 val,
 			order->SetWaitTimetabled(timetabled);
 			if (HasBit(v->vehicle_flags, VF_SCHEDULED_DISPATCH) && timetabled && order->IsScheduledDispatchOrder(true)) {
 				for (Vehicle *u = v->FirstShared(); u != nullptr; u = u->NextShared()) {
-					if (u->cur_implicit_order_index == order_number && (u->last_station_visited == order->GetDestination())) {
+					if (u->cur_implicit_order_index == order_number && order->IsBaseStationOrder() && u->last_station_visited == order->GetDestination()) {
 						u->lateness_counter += timetable_delta;
 					}
 				}
@@ -707,8 +707,8 @@ std::vector<TimetableProgress> PopulateSeparationState(const Vehicle *v_start)
 			// Do not try to separate vehicles on depot service or halt orders
 			separation_valid = false;
 		}
-		if (order->IsType(OT_RELEASE_SLOT) || order->IsType(OT_COUNTER)) {
-			// Do not try to separate vehicles on release slot or change counter orders
+		if (order->IsType(OT_RELEASE_SLOT) || order->IsType(OT_COUNTER) || order->IsType(OT_DUMMY) || order->IsType(OT_LABEL)) {
+			// Do not try to separate vehicles on release slot, change counter, or invalid orders
 			separation_valid = false;
 		}
 		int order_ticks;

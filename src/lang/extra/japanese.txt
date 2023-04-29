@@ -51,19 +51,17 @@ STR_DEPARTURES_TIME_DEP                                         :{ORANGE}{DATE_W
 STR_DEPARTURES_TIME_ARR                                         :{ORANGE}{DATE_WALLCLOCK_TINY} {RED}{DOWN_ARROW}
 STR_DEPARTURES_TIME_BOTH                                        :{ORANGE}{1:DATE_WALLCLOCK_TINY} {RED}{DOWN_ARROW} {ORANGE}{0:DATE_WALLCLOCK_TINY} {GREEN}{UP_ARROW}
 STR_DEPARTURES_TERMINUS                                         :{ORANGE}{STATION}{STRING}
-STR_DEPARTURES_TERMINUS_VIA_STATION                             :{ORANGE}{STATION}{STRING} 経由 {STATION}{STRING}経由
+STR_DEPARTURES_TERMINUS_VIA_STATION                             :{ORANGE}{STATION}{STRING} 経由 {STRING}経由
 STR_DEPARTURES_TERMINUS_VIA                                     :{ORANGE}{STATION}{STRING} 経由
-STR_DEPARTURES_VIA                                              :{ORANGE} {STATION}{STRING} 経由
+STR_DEPARTURES_VIA                                              :{ORANGE} {STRING} 経由
 STR_DEPARTURES_TOC                                              :{ORANGE}{COMPANY}
 STR_DEPARTURES_GROUP                                            :{ORANGE}{GROUP}
 STR_DEPARTURES_VEH                                              :{ORANGE}{VEHICLE}
-STR_DEPARTURES_CALLING_AT                                       :{TINY_FONT}{ORANGE}停車場:
-STR_DEPARTURES_CALLING_AT_LARGE                                 :{ORANGE}停車場:
+STR_DEPARTURES_CALLING_AT                                       :{ORANGE}停車場:
 STR_DEPARTURES_CALLING_AT_FIRST_STATION                         :{STATION}
 STR_DEPARTURES_CALLING_AT_STATION                               :{STRING}, {STATION}
 STR_DEPARTURES_CALLING_AT_LAST_STATION                          :{STRING} 終点、{STATION}でございます
-STR_DEPARTURES_CALLING_AT_LIST                                  :{TINY_FONT}{ORANGE}{STRING}.
-STR_DEPARTURES_CALLING_AT_LIST_LARGE                            :{ORANGE}{STRING}.
+STR_DEPARTURES_CALLING_AT_LIST                                  :{ORANGE}{STRING}.
 
 STR_DEPARTURES_TYPE_TRAIN                                       :{ORANGE}{TRAIN}
 STR_DEPARTURES_TYPE_TRAIN_SILVER                                :{SILVER}{TRAIN}

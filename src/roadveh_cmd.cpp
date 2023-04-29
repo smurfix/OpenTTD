@@ -153,7 +153,7 @@ void DrawRoadVehEngine(int left, int right, int preferred_x, int y, EngineID eng
 	GetRoadVehIcon(engine, image_type, &seq);
 
 	Rect16 rect = seq.GetBounds();
-	preferred_x = Clamp(preferred_x,
+	preferred_x = SoftClamp(preferred_x,
 			left - UnScaleGUI(rect.left),
 			right - UnScaleGUI(rect.right));
 
@@ -288,7 +288,7 @@ CommandCost CmdBuildRoadVehicle(TileIndex tile, DoCommandFlag flags, const Engin
 		int y = TileY(tile) * TILE_SIZE + TILE_SIZE / 2;
 		v->x_pos = x;
 		v->y_pos = y;
-		v->z_pos = GetSlopePixelZ(x, y);
+		v->z_pos = GetSlopePixelZ(x, y, true);
 
 		v->state = RVSB_IN_DEPOT;
 		v->vehstatus = VS_HIDDEN | VS_STOPPED | VS_DEFPAL;
@@ -383,7 +383,7 @@ inline bool IsOneWaySideJunctionRoadTile(TileIndex tile)
 
 static bool MayReverseOnOneWayRoadTile(TileIndex tile, DiagDirection dir)
 {
-	TrackdirBits bits = TrackStatusToTrackdirBits(GetTileTrackStatus(tile, TRANSPORT_ROAD, RTT_ROAD));
+	TrackdirBits bits = GetTileTrackdirBits(tile, TRANSPORT_ROAD, RTT_ROAD);
 	return bits & DiagdirReachesTrackdirs(ReverseDiagDir(dir));
 }
 
@@ -1580,7 +1580,7 @@ inline byte IncreaseOvertakingCounter(RoadVehicle *v)
 
 static bool CheckRestartLoadingAtRoadStop(RoadVehicle *v)
 {
-	if (v->GetNumOrders() < 1) return false;
+	if (v->GetNumOrders() < 1 || !Company::Get(v->owner)->settings.remain_if_next_order_same_station) return false;
 
 	StationID station_id = v->current_order.GetDestination();
 	VehicleOrderID next_order_idx = AdvanceOrderIndexDeferred(v, v->cur_implicit_order_index);
@@ -2013,7 +2013,7 @@ again:
 		 * A vehicle has to spend at least 9 frames on a tile, so the following articulated part can follow.
 		 * (The following part may only be one tile behind, and the front part is moved before the following ones.)
 		 * The short (inner) curve has 8 frames, this elongates it to 10. */
-		v->UpdateInclination(false, true);
+		v->UpdateViewport(true, true);
 		return true;
 	}
 

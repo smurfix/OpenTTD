@@ -60,6 +60,7 @@
 #include "scope_info.h"
 #include "debug_settings.h"
 #include "3rdparty/cpp-btree/btree_set.h"
+#include "3rdparty/cpp-btree/btree_map.h"
 
 #include "table/strings.h"
 
@@ -105,7 +106,7 @@ INSTANTIATE_POOL_METHODS(Vehicle)
 static btree::btree_set<VehicleID> _vehicles_to_pay_repair;
 static btree::btree_set<VehicleID> _vehicles_to_sell;
 
-std::unordered_multimap<VehicleID, PendingSpeedRestrictionChange> pending_speed_restriction_change_map;
+btree::btree_multimap<VehicleID, PendingSpeedRestrictionChange> _pending_speed_restriction_change_map;
 
 /**
  * Determine shared bounds of all sprites.
@@ -200,6 +201,7 @@ void VehicleServiceInDepot(Vehicle *v)
 		Ship::From(v)->critical_breakdown_count = 0;
 	}
 	v->vehstatus &= ~VS_AIRCRAFT_BROKEN;
+	ClrBit(v->vehicle_flags, VF_REPLACEMENT_PENDING);
 	SetWindowDirty(WC_VEHICLE_DETAILS, v->index); // ensure that last service date and reliability are updated
 
 	do {
@@ -230,6 +232,7 @@ bool Vehicle::NeedsServicing() const
 	if (this->vehstatus & (VS_STOPPED | VS_CRASHED)) return false;
 
 	/* Are we ready for the next service cycle? */
+	bool needs_service = true;
 	const Company *c = Company::Get(this->owner);
 	if ((this->ServiceIntervalIsPercent() ?
 			(this->reliability >= this->GetEngine()->reliability * (100 - this->service_interval) / 100) :
@@ -237,41 +240,29 @@ bool Vehicle::NeedsServicing() const
 			&& !(this->type == VEH_TRAIN && HasBit(Train::From(this)->flags, VRF_CONSIST_BREAKDOWN) && Train::From(this)->ConsistNeedsRepair())
 			&& !(this->type == VEH_ROAD && RoadVehicle::From(this)->critical_breakdown_count > 0)
 			&& !(this->type == VEH_SHIP && Ship::From(this)->critical_breakdown_count > 0)) {
+		needs_service = false;
+	}
+
+	if (!needs_service && !HasBit(this->vehicle_flags, VF_REPLACEMENT_PENDING)) {
 		return false;
 	}
 
 	/* If we're servicing anyway, because we have not disabled servicing when
 	 * there are no breakdowns or we are playing with breakdowns, bail out. */
-	if (!_settings_game.order.no_servicing_if_no_breakdowns ||
-			_settings_game.difficulty.vehicle_breakdowns != 0) {
+	if (needs_service && (!_settings_game.order.no_servicing_if_no_breakdowns ||
+			_settings_game.difficulty.vehicle_breakdowns != 0)) {
 		return true;
 	}
 
 	/* Is vehicle old and renewing is enabled */
-	if (this->NeedsAutorenewing(c, true)) {
+	if (needs_service && this->NeedsAutorenewing(c, true)) {
 		return true;
 	}
 
 	if (this->type == VEH_TRAIN) {
-		TemplateVehicle *tv = GetTemplateVehicleByGroupIDRecursive(this->group_id);
+		const TemplateVehicle *tv = GetTemplateVehicleByGroupIDRecursive(this->group_id);
 		if (tv != nullptr) {
-			if (tv->IsReplaceOldOnly() && !this->NeedsAutorenewing(c, false)) return false;
-			Money needed_money = c->settings.engine_renew_money;
-			if (needed_money > c->money) return false;
-			bool need_replacement = !TrainMatchesTemplate(Train::From(this), tv);
-			if (need_replacement) {
-				/* Check money.
-				 * We want 2*(the price of the whole template) without looking at the value of the vehicle(s) we are going to sell, or not need to buy. */
-				for (const TemplateVehicle *tv_unit = tv; tv_unit != nullptr; tv_unit = tv_unit->GetNextUnit()) {
-					if (!HasBit(Engine::Get(tv->engine_type)->company_avail, this->owner)) return false;
-					needed_money += 2 * Engine::Get(tv->engine_type)->GetCost();
-				}
-				return needed_money <= c->money;
-			} else if (!TrainMatchesTemplateRefit(Train::From(this), tv) && tv->refit_as_template) {
-				return true;
-			} else {
-				return false;
-			}
+			return ShouldServiceTrainForTemplateReplacement(Train::From(this), tv);
 		}
 	}
 
@@ -549,29 +540,22 @@ Vehicle *VehicleFromPos(TileIndex tile, VehicleType type, void *data, VehicleFro
 /**
  * Callback that returns 'real' vehicles lower or at height \c *(int*)data .
  * @param v Vehicle to examine.
- * @param data Pointer to height data.
+ * @param data unused.
  * @return \a v if conditions are met, else \c nullptr.
  */
-static Vehicle *EnsureNoVehicleProcZ(Vehicle *v, void *data)
+static Vehicle *EnsureNoVehicleProc(Vehicle *v, void *data)
 {
-	int z = static_cast<int>(reinterpret_cast<intptr_t>(data));
-
-	if (v->z_pos > z) return nullptr;
-
 	return v;
 }
 
 /**
  * Callback that returns 'real' train-collidable road vehicles lower or at height \c *(int*)data .
  * @param v Vehicle to examine.
- * @param data Pointer to height data.
+ * @param data unused
  * @return \a v if conditions are met, else \c nullptr.
  */
-static Vehicle *EnsureNoTrainCollidableRoadVehicleProcZ(Vehicle *v, void *data)
+static Vehicle *EnsureNoTrainCollidableRoadVehicleProc(Vehicle *v, void *data)
 {
-	int z = static_cast<int>(reinterpret_cast<intptr_t>(data));
-
-	if (v->z_pos > z) return nullptr;
 	if (HasBit(_roadtypes_non_train_colliding, RoadVehicle::From(v)->roadtype)) return nullptr;
 
 	return v;
@@ -600,50 +584,36 @@ static Vehicle *EnsureNoAircraftProcZ(Vehicle *v, void *data)
  */
 CommandCost EnsureNoVehicleOnGround(TileIndex tile)
 {
-	int z = GetTileMaxPixelZ(tile);
+	if (IsAirportTile(tile)) {
+		int z = GetTileMaxPixelZ(tile);
+		if (VehicleFromPos(tile, VEH_AIRCRAFT, reinterpret_cast<void *>(static_cast<intptr_t>(z)), &EnsureNoAircraftProcZ, true) != nullptr) {
+			return CommandCost(STR_ERROR_AIRCRAFT_IN_THE_WAY);
+		}
+		return CommandCost();
+	}
 
-	/* Value v is not safe in MP games, however, it is used to generate a local
-	 * error message only (which may be different for different machines).
-	 * Such a message does not affect MP synchronisation.
-	 */
-	if (VehicleFromPos(tile, VEH_TRAIN, reinterpret_cast<void *>(static_cast<intptr_t>(z)), &EnsureNoVehicleProcZ, true) != nullptr) {
-		return_cmd_error(STR_ERROR_TRAIN_IN_THE_WAY);
+	if (IsTileType(tile, MP_RAILWAY) || IsLevelCrossingTile(tile) || HasStationTileRail(tile) || IsRailTunnelBridgeTile(tile)) {
+		if (VehicleFromPos(tile, VEH_TRAIN, nullptr, &EnsureNoVehicleProc, true) != nullptr) {
+			return CommandCost(STR_ERROR_TRAIN_IN_THE_WAY);
+		}
 	}
-	if (VehicleFromPos(tile, VEH_ROAD, reinterpret_cast<void *>(static_cast<intptr_t>(z)), &EnsureNoVehicleProcZ, true) != nullptr) {
-		return_cmd_error(STR_ERROR_ROAD_VEHICLE_IN_THE_WAY);
+	if (IsTileType(tile, MP_ROAD) || IsAnyRoadStopTile(tile) || (IsTileType(tile, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(tile) == TRANSPORT_ROAD)) {
+		if (VehicleFromPos(tile, VEH_ROAD, nullptr, &EnsureNoVehicleProc, true) != nullptr) {
+			return CommandCost(STR_ERROR_ROAD_VEHICLE_IN_THE_WAY);
+		}
 	}
-	if (VehicleFromPos(tile, VEH_SHIP, reinterpret_cast<void *>(static_cast<intptr_t>(z)), &EnsureNoVehicleProcZ, true) != nullptr) {
-		return_cmd_error(STR_ERROR_SHIP_IN_THE_WAY);
+	if (HasTileWaterClass(tile) || (IsBridgeTile(tile) && GetTunnelBridgeTransportType(tile) == TRANSPORT_WATER)) {
+		if (VehicleFromPos(tile, VEH_SHIP, nullptr, &EnsureNoVehicleProc, true) != nullptr) {
+			return CommandCost(STR_ERROR_SHIP_IN_THE_WAY);
+		}
 	}
-	if (VehicleFromPos(tile, VEH_AIRCRAFT, reinterpret_cast<void *>(static_cast<intptr_t>(z)), &EnsureNoAircraftProcZ, true) != nullptr) {
-		return_cmd_error(STR_ERROR_AIRCRAFT_IN_THE_WAY);
-	}
-	return CommandCost();
-}
 
-/**
- * Ensure there is no road vehicle at the ground at the given position.
- * @param tile Position to examine.
- * @return Succeeded command (ground is free) or failed command (a vehicle is found).
- */
-CommandCost EnsureNoRoadVehicleOnGround(TileIndex tile)
-{
-	int z = GetTileMaxPixelZ(tile);
-
-	/* Value v is not safe in MP games, however, it is used to generate a local
-	 * error message only (which may be different for different machines).
-	 * Such a message does not affect MP synchronisation.
-	 */
-	Vehicle *v = VehicleFromPos(tile, VEH_ROAD, reinterpret_cast<void *>(static_cast<intptr_t>(z)), &EnsureNoVehicleProcZ, true);
-	if (v != nullptr) return_cmd_error(STR_ERROR_ROAD_VEHICLE_IN_THE_WAY);
 	return CommandCost();
 }
 
 bool IsTrainCollidableRoadVehicleOnGround(TileIndex tile)
 {
-	int z = GetTileMaxPixelZ(tile);
-
-	return VehicleFromPos(tile, VEH_ROAD, reinterpret_cast<void *>(static_cast<intptr_t>(z)), &EnsureNoTrainCollidableRoadVehicleProcZ, true) != nullptr;
+	return VehicleFromPos(tile, VEH_ROAD, nullptr, &EnsureNoTrainCollidableRoadVehicleProc, true) != nullptr;
 }
 
 struct GetVehicleTunnelBridgeProcData {
@@ -854,7 +824,7 @@ void UpdateVehicleTileHash(Vehicle *v, bool remove)
 	Vehicle **old_hash = v->hash_tile_current;
 	Vehicle **new_hash;
 
-	if (remove || HasBit(v->subtype, GVSF_VIRTUAL)) {
+	if (remove || HasBit(v->subtype, GVSF_VIRTUAL) || (v->tile == 0 && _settings_game.construction.freeform_edges)) {
 		new_hash = nullptr;
 	} else {
 		int x = GB(TileX(v->tile), HASH_RES, HASH_BITS);
@@ -884,7 +854,12 @@ void UpdateVehicleTileHash(Vehicle *v, bool remove)
 
 bool ValidateVehicleTileHash(const Vehicle *v)
 {
-	if ((v->type == VEH_TRAIN && Train::From(v)->IsVirtual()) || v->type >= VEH_COMPANY_END) return v->hash_tile_current == nullptr;
+	if ((v->type == VEH_TRAIN && Train::From(v)->IsVirtual())
+			|| (v->type == VEH_SHIP && HasBit(v->subtype, GVSF_VIRTUAL))
+			|| (v->type == VEH_AIRCRAFT && v->tile == 0 && _settings_game.construction.freeform_edges)
+			|| v->type >= VEH_COMPANY_END) {
+		return v->hash_tile_current == nullptr;
+	}
 
 	int x = GB(TileX(v->tile), HASH_RES, HASH_BITS);
 	int y = GB(TileY(v->tile), HASH_RES, HASH_BITS) << HASH_BITS;
@@ -1011,7 +986,7 @@ bool Vehicle::IsEngineCountable() const
 			return !this->IsArticulatedPart() && // tenders and other articulated parts
 					!Train::From(this)->IsRearDualheaded(); // rear parts of multiheaded engines
 		case VEH_ROAD: return RoadVehicle::From(this)->IsFrontEngine();
-		case VEH_SHIP: return true;
+		case VEH_SHIP: return Ship::From(this)->IsPrimaryVehicle();
 		default: return false; // Only count company buildable vehicles
 	}
 }
@@ -1168,7 +1143,7 @@ void Vehicle::PreDestructor()
 		ClrBit(this->vehicle_flags, VF_HAVE_SLOT);
 	}
 	if (this->type == VEH_TRAIN && HasBit(Train::From(this)->flags, VRF_PENDING_SPEED_RESTRICTION)) {
-		pending_speed_restriction_change_map.erase(this->index);
+		_pending_speed_restriction_change_map.erase(this->index);
 		ClrBit(Train::From(this)->flags, VRF_PENDING_SPEED_RESTRICTION);
 	}
 
@@ -1240,7 +1215,7 @@ Vehicle::~Vehicle()
  */
 void Vehicle::PreCleanPool()
 {
-	pending_speed_restriction_change_map.clear();
+	_pending_speed_restriction_change_map.clear();
 }
 
 /**
@@ -1404,7 +1379,7 @@ void RebuildVehicleTickCaches()
 				break;
 
 			case VEH_SHIP:
-				_tick_ship_cache.push_back(Ship::From(v));
+				if (v->Previous() == nullptr) _tick_ship_cache.push_back(Ship::From(v));
 				break;
 
 			case VEH_EFFECT:
@@ -1596,7 +1571,9 @@ void CallVehicleTicks()
 		for (Ship *s : _tick_ship_cache) {
 			v = s;
 			if (!s->Ship::Tick()) continue;
-			VehicleTickCargoAging(s);
+			for (Ship *u = s; u != nullptr; u = u->Next()) {
+				VehicleTickCargoAging(u);
+			}
 			if (!(s->vehstatus & VS_STOPPED)) VehicleTickMotion(s, s);
 		}
 	}
@@ -1656,12 +1633,14 @@ void CallVehicleTicks()
 
 		tmpl_cur_company.Change(t->owner);
 
+		_new_vehicle_id = INVALID_VEHICLE;
+
 		t->vehstatus |= VS_STOPPED;
 		CommandCost res = DoCommand(t->tile, t->index, leaveDepot ? 1 : 0, DC_EXEC, CMD_TEMPLATE_REPLACE_VEHICLE);
 
-		if (res.Succeeded()) {
+		if (_new_vehicle_id != INVALID_VEHICLE) {
 			VehicleID t_new = _new_vehicle_id;
-			t = Train::From(Vehicle::Get(t_new));
+			t = Train::Get(t_new);
 			const Company *c = Company::Get(_current_company);
 			SubtractMoneyFromCompany(CommandCost(EXPENSES_NEW_VEHICLES, (Money)c->settings.engine_renew_money));
 			CommandCost res2 = DoCommand(0, t_new, 1, DC_EXEC, CMD_AUTOREPLACE_VEHICLE);
@@ -1671,14 +1650,13 @@ void CallVehicleTicks()
 
 		if (!IsLocalCompany()) continue;
 
-		if (res.Succeeded()) {
-			if (res.GetCost() != 0) {
-				ShowCostOrIncomeAnimation(x, y, z, res.GetCost());
-			}
-			continue;
+		if (res.GetCost() != 0) {
+			ShowCostOrIncomeAnimation(x, y, z, res.GetCost());
 		}
 
-		ShowAutoReplaceAdviceMessage(res, t);
+		if (res.Failed()) {
+			ShowAutoReplaceAdviceMessage(res, t);
+		}
 	}
 	tmpl_cur_company.Restore();
 
@@ -2172,6 +2150,9 @@ void CheckVehicleBreakdown(Vehicle *v)
 	}
 	/**
 	 * Chance is (1 - reliability) * breakdown_setting * breakdown_chance / 10.
+	 * breakdown_setting is scaled by 2 to support a value of 1/2 (setting value 64).
+	 * Chance is (1 - reliability) * breakdown_scaling_x2 * breakdown_chance / 20.
+	 *
 	 * At 90% reliabilty, normal setting (2) and average breakdown_chance (128),
 	 * a vehicle will break down (on average) every 100 days.
 	 * This *should* mean that vehicles break down about as often as (or a little less than) they used to.
@@ -2179,7 +2160,8 @@ void CheckVehicleBreakdown(Vehicle *v)
 	 * their impact will be significantly less.
 	 */
 	uint32 r1 = Random();
-	if ((uint32) (0xffff - v->reliability) * _settings_game.difficulty.vehicle_breakdowns * chance > GB(r1, 0, 24) * 10) {
+	uint32 breakdown_scaling_x2 = (_settings_game.difficulty.vehicle_breakdowns == 64) ? 1 : (_settings_game.difficulty.vehicle_breakdowns * 2);
+	if ((uint32) (0xffff - v->reliability) * breakdown_scaling_x2 * chance > GB(r1, 0, 24) * 10 * 2) {
 		uint32 r2 = Random();
 		v->breakdown_ctr = GB(r1, 24, 6) + 0xF;
 		if (v->type == VEH_TRAIN) SetBit(Train::From(v)->First()->flags, VRF_CONSIST_BREAKDOWN);
@@ -3521,8 +3503,9 @@ void Vehicle::RecalculateOrderOccupancyAverage()
 	uint total = 0;
 	uint order_count = this->GetNumOrders();
 	for (uint i = 0; i < order_count; i++) {
-		uint occupancy = this->GetOrder(i)->GetOccupancy();
-		if (occupancy > 0) {
+		const Order *order = this->GetOrder(i);
+		uint occupancy = order->GetOccupancy();
+		if (occupancy > 0 && order->UseOccupancyValueForAverage()) {
 			num_valid++;
 			total += (occupancy - 1);
 		}
@@ -4209,6 +4192,7 @@ void DumpVehicleFlagsGeneric(const Vehicle *v, T dump, U dump_header)
 	dump('a', "VF_AUTOMATE_TIMETABLE",      HasBit(v->vehicle_flags, VF_AUTOMATE_TIMETABLE));
 	dump('Q', "VF_HAVE_SLOT",               HasBit(v->vehicle_flags, VF_HAVE_SLOT));
 	dump('W', "VF_COND_ORDER_WAIT",         HasBit(v->vehicle_flags, VF_COND_ORDER_WAIT));
+	dump('r', "VF_REPLACEMENT_PENDING",     HasBit(v->vehicle_flags, VF_REPLACEMENT_PENDING));
 	dump_header("vcf:", "cached_veh_flags:");
 	dump('l', "VCF_LAST_VISUAL_EFFECT",     HasBit(v->vcache.cached_veh_flags, VCF_LAST_VISUAL_EFFECT));
 	dump('z', "VCF_GV_ZERO_SLOPE_RESIST",   HasBit(v->vcache.cached_veh_flags, VCF_GV_ZERO_SLOPE_RESIST));
@@ -4397,10 +4381,10 @@ bool CanVehicleUseStation(const Vehicle *v, const Station *st)
 }
 
 /**
- * Get reason string why this station can't be used by the given vehicle
- * @param v the vehicle to test
- * @param st the station to test for
- * @return true if and only if the vehicle can use this station.
+ * Get reason string why this station can't be used by the given vehicle.
+ * @param v The vehicle to test.
+ * @param st The station to test for.
+ * @return The string explaining why the vehicle cannot use the station.
  */
 StringID GetVehicleCannotUseStationReason(const Vehicle *v, const Station *st)
 {
@@ -4415,15 +4399,18 @@ StringID GetVehicleCannotUseStationReason(const Vehicle *v, const Station *st)
 			StringID err = rv->IsBus() ? STR_ERROR_NO_BUS_STATION : STR_ERROR_NO_TRUCK_STATION;
 
 			for (; rs != nullptr; rs = rs->next) {
-				/* The vehicle is articulated and can therefore not go to a standard road stop. */
-				if (IsStandardRoadStopTile(rs->xy) && rv->HasArticulatedPart()) {
-					err = STR_ERROR_NO_STOP_ARTIC_VEH;
+				/* Articulated vehicles cannot use bay road stops, only drive-through. Make sure the vehicle can actually use this bay stop */
+				if (HasTileAnyRoadType(rs->xy, rv->compatible_roadtypes) && IsStandardRoadStopTile(rs->xy) && rv->HasArticulatedPart()) {
+					err = STR_ERROR_NO_STOP_ARTICULATED_VEHICLE;
 					continue;
 				}
-				/* The vehicle cannot go to this roadstop (different roadtype) */
-				if (!HasTileAnyRoadType(rs->xy, rv->compatible_roadtypes)) return STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE;
 
-				return INVALID_STRING_ID;
+				/* Bay stop errors take precedence, but otherwise the vehicle may not be compatible with the roadtype/tramtype of this station tile.
+				 * We give bay stop errors precedence because they are usually a bus sent to a tram station or vice versa. */
+				if (!HasTileAnyRoadType(rs->xy, rv->compatible_roadtypes) && err != STR_ERROR_NO_STOP_ARTICULATED_VEHICLE) {
+					err = RoadTypeIsRoad(rv->roadtype) ? STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE : STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE;
+					continue;
+				}
 			}
 
 			return err;
@@ -4437,7 +4424,7 @@ StringID GetVehicleCannotUseStationReason(const Vehicle *v, const Station *st)
 			if (v->GetEngine()->u.air.subtype & AIR_CTOL) {
 				return STR_ERROR_AIRPORT_NO_PLANES;
 			} else {
-				return STR_ERROR_AIRPORT_NO_HELIS;
+				return STR_ERROR_AIRPORT_NO_HELICOPTERS;
 			}
 
 		default:
@@ -4593,7 +4580,7 @@ void AdjustVehicleScaledTickBase(int64 delta)
 void ShiftVehicleDates(int interval)
 {
 	for (Vehicle *v : Vehicle::Iterate()) {
-		v->date_of_last_service += interval;
+		v->date_of_last_service = std::max(v->date_of_last_service + interval, 0);
 	}
 }
 

@@ -291,7 +291,7 @@ public:
 
 		/* Rail speed limit */
 		if (td.rail_speed != 0) {
-			SetDParam(0, td.rail_speed);
+			SetDParam(0, PackVelocity(td.rail_speed, VEH_TRAIN));
 			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_RAIL_SPEED_LIMIT));
 		}
 
@@ -315,7 +315,7 @@ public:
 
 		/* Road speed limit */
 		if (td.road_speed != 0) {
-			SetDParam(0, td.road_speed);
+			SetDParam(0, PackVelocity(td.road_speed, VEH_ROAD));
 			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_ROAD_SPEED_LIMIT));
 		}
 
@@ -327,7 +327,7 @@ public:
 
 		/* Tram speed limit */
 		if (td.tram_speed != 0) {
-			SetDParam(0, td.tram_speed);
+			SetDParam(0, PackVelocity(td.tram_speed, VEH_ROAD));
 			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_TRAM_SPEED_LIMIT));
 		}
 
@@ -396,12 +396,9 @@ public:
 	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
-		switch (data) {
-			case 1:
-				/* ReInit, "debug" sprite might have changed */
-				this->ReInit();
-				break;
-		}
+
+		/* ReInit, "debug" sprite might have changed */
+		if (data == 1) this->ReInit();
 	}
 };
 
@@ -1009,7 +1006,8 @@ void QueryString::ClickEditBox(Window *w, Point pt, int wid, int click_count, bo
 	assert((wi->type & WWT_MASK) == WWT_EDITBOX);
 
 	bool rtl = _current_text_dir == TD_RTL;
-	int clearbtn_width = GetSpriteSize(rtl ? SPR_IMG_DELETE_RIGHT : SPR_IMG_DELETE_LEFT).width;
+	Dimension sprite_size = GetSpriteSize(rtl ? SPR_IMG_DELETE_RIGHT : SPR_IMG_DELETE_LEFT);
+	int clearbtn_width = sprite_size.width + WidgetDimensions::scaled.imgbtn.Horizontal();
 
 	Rect cr = wi->GetCurrentRect().WithWidth(clearbtn_width, !rtl);
 
@@ -1224,8 +1222,8 @@ struct QueryWindow : public Window {
 	void FindWindowPlacementAndResize(int def_width, int def_height) override
 	{
 		/* Position query window over the calling window, ensuring it's within screen bounds. */
-		this->left = Clamp(parent->left + (parent->width / 2) - (this->width / 2), 0, _screen.width - this->width);
-		this->top = Clamp(parent->top + (parent->height / 2) - (this->height / 2), 0, _screen.height - this->height);
+		this->left = SoftClamp(parent->left + (parent->width / 2) - (this->width / 2), 0, _screen.width - this->width);
+		this->top = SoftClamp(parent->top + (parent->height / 2) - (this->height / 2), 0, _screen.height - this->height);
 		this->SetDirty();
 	}
 

@@ -27,6 +27,7 @@
 #include "effectvehicle_base.h"
 #include "elrail_func.h"
 #include "roadveh.h"
+#include "train.h"
 #include "town.h"
 #include "company_base.h"
 #include "core/random_func.hpp"
@@ -258,9 +259,21 @@ static btree::btree_set<TileIndex> _road_cache_one_way_state_pending_interpolate
 static bool _defer_update_road_cache_one_way_state = false;
 bool _mark_tile_dirty_on_road_cache_one_way_state_update = false;
 
+static void RefreshTileOnCachedOneWayStateChange(TileIndex tile)
+{
+	if (IsAnyRoadStopTile(tile) && IsCustomRoadStopSpecIndex(tile)) {
+		MarkTileGroundDirtyByTile(tile, VMDF_NOT_MAP_MODE);
+		return;
+	}
+	if (unlikely(_mark_tile_dirty_on_road_cache_one_way_state_update)) {
+		MarkTileGroundDirtyByTile(tile, VMDF_NOT_MAP_MODE);
+		return;
+	}
+}
+
 static void UpdateTileRoadCachedOneWayState(TileIndex tile)
 {
-	if (unlikely(_mark_tile_dirty_on_road_cache_one_way_state_update)) MarkTileGroundDirtyByTile(tile, VMDF_NOT_MAP_MODE);
+	RefreshTileOnCachedOneWayStateChange(tile);
 
 	DisallowedRoadDirections drd = GetOneWayRoadTileDisallowedRoadDirections(tile);
 	if (drd != DRD_NONE) {
@@ -363,7 +376,7 @@ static void InterpolateRoadFollowRoadBitSetState(TileIndex tile, uint8 bit, Inte
 			SetRoadCachedOneWayState(tile, (RoadCachedOneWayState)(irr ^ (HasBit(bits_to_rcows, (inbit << 2) | bit) ? 0 : 3)));
 		}
 		_road_cache_one_way_state_pending_interpolate_tiles.erase(tile);
-		if (unlikely(_mark_tile_dirty_on_road_cache_one_way_state_update)) MarkTileGroundDirtyByTile(tile, VMDF_NOT_MAP_MODE);
+		RefreshTileOnCachedOneWayStateChange(tile);
 		TileIndex next = InterpolateRoadFollowTileStep(tile, bit);
 		if (next == INVALID_TILE) return;
 		DisallowedRoadDirections drd = GetOneWayRoadTileDisallowedRoadDirections(next);
@@ -2481,7 +2494,7 @@ void UpdateNearestTownForRoadTiles(bool invalidate)
 	}
 }
 
-static int GetSlopePixelZ_Road(TileIndex tile, uint x, uint y)
+static int GetSlopePixelZ_Road(TileIndex tile, uint x, uint y, bool ground_vehicle)
 {
 
 	if (IsNormalRoad(tile)) {
@@ -2618,7 +2631,7 @@ static void TileLoop_Road(TileIndex tile)
 
 		/* Possibly change road type */
 		if (GetRoadOwner(tile, RTT_ROAD) == OWNER_TOWN) {
-			RoadType rt = GetTownRoadType(t);
+			RoadType rt = GetTownRoadType();
 			if (rt != GetRoadTypeRoad(tile)) {
 				SetRoadType(tile, RTT_ROAD, rt);
 			}
@@ -2720,8 +2733,10 @@ static TrackStatus GetTileTrackStatus_Road(TileIndex tile, TransportType mode, u
 						RoadType rt = (RoadType)(rtfield - 1);
 						return HasBit(_roadtypes_non_train_colliding, rt);
 					};
-					if (IsCrossingBarred(tile) && !is_non_colliding()) {
+					if (!(sub_mode & TTSSM_NO_RED_SIGNALS) && IsCrossingBarred(tile) && !is_non_colliding()) {
 						red_signals = trackdirbits;
+						if (TrainOnCrossing(tile)) break;
+
 						auto mask_red_signal_bits_if_crossing_barred = [&](TileIndex t, TrackdirBits mask) {
 							if (IsLevelCrossingTile(t) && IsCrossingBarred(t)) red_signals &= mask;
 						};

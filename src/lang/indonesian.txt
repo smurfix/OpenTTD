@@ -1806,6 +1806,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Jika diaktifkan
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Usia minimum perusahaan untuk memperdagangkan saham: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Set umur minimal perusahaan saat sahamnya dapat dibeli atau dijual.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Persentase keuntungan akhir dari sistem pengisi: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Persentase pendapatan yang diberikan dari sistem pengisi, memberikan lebih banyak kendali pendapatan
@@ -1951,7 +1952,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Biasanya terdap
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Satuan kecepatan: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Apabila kecepatan ditampilkan di antarmuka, nyatakan di satuan yang dipilih
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Imperial (mpj)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Metrik (km/j)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/d)
@@ -2356,7 +2357,6 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Perusahaan bar
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Ciptakan perusahaan baru dan bergabung
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Ini adalah Anda
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Ini adalah hos permainan
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} klien / {NUM} Perusahaan
 
 # Matches ConnectionType
 ###length 5
@@ -5073,6 +5073,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Tidak da
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Tidak dapat meniru perintah...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... terlalu jauh dari tujuan sebelumnya
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... pesawat tidak dapat menjangkau
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Tidak dapat membuat jadwal keberangkatan kendaraan...

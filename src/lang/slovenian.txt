@@ -1821,6 +1821,7 @@ STR_CONFIG_SETTING_STARTING_YEAR                                :Začetno leto: 
 STR_CONFIG_SETTING_ALLOW_SHARES                                 :Dovoli kupovanje delnic od drugih podjetij: {STRING}
 STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Če je omogočeno, se lahko trguje z delnicami podjetij. Na voljo samo po določeni starosti podjetja.
 
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Procent osnovnega dobička za plačilo v sklade: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Procent prihodkov vložen v srednje sklade, ki omogoča več kontrole nad prihodki.
@@ -1950,7 +1951,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Pogosto je več
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Enote hitrosti: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Ko bo prikazana hitrost vozil na vmesniku, bodo uporabljene izbrane enote.
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Colsko (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Metrično (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -4748,6 +4749,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Ni mogo�
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Ni mogoče skopirati urnika...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... predaleč od prejšnjega cilja
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... letalo nima dovolj dometa
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Ni mogoče določiti časa vozilu...

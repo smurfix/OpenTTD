@@ -14,6 +14,7 @@
 #include "../fileio_type.h"
 #include "../fios.h"
 #include "../strings_type.h"
+#include "../scope.h"
 
 #include <stdarg.h>
 #include <vector>
@@ -55,6 +56,7 @@ enum SaveModeFlags : byte {
 	SMF_NONE             = 0,
 	SMF_NET_SERVER       = 1 << 0, ///< Network server save
 	SMF_ZSTD_OK          = 1 << 1, ///< Zstd OK
+	SMF_SCENARIO         = 1 << 2, ///< Scenario save
 };
 DECLARE_ENUM_AS_BIT_SET(SaveModeFlags);
 
@@ -73,6 +75,7 @@ void DoAutoOrNetsave(FiosNumberedSaveName &counter, bool threaded);
 SaveOrLoadResult SaveWithFilter(struct SaveFilter *writer, bool threaded, SaveModeFlags flags);
 SaveOrLoadResult LoadWithFilter(struct LoadFilter *reader);
 bool IsNetworkServerSave();
+bool IsScenarioSave();
 
 typedef void ChunkSaveLoadProc();
 typedef void AutolengthProc(void *arg);
@@ -82,8 +85,14 @@ void SlUnreachablePlaceholder();
 enum ChunkSaveLoadSpecialOp {
 	CSLSO_PRE_LOAD,
 	CSLSO_PRE_LOADCHECK,
+	CSLSO_SHOULD_SAVE_CHUNK,
 };
-typedef bool ChunkSaveLoadSpecialProc(uint32, ChunkSaveLoadSpecialOp);
+enum ChunkSaveLoadSpecialOpResult {
+	CSLSOR_NONE,
+	CSLSOR_LOAD_CHUNK_CONSUMED,
+	CSLSOR_DONT_SAVE_CHUNK,
+};
+typedef ChunkSaveLoadSpecialOpResult ChunkSaveLoadSpecialProc(uint32, ChunkSaveLoadSpecialOp);
 
 /** Type of a chunk. */
 enum ChunkType {
@@ -112,8 +121,10 @@ void SlExecWithSlVersion(SaveLoadVersion use_version, F proc)
 	extern SaveLoadVersion _sl_version;
 	SaveLoadVersion old_ver = _sl_version;
 	_sl_version = use_version;
+	auto guard = scope_guard([&]() {
+		_sl_version = old_ver;
+	});
 	proc();
-	_sl_version = old_ver;
 }
 
 namespace upstream_sl {
@@ -129,29 +140,29 @@ namespace upstream_sl {
 			nullptr,
 			SlUnreachablePlaceholder,
 			[]() {
-				SlExecWithSlVersion(F::GetVersion(), []() {
+				SlExecWithSlVersion(F::GetLoadVersion(), []() {
 					SlFixPointerChunkByID(id);
 				});
 			},
 			SlUnreachablePlaceholder,
 			CH_UPSTREAM_SAVE
 		};
-		ch.special_proc = [](uint32 chunk_id, ChunkSaveLoadSpecialOp op) -> bool {
+		ch.special_proc = [](uint32 chunk_id, ChunkSaveLoadSpecialOp op) -> ChunkSaveLoadSpecialOpResult {
 			assert(id == chunk_id);
 			switch (op) {
 				case CSLSO_PRE_LOAD:
-					SlExecWithSlVersion(F::GetVersion(), []() {
+					SlExecWithSlVersion(F::GetLoadVersion(), []() {
 						SlLoadChunkByID(id);
 					});
-					break;
+					return CSLSOR_LOAD_CHUNK_CONSUMED;
 				case CSLSO_PRE_LOADCHECK:
-					SlExecWithSlVersion(F::GetVersion(), []() {
+					SlExecWithSlVersion(F::GetLoadVersion(), []() {
 						SlLoadCheckChunkByID(id);
 					});
-					break;
+					return CSLSOR_LOAD_CHUNK_CONSUMED;
+				default:
+					return CSLSOR_NONE;
 			}
-
-			return true; // chunk has been consumed
 		};
 		return ch;
 	}
@@ -746,6 +757,8 @@ bool SaveloadCrashWithMissingNewGRFs();
 
 void SlResetVENC();
 void SlProcessVENC();
+
+void SlResetTNNC();
 
 extern std::string _savegame_format;
 extern bool _do_autosave;

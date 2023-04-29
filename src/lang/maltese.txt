@@ -674,6 +674,7 @@ STR_CONFIG_SETTING_ADVANCED_VEHICLE_LISTS_HELPTEXT              :Ippermetti l-uz
 ###length 3
 
 
+###setting-zero-is-special
 
 
 
@@ -709,7 +710,7 @@ STR_CONFIG_SETTING_ADVANCED_VEHICLE_LISTS_HELPTEXT              :Ippermetti l-uz
 
 
 
-###length 4
+###length 5
 
 ###length 3
 
@@ -1457,6 +1458,8 @@ STR_ERROR_CAN_T_MODIFY_THIS_ORDER                               :{WHITE}Ma tista
 STR_ERROR_CAN_T_MOVE_THIS_ORDER                                 :{WHITE}Ma tistax iċċaqlaq din l-ordni...
 STR_ERROR_CAN_T_SKIP_ORDER                                      :{WHITE}Ma tistax taqbeż din l-ordni...
 
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 

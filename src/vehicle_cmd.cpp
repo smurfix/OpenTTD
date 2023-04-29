@@ -125,7 +125,7 @@ CommandCost CmdBuildVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 	switch (type) {
 		case VEH_TRAIN:    num_vehicles = (e->u.rail.railveh_type == RAILVEH_MULTIHEAD ? 2 : 1) + CountArticulatedParts(eid, false); break;
 		case VEH_ROAD:     num_vehicles = 1 + CountArticulatedParts(eid, false); break;
-		case VEH_SHIP:     num_vehicles = 1; break;
+		case VEH_SHIP:     num_vehicles = 1 + CountArticulatedParts(eid, false); break;
 		case VEH_AIRCRAFT: num_vehicles = e->u.air.subtype & AIR_CTOL ? 2 : 3; break;
 		default: NOT_REACHED(); // Safe due to IsDepotTile()
 	}
@@ -167,7 +167,7 @@ CommandCost CmdBuildVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 			value.AddCost(CmdRefitVehicle(tile, flags, v->index, cargo | (1 << 16), nullptr));
 		} else {
 			/* Fill in non-refitted capacities */
-			if (e->type == VEH_TRAIN || e->type == VEH_ROAD) {
+			if (e->type == VEH_TRAIN || e->type == VEH_ROAD || e->type == VEH_SHIP) {
 				_returned_vehicle_capacities = GetCapacityOfArticulatedParts(eid);
 				_returned_refit_capacity = _returned_vehicle_capacities[default_cargo];
 				_returned_mail_refit_capacity = 0;
@@ -534,7 +534,7 @@ CommandCost CmdRefitVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 	}
 
 	/* Don't allow shadows and such to be refitted. */
-	if (v != front && (v->type == VEH_SHIP || v->type == VEH_AIRCRAFT)) return CMD_ERROR;
+	if (v != front && (v->type == VEH_AIRCRAFT)) return CMD_ERROR;
 
 	/* Allow auto-refitting only during loading and normal refitting only in a depot. */
 	if (!virtual_train_mode) {
@@ -553,9 +553,9 @@ CommandCost CmdRefitVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 	byte new_subtype = GB(p2, 8, 8);
 	if (new_cid >= NUM_CARGO) return CMD_ERROR;
 
-	/* For ships and aircraft there is always only one. */
-	bool only_this = HasBit(p2, 25) || front->type == VEH_SHIP || front->type == VEH_AIRCRAFT;
+	/* For aircraft there is always only one. */
 	uint8 num_vehicles = GB(p2, 16, 8);
+	bool only_this = HasBit(p2, 25) || front->type == VEH_AIRCRAFT || (front->type == VEH_SHIP && num_vehicles == 1);
 
 	CommandCost cost = RefitVehicle(v, only_this, num_vehicles, new_cid, new_subtype, flags, auto_refit);
 	if (is_virtual_train && !(flags & DC_QUERY_COST)) cost.MultiplyCost(0);
@@ -573,7 +573,7 @@ CommandCost CmdRefitVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 
 			case VEH_SHIP:
 				v->InvalidateNewGRFCacheOfChain();
-				Ship::From(v)->UpdateCache();
+				Ship::From(front)->UpdateCache();
 				break;
 
 			case VEH_AIRCRAFT:
@@ -591,7 +591,7 @@ CommandCost CmdRefitVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 			InvalidateWindowClassesData(WC_DEPARTURES_BOARD, 0);
 		}
 		/* virtual vehicles get their cargo changed by the TemplateCreateWindow, so set this dirty instead of a depot window */
-		if (HasBit(v->subtype, GVSF_VIRTUAL)) {
+		if (HasBit(front->subtype, GVSF_VIRTUAL)) {
 			SetWindowClassesDirty(WC_CREATE_TEMPLATE);
 		} else {
 			SetWindowDirty(WC_VEHICLE_DEPOT, front->tile);
@@ -947,6 +947,7 @@ CommandCost CmdToggleRefitAsTemplate(TileIndex tile, DoCommandFlag flags, uint32
 
 	if (should_execute) {
 		template_vehicle->ToggleRefitAsTemplate();
+		MarkTrainsUsingTemplateAsPendingTemplateReplacement(template_vehicle);
 
 		InvalidateWindowClassesData(WC_TEMPLATEGUI_MAIN, 0);
 	}
@@ -976,6 +977,7 @@ CommandCost CmdToggleTemplateReplaceOldOnly(TileIndex tile, DoCommandFlag flags,
 
 	if (should_execute) {
 		template_vehicle->ToggleReplaceOldOnly();
+		MarkTrainsUsingTemplateAsPendingTemplateReplacement(template_vehicle);
 
 		InvalidateWindowClassesData(WC_TEMPLATEGUI_MAIN, 0);
 	}
@@ -1241,14 +1243,18 @@ CommandCost CmdReplaceTemplateVehicle(TileIndex tile, DoCommandFlag flags, uint3
 	VehicleID template_vehicle_id = p1;
 	VehicleID virtual_train_id = p2;
 
-	TemplateVehicle* template_vehicle = TemplateVehicle::GetIfValid(template_vehicle_id);
-	Vehicle* vehicle = Vehicle::GetIfValid(virtual_train_id);
+	TemplateVehicle *template_vehicle = TemplateVehicle::GetIfValid(template_vehicle_id);
+	Vehicle *vehicle = Vehicle::GetIfValid(virtual_train_id);
 
 	if (vehicle == nullptr || vehicle->type != VEH_TRAIN) {
 		return CMD_ERROR;
 	}
 	CommandCost ret = CheckOwnership(vehicle->owner);
 	if (ret.Failed()) return ret;
+	if (template_vehicle != nullptr) {
+		ret = CheckOwnership(template_vehicle->owner);
+		if (ret.Failed()) return ret;
+	}
 
 	vehicle = vehicle->First();
 
@@ -1295,7 +1301,7 @@ CommandCost CmdReplaceTemplateVehicle(TileIndex tile, DoCommandFlag flags, uint3
 		}
 
 		// Make sure our replacements still point to the correct thing.
-		if (old_ID != template_vehicle->index) {
+		if (old_ID != INVALID_VEHICLE && old_ID != template_vehicle->index) {
 			bool reindex = false;
 			for (TemplateReplacement *tr : TemplateReplacement::Iterate()) {
 				if (tr->GetTemplateVehicleID() == old_ID) {
@@ -1303,7 +1309,12 @@ CommandCost CmdReplaceTemplateVehicle(TileIndex tile, DoCommandFlag flags, uint3
 					reindex = true;
 				}
 			}
-			if (reindex) ReindexTemplateReplacements();
+			if (reindex) {
+				ReindexTemplateReplacements();
+				MarkTrainsUsingTemplateAsPendingTemplateReplacement(template_vehicle);
+			}
+		} else if (template_vehicle->NumGroupsUsingTemplate() > 0) {
+			MarkTrainsUsingTemplateAsPendingTemplateReplacement(template_vehicle);
 		}
 
 		InvalidateWindowClassesData(WC_TEMPLATEGUI_MAIN, 0);
@@ -1618,8 +1629,8 @@ CommandCost CmdCloneVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 			}
 		} while (v != nullptr);
 
-		if ((flags & DC_EXEC) && v->type == VEH_TRAIN) w = w->GetNextVehicle();
-	} while (v->type == VEH_TRAIN && (v = v->GetNextVehicle()) != nullptr);
+		if ((flags & DC_EXEC) && (v->type == VEH_TRAIN || v->type == VEH_SHIP)) w = w->GetNextVehicle();
+	} while ((v->type == VEH_TRAIN || v->type == VEH_SHIP) && (v = v->GetNextVehicle()) != nullptr);
 
 	if (flags & DC_EXEC) {
 		/*

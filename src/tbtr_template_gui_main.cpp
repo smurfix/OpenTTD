@@ -8,45 +8,37 @@
 /** @file tbtr_template_gui_main.cpp Template-based train replacement: main GUI. */
 
 #include "stdafx.h"
-#include "command_func.h"
-#include "vehicle_gui.h"
-#include "newgrf_engine.h"
-#include "group.h"
-#include "rail.h"
-#include "strings_func.h"
-#include "window_func.h"
 #include "autoreplace_func.h"
+#include "command_func.h"
 #include "company_func.h"
-#include "engine_base.h"
-#include "window_gui.h"
-#include "viewport_func.h"
-#include "tilehighlight_func.h"
-#include "engine_gui.h"
-#include "settings_func.h"
-#include "core/geometry_func.hpp"
-#include "rail_gui.h"
-#include "network/network.h"
-#include "zoom_func.h"
-#include "textbuf_gui.h"
 #include "core/backup_type.hpp"
-
+#include "core/geometry_func.hpp"
+#include "core/pool_func.hpp"
+#include "engine_base.h"
+#include "engine_func.h"
+#include "engine_gui.h"
+#include "gfx_type.h"
+#include "group.h"
+#include "network/network.h"
+#include "newgrf_engine.h"
+#include "rail_gui.h"
+#include "rail.h"
+#include "settings_func.h"
+#include "spritecache.h"
+#include "strings_func.h"
 #include "table/sprites.h"
 #include "table/strings.h"
-
-// test creating pool -> creating vehicles
-#include "core/pool_func.hpp"
-
-#include "vehicle_gui_base.h"
-#include "vehicle_base.h"
+#include "textbuf_gui.h"
+#include "tilehighlight_func.h"
 #include "train.h"
+#include "vehicle_base.h"
 #include "vehicle_func.h"
-
-#include "gfx_type.h"
-
-#include "engine_func.h"
-
-// drawing the vehicle length based on occupied tiles
-#include "spritecache.h"
+#include "vehicle_gui_base.h"
+#include "vehicle_gui.h"
+#include "viewport_func.h"
+#include "window_func.h"
+#include "window_gui.h"
+#include "zoom_func.h"
 
 #include "tbtr_template_gui_main.h"
 #include "tbtr_template_gui_create.h"
@@ -171,11 +163,11 @@ static const NWidgetPart _widgets[] = {
 	EndContainer(),
 	// Start/Stop buttons
 	NWidget(NWID_HORIZONTAL),
-		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, TRW_WIDGET_START), SetMinimalSize(150, 12), SetDataTip(STR_TMPL_RPL_START, STR_REPLACE_ENGINE_WAGON_SELECT_HELP),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, TRW_WIDGET_START), SetMinimalSize(150, 12), SetDataTip(STR_TMPL_RPL_START, STR_TMPL_RPL_START_TOOLTIP),
 		NWidget(WWT_PANEL, COLOUR_GREY, TRW_WIDGET_TRAIN_FLUFF_LEFT), SetMinimalSize(15, 12), EndContainer(),
 		NWidget(WWT_DROPDOWN, COLOUR_GREY, TRW_WIDGET_TRAIN_RAILTYPE_DROPDOWN), SetMinimalSize(150, 12), SetDataTip(0x0, STR_REPLACE_HELP_RAILTYPE), SetResize(1, 0),
 		NWidget(WWT_PANEL, COLOUR_GREY, TRW_WIDGET_TRAIN_FLUFF_RIGHT), SetMinimalSize(16, 12), EndContainer(),
-		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, TRW_WIDGET_STOP), SetMinimalSize(150, 12), SetDataTip(STR_TMPL_RPL_STOP, STR_REPLACE_REMOVE_WAGON_HELP),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, TRW_WIDGET_STOP), SetMinimalSize(150, 12), SetDataTip(STR_TMPL_RPL_STOP, STR_TMPL_RPL_STOP_TOOLTIP),
 		NWidget(WWT_RESIZEBOX, COLOUR_GREY),
 	EndContainer(),
 };
@@ -658,7 +650,7 @@ public:
 			/* Draw the number of trains that still need to be treated by the currently selected template replacement */
 			if (tid != INVALID_TEMPLATE) {
 				const TemplateVehicle *tv = TemplateVehicle::Get(tid);
-				const int num_trains = NumTrainsNeedTemplateReplacement(g_id, tv);
+				const uint num_trains = CountsTrainsNeedingTemplateReplacement(g_id, tv);
 				// Draw number
 				SetDParam(0, num_trains);
 				int inner_right = DrawString(col2 + ScaleGUITrad(4), right - ScaleGUITrad(4), text_y, STR_JUST_INT, num_trains ? TC_ORANGE : TC_GREY, SA_RIGHT);

@@ -1934,6 +1934,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :При вклю
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Мінімальний вік компанії для торгівлі акціями: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Встановіть мінімальний вік компанії, щоб інші могли купувати та продавати акції у них.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Відсоток прибутку за часткове перевезення: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Налаштування проценту прибутку, що нараховується за часткове перевезення вантажу. За допомогою даної опції можна контролювати розподіл прибутків між учасниками багатоланкових перевезень.
@@ -2079,7 +2080,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Часто мі
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Одиниці швидкості: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Показувати швидкості в таких одиницях
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Імперські (милі/год)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Метричні (км/год)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :СІ (м/с)
@@ -2484,7 +2485,6 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Нова ко�
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Створити нову компанію і приєднатись до неї
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Це ти
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Організатор гри
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} клієнт{P "" и ів} / {NUM} компан{P ія ії ій}
 
 # Matches ConnectionType
 ###length 5
@@ -4652,7 +4652,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}Скас
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}Скасувати обмеження швидкості для виділеного пункту. Ctrl+клац видалить швидкість в усіх завданнях
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}Скасувати відхилення
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Скасувати лічильник відхилення від графіка, щоб транспорт встигнув
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Скасувати лічильник відхилення від графіка, щоб транспорт встигнув. Ctrl+клац щоб скасувати лічильник для всіх транспортів. При цьому останній транспорт стане йти за графіком, а інщі опереджати графік.
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}Авторозрахунок
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}Автоматично розрахувати розклад впродовж наступної поїздки. Ctrl+клац, щоб спробувати зберегти час очікування
@@ -5206,6 +5206,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Немо
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Неможливо скопіювати список завдань...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... занадто далеко від попереднього пункту призначення
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... літак не може летіти так далеко
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Не можна встановити розклад для транспорту...

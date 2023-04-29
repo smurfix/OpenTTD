@@ -37,6 +37,7 @@
 #include "game/game_text.hpp"
 #include "network/network_content_gui.h"
 #include "newgrf_engine.h"
+#include "core/backup_type.hpp"
 #include "core/y_combinator.hpp"
 #include <stack>
 
@@ -339,7 +340,7 @@ static char *FormatNumber(char *buff, int64 number, const char *last, const char
 	int thousands_offset = (max_digits - fractional_digits - 1) % 3;
 
 	if (number < 0) {
-		buff += seprintf(buff, last, "-");
+		if (buff != last) *buff++ = '-';
 		number = -number;
 	}
 
@@ -349,7 +350,7 @@ static char *FormatNumber(char *buff, int64 number, const char *last, const char
 		if (i == max_digits - fractional_digits) {
 			const char *decimal_separator = _settings_game.locale.digit_decimal_separator.c_str();
 			if (StrEmpty(decimal_separator)) decimal_separator = _langpack.langpack->digit_decimal_separator;
-			buff += seprintf(buff, last, "%s", decimal_separator);
+			buff = strecpy(buff, decimal_separator, last);
 		}
 
 		uint64 quot = 0;
@@ -358,7 +359,7 @@ static char *FormatNumber(char *buff, int64 number, const char *last, const char
 			num = num % divisor;
 		}
 		if ((tot |= quot) || i >= max_digits - zerofill) {
-			buff += seprintf(buff, last, "%i", (int)quot);
+			if (buff != last) *buff++ = '0' + quot; // quot is a single digit
 			if ((i % 3) == thousands_offset && i < max_digits - 1 - fractional_digits) buff = strecpy(buff, separator, last);
 		}
 
@@ -755,10 +756,11 @@ struct UnitsLong {
 
 /** Unit conversions for velocity. */
 static const Units _units_velocity[] = {
-	{ {    1,  0}, STR_UNITS_VELOCITY_IMPERIAL,     0 },
-	{ {  103,  6}, STR_UNITS_VELOCITY_METRIC,       0 },
-	{ { 1831, 12}, STR_UNITS_VELOCITY_SI,           0 },
-	{ {37888, 16}, STR_UNITS_VELOCITY_GAMEUNITS,    1 },
+	{ {       1,  0}, STR_UNITS_VELOCITY_IMPERIAL,     0 },
+	{ {     103,  6}, STR_UNITS_VELOCITY_METRIC,       0 },
+	{ {    1831, 12}, STR_UNITS_VELOCITY_SI,           0 },
+	{ {   37888, 16}, STR_UNITS_VELOCITY_GAMEUNITS,    1 },
+	{ { 7289499, 23}, STR_UNITS_VELOCITY_KNOTS,        0 },
 };
 
 /** Unit conversions for power. */
@@ -810,16 +812,28 @@ static const Units _units_height[] = {
 };
 
 /**
+ * Get index for velocity conversion units for a vehicle type.
+ * @param type VehicleType to convert velocity for.
+ * @return Index within velocity conversion units for vehicle type.
+ */
+static byte GetVelocityUnits(VehicleType type)
+{
+	if (type == VEH_SHIP || type == VEH_AIRCRAFT) return _settings_game.locale.units_velocity_nautical;
+
+	return _settings_game.locale.units_velocity;
+}
+
+/**
  * Convert the given (internal) speed to the display speed.
  * @param speed the speed to convert
  * @return the converted speed.
  */
-uint ConvertSpeedToDisplaySpeed(uint speed)
+uint ConvertSpeedToDisplaySpeed(uint speed, VehicleType type)
 {
 	/* For historical reasons we don't want to mess with the
 	 * conversion for speed. So, don't round it and keep the
 	 * original conversion factors instead of the real ones. */
-	return _units_velocity[_settings_game.locale.units_velocity].c.ToDisplay(speed, false);
+	return _units_velocity[GetVelocityUnits(type)].c.ToDisplay(speed, false);
 }
 
 /**
@@ -827,9 +841,9 @@ uint ConvertSpeedToDisplaySpeed(uint speed)
  * @param speed the speed to convert
  * @return the converted speed.
  */
-uint ConvertSpeedToUnitDisplaySpeed(uint speed)
+uint ConvertSpeedToUnitDisplaySpeed(uint speed, VehicleType type)
 {
-	uint result = ConvertSpeedToDisplaySpeed(speed);
+	uint result = ConvertSpeedToDisplaySpeed(speed, type);
 	for (uint i = 0; i < _units_velocity[_settings_game.locale.units_velocity].decimal_places; i++) {
 		result /= 10;
 	}
@@ -841,9 +855,9 @@ uint ConvertSpeedToUnitDisplaySpeed(uint speed)
  * @param speed the speed to convert
  * @return the converted speed.
  */
-uint ConvertDisplaySpeedToSpeed(uint speed)
+uint ConvertDisplaySpeedToSpeed(uint speed, VehicleType type)
 {
-	return _units_velocity[_settings_game.locale.units_velocity].c.FromDisplay(speed);
+	return _units_velocity[GetVelocityUnits(type)].c.FromDisplay(speed);
 }
 
 /**
@@ -851,9 +865,9 @@ uint ConvertDisplaySpeedToSpeed(uint speed)
  * @param speed the speed to convert
  * @return the converted speed.
  */
-uint ConvertKmhishSpeedToDisplaySpeed(uint speed)
+uint ConvertKmhishSpeedToDisplaySpeed(uint speed, VehicleType type)
 {
-	return _units_velocity[_settings_game.locale.units_velocity].c.ToDisplay(speed * 10, false) / 16;
+	return _units_velocity[GetVelocityUnits(type)].c.ToDisplay(speed * 10, false) / 16;
 }
 
 /**
@@ -861,9 +875,9 @@ uint ConvertKmhishSpeedToDisplaySpeed(uint speed)
  * @param speed the speed to convert
  * @return the converted speed.
  */
-uint ConvertDisplaySpeedToKmhishSpeed(uint speed)
+uint ConvertDisplaySpeedToKmhishSpeed(uint speed, VehicleType type)
 {
-	return _units_velocity[_settings_game.locale.units_velocity].c.FromDisplay(speed * 16, true, 10);
+	return _units_velocity[GetVelocityUnits(type)].c.FromDisplay(speed * 16, true, 10);
 }
 
 /**
@@ -1050,6 +1064,8 @@ uint ConvertDisplayQuantityToCargoQuantity(CargoID cargo, uint quantity)
 	return quantity;
 }
 
+static std::vector<const char *> _game_script_raw_strings;
+
 /**
  * Parse most format codes within a string and write the result to a buffer.
  * @param buff    The buffer to write the final string to.
@@ -1177,11 +1193,13 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 
 						sub_args.SetParam(i++, param);
 					} else {
+						s++; // skip the leading \"
 						char *g = stredup(s);
-						g[p - s] = '\0';
+						g[p - s - 1] = '\0'; // skip the trailing \"
 
 						sub_args_need_free[i] = true;
 						sub_args.SetParam(i++, (uint64)(size_t)g);
+						_game_script_raw_strings.push_back(g);
 					}
 				}
 				/* If we didn't error out, we can actually print the string. */
@@ -1191,7 +1209,10 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 				}
 
 				for (int i = 0; i < 20; i++) {
-					if (sub_args_need_free[i]) free((void *)sub_args.GetParam(i));
+					if (sub_args_need_free[i]) {
+						free((void *)sub_args.GetParam(i));
+						_game_script_raw_strings.pop_back();
+					}
 				}
 				break;
 			}
@@ -1295,8 +1316,11 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 				break;
 
 			case SCC_RAW_STRING_POINTER: { // {RAW_STRING}
-				if (game_script) break;
 				const char *raw_string = (const char *)(size_t)args->GetInt64(SCC_RAW_STRING_POINTER);
+				if (game_script && std::find(_game_script_raw_strings.begin(), _game_script_raw_strings.end(), raw_string) == _game_script_raw_strings.end()) {
+					buff = strecat(buff, "(invalid RAW_STRING parameter)", last);
+					break;
+				}
 				buff = FormatString(buff, raw_string, args, last);
 				break;
 			}
@@ -1610,11 +1634,15 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 			}
 
 			case SCC_VELOCITY: { // {VELOCITY}
-				assert(_settings_game.locale.units_velocity < lengthof(_units_velocity));
-				unsigned int decimal_places = _units_velocity[_settings_game.locale.units_velocity].decimal_places;
-				uint64 args_array[] = {ConvertKmhishSpeedToDisplaySpeed(args->GetInt64(SCC_VELOCITY)), decimal_places};
+				int64 arg = args->GetInt64(SCC_VELOCITY);
+				// Unpack vehicle type from packed argument to get desired units.
+				VehicleType vt = static_cast<VehicleType>(GB(arg, 56, 8));
+				byte units = GetVelocityUnits(vt);
+				assert(units < lengthof(_units_velocity));
+				unsigned int decimal_places = _units_velocity[units].decimal_places;
+				uint64 args_array[] = {ConvertKmhishSpeedToDisplaySpeed(GB(arg, 0, 56), vt), decimal_places};
 				StringParameters tmp_params(args_array, decimal_places ? 2 : 1, nullptr);
-				buff = FormatString(buff, GetStringPtr(_units_velocity[_settings_game.locale.units_velocity].s), &tmp_params, last);
+				buff = FormatString(buff, GetStringPtr(_units_velocity[units].s), &tmp_params, last);
 				break;
 			}
 
@@ -1785,7 +1813,11 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 				const Industry *i = Industry::GetIfValid(args->GetInt32(SCC_INDUSTRY_NAME));
 				if (i == nullptr) break;
 
-				if (_scan_for_gender_data) {
+				static bool use_cache = true;
+				if (use_cache) { // Use cached version if first call
+					AutoRestoreBackup cache_backup(use_cache, false);
+					buff = strecpy(buff, i->GetCachedName(), last);
+				} else if (_scan_for_gender_data) {
 					/* Gender is defined by the industry type.
 					 * STR_FORMAT_INDUSTRY_NAME may have the town first, so it would result in the gender of the town name */
 					StringParameters tmp_params(nullptr, 0, nullptr);
@@ -1830,7 +1862,11 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 					break;
 				}
 
-				if (!st->name.empty()) {
+				static bool use_cache = true;
+				if (use_cache) { // Use cached version if first call
+					AutoRestoreBackup cache_backup(use_cache, false);
+					buff = strecpy(buff, st->GetCachedName(), last);
+				} else if (!st->name.empty()) {
 					int64 args_array[] = {(int64)(size_t)st->name.c_str()};
 					StringParameters tmp_params(args_array);
 					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params, last);
@@ -1863,7 +1899,11 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 				const Town *t = Town::GetIfValid(args->GetInt32(SCC_TOWN_NAME));
 				if (t == nullptr) break;
 
-				if (!t->name.empty()) {
+				static bool use_cache = true;
+				if (use_cache) { // Use cached version if first call
+					AutoRestoreBackup cache_backup(use_cache, false);
+					buff = strecpy(buff, t->GetCachedName(), last);
+				} else if (!t->name.empty()) {
 					int64 args_array[] = {(int64)(size_t)t->name.c_str()};
 					StringParameters tmp_params(args_array);
 					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params, last);
@@ -1892,18 +1932,26 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 			}
 
 			case SCC_VEHICLE_NAME: { // {VEHICLE}
-				const Vehicle *v = Vehicle::GetIfValid(args->GetInt32(SCC_VEHICLE_NAME));
+				uint32 id = (uint32)args->GetInt64(SCC_VEHICLE_NAME);
+				uint8 vehicle_names = _settings_client.gui.vehicle_names;
+				if (id & VEHICLE_NAME_NO_GROUP) {
+					id &= ~VEHICLE_NAME_NO_GROUP;
+					/* Change format from long to traditional */
+					if (vehicle_names == 2) vehicle_names = 0;
+				}
+
+				const Vehicle *v = Vehicle::GetIfValid(id);
 				if (v == nullptr) break;
 
 				if (!v->name.empty()) {
 					int64 args_array[] = {(int64)(size_t)v->name.c_str()};
 					StringParameters tmp_params(args_array);
 					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params, last);
-				} else if (v->group_id != DEFAULT_GROUP && _settings_client.gui.vehicle_names != 0 && v->type < VEH_COMPANY_END) {
+				} else if (v->group_id != DEFAULT_GROUP && vehicle_names != 0 && v->type < VEH_COMPANY_END) {
 					/* The vehicle has no name, but is member of a group, so print group name */
 					uint32 group_name = v->group_id;
 					if (_settings_client.gui.show_vehicle_group_hierarchy_name) group_name |= GROUP_NAME_HIERARCHY;
-					if (_settings_client.gui.vehicle_names == 1) {
+					if (vehicle_names == 1) {
 						int64 args_array[] = {group_name, v->unitnumber};
 						StringParameters tmp_params(args_array);
 						buff = GetStringWithArgs(buff, STR_FORMAT_GROUP_VEHICLE_NAME, &tmp_params, last);
@@ -1918,7 +1966,7 @@ static char *FormatString(char *buff, const char *str_arg, StringParameters *arg
 
 					StringID string_id;
 					if (v->type < VEH_COMPANY_END) {
-						string_id = ((_settings_client.gui.vehicle_names == 1) ? STR_SV_TRAIN_NAME : STR_TRADITIONAL_TRAIN_NAME) + v->type;
+						string_id = ((vehicle_names == 1) ? STR_SV_TRAIN_NAME : STR_TRADITIONAL_TRAIN_NAME) + v->type;
 					} else {
 						string_id = STR_INVALID_VEHICLE;
 					}

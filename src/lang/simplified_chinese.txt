@@ -1808,6 +1808,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :“打开”时
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :公司可发售股份的最小已存续年份数：{STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :设置公司可发售股份的最小已存续年份数。
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :转运系统中支付的利润百分比 {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :设定在转运系统中支付给前一环节的收入百分比, 从而对收入有更多的控制权
@@ -1953,7 +1954,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :货物分配功
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :速度单位：{STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :在界面上以所选择的单位表示速度
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :英制（英里/小时）
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :公制（千米/小时）
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :国际单位制（米/秒）
@@ -2358,7 +2359,7 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :（新公司）
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}新建并加入公司
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}这是你
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}这里是游戏的主机
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM}个客户端 / {NUM}个公司
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}服务器管理员允许的当前连接的玩家数量、公司数量和最多公司数量
 
 # Matches ConnectionType
 ###length 5
@@ -3352,6 +3353,7 @@ STR_NEWGRF_ERROR_MSG_INFO                                       :{SILVER}{STRING
 STR_NEWGRF_ERROR_MSG_WARNING                                    :{RED}警告：{SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_ERROR                                      :{RED}错误：{SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_FATAL                                      :{RED}严重错误：{SILVER}{STRING}
+STR_NEWGRF_ERROR_POPUP                                          :{WHITE}NewGRF "{STRING}"发生了一个错误:{}{STRING}
 STR_NEWGRF_ERROR_VERSION_NUMBER                                 :{1:STRING} 不能与 OpenTTD 报告的 TTDPatch 版本兼容。
 STR_NEWGRF_ERROR_DOS_OR_WINDOWS                                 :{1:STRING} 是为 {2:STRING} 版 TTD 开发的。
 STR_NEWGRF_ERROR_UNSET_SWITCH                                   :{1:STRING} 应当与 {2:STRING} 配合
@@ -5081,6 +5083,18 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}不能�
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}不能复制调度计划……
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}……距离前一目的地太远
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... 飞机航行距离不足
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}没有火车站
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}没有公交车站
+STR_ERROR_NO_DOCK                                               :{WHITE}这里没有码头
+STR_ERROR_NO_AIRPORT                                            :{WHITE}没有机场/直升机场
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}没有兼容此道路类型的站点
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}没有兼容此有轨电车道路类型的站点
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}没有适合铰接式道路车辆的站点.{}铰接式道路车辆需要通过式车站，而不是港湾式车站
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}这架飞机不能降落在这个直升机场
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}这架直升机不能降落在这个机场
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}没有铁路路点
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}不能给车辆编制时间表…

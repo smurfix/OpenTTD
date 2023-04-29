@@ -82,6 +82,10 @@ STR_CONFIG_SETTING_TOWN_GROWTH_VERY_SLOW                        :Very slow
 ##after STR_ABOUT_MENU_SHOW_FRAMERATE
 STR_ABOUT_MENU_SHOW_TOGGLE_MODIFIER_KEYS                        :Modifier key window
 
+##after STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_12_MONTHS
+STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_LABEL      :Custom interval (days)
+STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM_LABEL   :Custom interval (real-time minutes)
+
 ##end-after
 
 STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :mph
@@ -130,8 +134,6 @@ STR_SMALLMAP_SCREENSHOT                                         :{BLACK}Screensh
 STR_NEWS_VEHICLE_NO_DEPOT_ORDER                                 :{WHITE}{VEHICLE} does not have a depot order in its schedule
 STR_NEWS_TRAIN_OVERSHOT_STATION                                 :{WHITE}{VEHICLE} failed to stop at {STRING1} due to excessive speed
 
-STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_LABEL      :Custom interval (days)
-STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM_LABEL   :Custom interval (real-time minutes)
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM            :Every {COMMA}{NBSP}days
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_SINGULAR   :Every day
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM         :Every {COMMA} real-time minutes
@@ -188,7 +190,9 @@ STR_CONFIG_SETTING_REALISTIC_BRAKING_ASPECT_LIMITED_HELPTEXT    :In the realisti
 
 STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT                     :Train through load maximum speed: {STRING2}
 STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT_HELPTEXT            :The maximum permitted speed for trains when through loading at a station
-STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT_VAL                 :{VELOCITY}
+
+STR_CONFIG_SETTING_RAIL_DEPOT_SPEED_LIMIT                       :Rail depot maximum speed: {STRING2}
+STR_CONFIG_SETTING_RAIL_DEPOT_SPEED_LIMIT_HELPTEXT              :The maximum permitted speed for trains when entering or exiting a rail depot
 
 STR_CONFIG_SETTING_BACK_ONE_WAY_PBS_SAFE_WAITING                :Pathfind up to back of one-way path signals: {STRING2}
 STR_CONFIG_SETTING_BACK_ONE_WAY_PBS_SAFE_WAITING_HELPTEXT       :When enabled, the YAPF train pathfinder may pathfind up to the back of a one-way path signal.
@@ -597,7 +601,7 @@ STR_CONFIG_SETTING_CITY_ZONE_4_MULT                             :Multiplier for 
 STR_CONFIG_SETTING_CITY_ZONE_4_MULT_HELPTEXT                    :Multiplier for the size of City Zone 4 (Innermost roads with street lights). This setting works best with minor alterations.
 
 STR_CONFIG_SETTING_TOWN_GROWTH_CARGO_TRANSPORTED                :Town growth speed depends on transported cargo: {STRING2}
-STR_CONFIG_SETTING_TOWN_GROWTH_CARGO_TRANSPORTED_HELPTEXT       :Percentage of town growth speed which depends on proportion of town cargo transported in the last month
+STR_CONFIG_SETTING_TOWN_GROWTH_CARGO_TRANSPORTED_HELPTEXT       :Percentage of town growth speed which depends on proportion of town cargo transported in the last month.{}This percentage of the calculated town growth speed is multiplied by the fraction of passengers and mail which were transported in the last month. This setting can only decrease the town growth speed, not increase it.
 
 STR_CONFIG_SETTING_RANDOM_ROAD_RECONSTRUCTION                   :Probability of random town road re-construction: {STRING2}
 STR_CONFIG_SETTING_RANDOM_ROAD_RECONSTRUCTION_HELPTEXT          :The probability of town roads randomly being re-constructed (0 = off, 1000 = max)
@@ -702,6 +706,9 @@ STR_CONFIG_SETTING_ADVANCE_ORDER_ON_CLONE_HELPTEXT              :After cloning a
 
 STR_CONFIG_SETTING_COPY_CLONE_ADD_TO_GROUP                      :Add vehicle to group on copy-clone: {STRING2}
 STR_CONFIG_SETTING_COPY_CLONE_ADD_TO_GROUP_HELPTEXT             :Set whether cloned vehicles which do not share orders are added to the copied vehicle's group.
+
+STR_CONFIG_SETTING_REMAIN_IF_NEXT_ORDER_SAME_STATION            :Remain in station if next order is for same station: {STRING2}
+STR_CONFIG_SETTING_REMAIN_IF_NEXT_ORDER_SAME_STATION_HELPTEXT   :If a vehicle's next order is for the same station it would be about to leave, start loading/unloading again instead of leaving.
 
 STR_CONFIG_SETTING_SCENARIO_MULTIPLE_BUILDINGS                  :Allow multiple churches/stadiums: {STRING2}
 STR_CONFIG_SETTING_SCENARIO_MULTIPLE_BUILDINGS_HELPTEXT         :Allow manually adding churches and stadiums when there is already one present in the town.
@@ -910,6 +917,7 @@ STR_TRACE_RESTRICT_TRAIN_STATUS_LOADING                         :loading
 STR_TRACE_RESTRICT_TRAIN_STATUS_WAITING                         :waiting
 STR_TRACE_RESTRICT_TRAIN_STATUS_LOST                            :lost
 STR_TRACE_RESTRICT_TRAIN_STATUS_REQUIRES_SERVICE                :requires service
+STR_TRACE_RESTRICT_TRAIN_STATUS_STOPPING_AT_STATION_WAYPOINT    :stopping at station/waypoint
 STR_TRACE_RESTRICT_REVERSE_SIG                                  :Reverse behind signal
 STR_TRACE_RESTRICT_REVERSE_SIG_CANCEL                           :Cancel reverse behind signal
 STR_TRACE_RESTRICT_SET_SPEED_RESTRICTION                        :Restrict train speed to: {VELOCITY}
@@ -1275,21 +1283,21 @@ STR_DEPARTURES_TIME_DEP                                         :{ORANGE}{DATE_W
 STR_DEPARTURES_TIME_ARR                                         :{ORANGE}{DATE_WALLCLOCK_TINY} {RED}{DOWN_ARROW}
 STR_DEPARTURES_TIME_BOTH                                        :{ORANGE}{1:DATE_WALLCLOCK_TINY} {RED}{DOWN_ARROW} {ORANGE}{0:DATE_WALLCLOCK_TINY} {GREEN}{UP_ARROW}
 STR_DEPARTURES_TERMINUS                                         :{ORANGE}{STATION}{STRING}
-STR_DEPARTURES_TERMINUS_VIA_STATION                             :{ORANGE}{STATION}{STRING} via {STATION}{STRING}
+STR_DEPARTURES_TERMINUS_VIA_STATION                             :{ORANGE}{STATION}{STRING} via {STRING}
 STR_DEPARTURES_TERMINUS_VIA                                     :{ORANGE}{STATION}{STRING} via
-STR_DEPARTURES_VIA                                              :{ORANGE}via {STATION}{STRING}
+STR_DEPARTURES_VIA                                              :{ORANGE}via {STRING}
 STR_DEPARTURES_TOC                                              :{ORANGE}{COMPANY}
 STR_DEPARTURES_GROUP                                            :{ORANGE}{GROUP}
 STR_DEPARTURES_VEH                                              :{ORANGE}{VEHICLE}
-STR_DEPARTURES_CALLING_AT                                       :{TINY_FONT}{ORANGE}Calling at:
-STR_DEPARTURES_CALLING_AT_LARGE                                 :{ORANGE}Calling at:
+STR_DEPARTURES_CALLING_AT                                       :{ORANGE}Calling at:
 STR_DEPARTURES_CALLING_AT_FIRST_STATION                         :{STATION}
 STR_DEPARTURES_CALLING_AT_STATION                               :{RAW_STRING}, {STATION}
 STR_DEPARTURES_CALLING_AT_LAST_STATION                          :{RAW_STRING} and {STATION}
-STR_DEPARTURES_CALLING_AT_LIST                                  :{TINY_FONT}{ORANGE}{RAW_STRING}.
-STR_DEPARTURES_CALLING_AT_LIST_LARGE                            :{ORANGE}{RAW_STRING}.
-STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS                   :{TINY_FONT}{ORANGE}{RAW_STRING}. This service continues to {STATION}.
-STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS_LARGE             :{ORANGE}{RAW_STRING}. This service continues to {STATION}.
+STR_DEPARTURES_CALLING_AT_LIST                                  :{ORANGE}{RAW_STRING}.
+STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS                   :{ORANGE}{RAW_STRING}. This service continues to {STATION}.
+STR_DEPARTURES_TINY                                             :{TINY_FONT}{STRING2}
+STR_DEPARTURES_VIA_DESCRIPTOR                                   :{STRING1}{STRING}
+STR_DEPARTURES_VIA_AND                                          :{STRING} and {STRING}
 
 STR_DEPARTURES_TYPE_TRAIN                                       :{ORANGE}{TRAIN}
 STR_DEPARTURES_TYPE_TRAIN_SILVER                                :{SILVER}{TRAIN}
@@ -1549,6 +1557,13 @@ STR_ORDER_RELEASE_SLOT_TOOLTIP                                  :{BLACK}The trai
 
 STR_ORDER_CHANGE_COUNTER_TOOLTIP                                :{BLACK}The counter to change
 
+STR_ORDER_LABEL_TEXT                                            :Label: {RAW_STRING}
+STR_ORDER_LABEL_TEXT_CAPTION                                    :{WHITE}Label
+STR_ORDER_LABEL_TEXT_BUTTON                                     :Label
+STR_ORDER_LABEL_TEXT_BUTTON_TOOLTIP                             :{BLACK}Change label text
+STR_ORDER_LABEL_DEPARTURES_VIA_BUTTON                           :Departure board via
+STR_ORDER_LABEL_DEPARTURES_VIA                                  :Departure board: Show as via: {STRING1}
+
 STR_ORDERS_OCCUPANCY_BUTTON                                     :{BLACK}{STRING2}%
 STR_ORDERS_OCCUPANCY_BUTTON_TOOLTIP                             :{BLACK}Show occupancy running averages{}The percentage shown is the overall average of the order occupancies
 STR_ORDERS_OCCUPANCY_LIST_TOOLTIP                               :{BLACK}Order occupancy - this shows running averages of recent occupancy levels when leaving a station, for all vehicles sharing these orders
@@ -1746,18 +1761,7 @@ STR_ERROR_DEPOT_HAS_WRONG_RAIL_TYPE                             :{WHITE}Depot ca
 
 STR_ERROR_CANNOT_MODIFY_TRACK_TRAIN_APPROACHING                 :{WHITE}Moving train approaching...
 
-STR_ERROR_NO_RAIL_STATION                                       :{WHITE}There is no railway station...
-STR_ERROR_NO_BUS_STATION                                        :{WHITE}There is no bus station...
-STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}There is no lorry station...
-STR_ERROR_NO_DOCK                                               :{WHITE}There is no dock...
-STR_ERROR_NO_AIRPORT                                            :{WHITE}There is no airport/heliport...
-STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}There are no stops with a compatible road/tram type...
-STR_ERROR_NO_STOP_ARTIC_VEH                                     :{WHITE}There are no stops which are suitable for articulated road vehicles.{}Articulated road vehicles require a drive-through stop, not a bay stop...
-STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}This plane cannot land at this heliport...
-STR_ERROR_AIRPORT_NO_HELIS                                      :{WHITE}This helicopter cannot land at this airport...
-STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}There is no railway waypoint...
-STR_ERROR_NO_ROAD_WAYPOINT                                      :{WHITE}There is no road waypoint...
-STR_ERROR_NO_BUOY                                               :{WHITE}There is no buoy...
+STR_ERROR_NO_ROAD_WAYPOINT                                      :{WHITE}There is no road waypoint
 
 # Plan related errors
 STR_ERROR_TOO_MANY_PLANS                                        :{WHITE}... too many plans
@@ -1795,6 +1799,8 @@ STR_JUST_TIME_HHMM                                              :{TIME_HHMM}
 
 STR_JUST_STRING1                                                :{STRING1}
 STR_JUST_STRING2                                                :{STRING2}
+
+STR_JUST_VELOCITY                                               :{VELOCITY}
 
 STR_BLACK_DECIMAL                                               :{BLACK}{DECIMAL}
 STR_WHITE_DATE_WALLCLOCK_LONG                                   :{WHITE}{DATE_WALLCLOCK_LONG}
@@ -1901,7 +1907,9 @@ STR_TMPL_REFIT                                                  :{BLACK}Refit
 STR_TMPL_GROUP_INFO                                             :{BLACK}Group Info: {ORANGE}
 STR_TMPL_TEMPLATE_INFO                                          :{BLACK}Template Info: {ORANGE}
 STR_TMPL_RPL_START                                              :{BLACK}Start replacing
+STR_TMPL_RPL_START_TOOLTIP                                      :{BLACK}Press to start replacement of trains in the selected group with the selected template
 STR_TMPL_RPL_STOP                                               :{BLACK}Stop replacing
+STR_TMPL_RPL_STOP_TOOLTIP                                       :{BLACK}Press to stop replacement of trains in the selected group
 STR_TMPL_TEMPLATE_OVR_VALUE                                     :{BLACK}Buying Cost: {GOLD}{CURRENCY_LONG}
 STR_TMPL_TEMPLATE_OVR_VALUE_LTBLUE                              :{BLACK}Buying Cost: {LTBLUE}{CURRENCY_LONG}
 STR_TMPL_TEMPLATE_OVR_RUNNING_COST                              :{BLACK}Estimated Running Cost: {LTBLUE}{CURRENCY_LONG}
@@ -2031,3 +2039,14 @@ STR_MODIFIER_TOGGLE_SHIFT_TOOLTIP                               :{BLACK}Click to
 STR_MODIFIER_TOGGLE_CTRL_TOOLTIP                                :{BLACK}Click to invert state of Ctrl key
 
 STR_ERROR_TUNNEL_DISALLOWED_ROAD                                :{WHITE}Tunnels not allowed for this road type
+
+STR_REFIT_SHIP_PART_DROPDOWN_TOOLTIP                            :{BLACK}Select which part of this ship to refit
+STR_REFIT_WHOLE_SHIP                                            :Whole ship
+STR_REFIT_SHIP_PART                                             :Part {NUM}
+
+STR_VERY_REDUCED                                                :Very reduced
+
+STR_STATION_VIEW_RENAME_TOOLTIP_EXTRA                           :{BLACK}{STRING}{}(Ctrl+Click "{STRING}" button to generate new default name).{}{}Ctrl+Click to exchange name with another station.
+STR_ERROR_CAN_T_EXCHANGE_STATION_NAMES                          :{WHITE}Can't exchange station names...
+STR_ERROR_STATIONS_NOT_IN_SAME_TOWN                             :{WHITE}... stations are not in the same town
+STR_ERROR_STATION_ATTACHED_TO_INDUSTRY                          :{WHITE}... station is attached to an industry

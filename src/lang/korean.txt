@@ -196,6 +196,7 @@ STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA}mph
 STR_UNITS_VELOCITY_METRIC                                       :{COMMA}km/h
 STR_UNITS_VELOCITY_SI                                           :{COMMA}m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}칸/일
+STR_UNITS_VELOCITY_KNOTS                                        :{COMMA}노트
 
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}마력
 STR_UNITS_POWER_METRIC                                          :{COMMA}마력
@@ -1809,6 +1810,9 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :이 설정을 �
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :지분 거래를 허용할 최소 회사 나이: {STRING}년
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :지분을 사고 팔기 위해 필요한 회사의 최소 나이를 설정합니다.
+STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_VALUE                   :{COMMA}년
+###setting-zero-is-special
+STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_NO_MIN                  :제한 없음
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :환승시 벌어들이는 중간 수익의 비율: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :더 많은 수익을 내기 위해, 수송 관계상 중간 구간에게 주어진 수익의 비율을 설정합니다.
@@ -1952,13 +1956,15 @@ STR_CONFIG_SETTING_DEMAND_SIZE_HELPTEXT                         :이 값을 100%
 STR_CONFIG_SETTING_SHORT_PATH_SATURATION                        :다음으로 짧은 경로를 사용하기 위한 경로의 포화도: {STRING}
 STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :종종 두 역 사이에는 여러 가지 경로가 존재할 수 있습니다. 이 경우, 화물 분배 기능은 먼저 가장 짧은 경로로 화물을 보내고, 그 경로가 포화 상태에 이르면 그 다음으로 짧은 경로를 사용하는 식으로 화물을 분배합니다. 포화도는 경로의 수송 능력과 예정 사용량을 추정하여 계산됩니다. 일단 모든 경로가 포화 상태가 되었는데 아직 수요가 남아있다면, 수송 능력이 높은 경로를 사용하면서 모든 경로를 과부하 상태로 만들게 됩니다. 하지만, 이 알고리즘은 수송량을 대부분 정확히 추정하지는 않습니다. 이 설정을 이용해서, 화물 분배 기능이 짧은 경로의 포화 상태가 몇 퍼센트가 되어야 다음으로 짧은 경로에 화물을 분배할 것인지를 지정할 수 있습니다. 과대평가된 수송량의 경우 너무 붐비는 역이 생기지 않도록 하기 위해서는 이 값을 100%보다 작게 설정하십시오.
 
-STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :속력 단위: {STRING}
+STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :속력 단위 (지상): {STRING}
+STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_NAUTICAL         :속력 단위 (해상): {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :속력를 표시할 때 선택한 단위를 사용하여 나타냅니다.
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :야드파운드법 (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :미터법 (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :국제표준규격 (m/s)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_GAMEUNITS        :게임 단위 (칸/일)
+STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_KNOTS            :노트
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_POWER                     :차량의 힘 단위: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_POWER_HELPTEXT            :출력할 차량의 힘 단위를 선택합니다.
@@ -2359,7 +2365,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(새 회사)
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}새 회사를 만듭니다
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}당신입니다
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}이 게임을 연 사람입니다
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}접속자 {NUM}명 / 회사 {NUM}개
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}접속자 {NUM}명 / 회사 {NUM}/{NUM}개
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}현재 접속 중인 클라이언트의 수 및 회사 수와 서버 관리자가 허용한 최대 회사 개수입니다
 
 # Matches ConnectionType
 ###length 5
@@ -3353,6 +3360,8 @@ STR_NEWGRF_ERROR_MSG_INFO                                       :{SILVER}{STRING
 STR_NEWGRF_ERROR_MSG_WARNING                                    :{RED}경고: {SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_ERROR                                      :{RED}오류: {SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_FATAL                                      :{RED}치명적 오류: {SILVER}{STRING}
+STR_NEWGRF_ERROR_FATAL_POPUP                                    :{WHITE}NewGRF "{STRING}"에서 치명적인 오류가 발생했습니다:{}{STRING}
+STR_NEWGRF_ERROR_POPUP                                          :{WHITE}NewGRF  "{STRING}"에서 오류가 발생했습니다:{}{STRING}
 STR_NEWGRF_ERROR_VERSION_NUMBER                                 :{1:STRING}{G 1 "은" "는"} OpenTTD에서 보고된 TTDPatch 버전에서 작동하지 않을 것입니다
 STR_NEWGRF_ERROR_DOS_OR_WINDOWS                                 :{1:STRING}{G 1 "은" "는"} {2:STRING} 버전의 TTD를 위한 것입니다
 STR_NEWGRF_ERROR_UNSET_SWITCH                                   :{1:STRING}{G 1 "은" "는"} {2:STRING}{G 1 "와" "과"} 같이 사용해야 합니다
@@ -3911,7 +3920,7 @@ STR_PURCHASE_INFO_AIRCRAFT_TYPE                                 :{BLACK}항공�
 
 ###length 3
 STR_CARGO_TYPE_FILTER_ALL                                       :모든 화물 종류
-STR_CARGO_TYPE_FILTER_FREIGHT                                   :무게
+STR_CARGO_TYPE_FILTER_FREIGHT                                   :화물
 STR_CARGO_TYPE_FILTER_NONE                                      :없음
 
 ###length VEHICLE_TYPES
@@ -4241,7 +4250,7 @@ STR_VEHICLE_INFO_WEIGHT_POWER_MAX_SPEED                         :{BLACK}무게: 
 STR_VEHICLE_INFO_WEIGHT_POWER_MAX_SPEED_MAX_TE                  :{BLACK}무게: {LTBLUE}{WEIGHT_SHORT} {BLACK}힘: {LTBLUE}{POWER}{BLACK} 최고 속력: {LTBLUE}{VELOCITY} {BLACK}최고 견인력: {LTBLUE}{FORCE}
 
 STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR                     :{BLACK}올해 이익: {LTBLUE}{CURRENCY_LONG} (작년: {CURRENCY_LONG})
-STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR_MIN_PERFORMANCE     :{BLACK}올해 이익: {LTBLUE}{CURRENCY_LONG} (작년: {CURRENCY_LONG}) {BLACK}최소 성취도: {LTBLUE}{POWER_TO_WEIGHT}
+STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR_MIN_PERFORMANCE     :{BLACK}올해 이익: {LTBLUE}{CURRENCY_LONG} (작년: {CURRENCY_LONG}) {BLACK}최소 성능: {LTBLUE}{POWER_TO_WEIGHT}
 STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}신뢰도: {LTBLUE}{COMMA}%  {BLACK}최근 점검 이후 고장 횟수: {LTBLUE}{COMMA}
 
 STR_VEHICLE_INFO_BUILT_VALUE                                    :{LTBLUE}{ENGINE} {BLACK}생산: {LTBLUE}{NUM}{BLACK} 가격: {LTBLUE}{CURRENCY_LONG}
@@ -4528,7 +4537,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}속력 �
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}선택한 경로의 최대 여행 속력 제한값을 초기화합니다. CTRL+클릭하면 모든 경로의 속력을 초기화합니다
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}지연 시간 초기화
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}이 차량의 지연 시간값을 초기화하여, 정시운행 상태로 바꿉니다
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}이 차량의 지연 시간 값을 초기화하여, 정시운행 상태로 바꿉니다. CTRL+클릭하면 전체 그룹을 초기화하여 마지막 차량은 정시에, 나머지 차량은 조착하게 됩니다.
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}자동 시간 설정
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}다음 운행시 자동으로 값을 얻어 시간표를 완성합니다. 역에 머무르는 시간값을 유지하려면 CTRL+클릭하세요
@@ -4582,6 +4591,7 @@ STR_AI_CONFIG_AILIST_TOOLTIP                                    :{BLACK}다음�
 STR_AI_CONFIG_HUMAN_PLAYER                                      :사용자 플레이어
 STR_AI_CONFIG_RANDOM_AI                                         :무작위 인공지능
 STR_AI_CONFIG_NONE                                              :(없음)
+STR_AI_CONFIG_NAME_VERSION                                      :{STRING} {YELLOW}v{NUM}
 STR_AI_CONFIG_MAX_COMPETITORS                                   :{LTBLUE}최대 경쟁자수: {ORANGE}{COMMA}
 
 STR_AI_CONFIG_MOVE_UP                                           :{BLACK}위로 이동
@@ -4595,7 +4605,7 @@ STR_AI_CONFIG_AI                                                :{SILVER}인공�
 
 STR_AI_CONFIG_CHANGE_AI                                         :{BLACK}인공지능을 선택하세요
 STR_AI_CONFIG_CHANGE_GAMESCRIPT                                 :{BLACK}게임 스크립트 선택
-STR_AI_CONFIG_CHANGE_TOOLTIP                                    :{BLACK}다른 게임 스크립트를 불러옵니다
+STR_AI_CONFIG_CHANGE_TOOLTIP                                    :{BLACK}다른 게임 스크립트를 불러옵니다. CTRL + 클릭하면 사용 가능한 모든 버전을 보여줍니다
 STR_AI_CONFIG_CONFIGURE                                         :{BLACK}설정
 STR_AI_CONFIG_CONFIGURE_TOOLTIP                                 :{BLACK}인공지능의 매개 변수를 설정합니다
 
@@ -4623,7 +4633,9 @@ STR_SCREENSHOT_HEIGHTMAP_SCREENSHOT                             :{BLACK}높이�
 STR_SCREENSHOT_MINIMAP_SCREENSHOT                               :{BLACK}미니맵 스크린 샷
 
 # Script Parameters
-STR_AI_SETTINGS_CAPTION_AI                                      :{WHITE}인공지능 매개 변수
+STR_AI_SETTINGS_CAPTION                                         :{WHITE}{STRING} 매개 변수
+STR_AI_SETTINGS_CAPTION_AI                                      :인공지능
+STR_AI_SETTINGS_CAPTION_GAMESCRIPT                              :게임 스크립트
 STR_AI_SETTINGS_CLOSE                                           :{BLACK}닫기
 STR_AI_SETTINGS_RESET                                           :{BLACK}초기화
 STR_AI_SETTINGS_SETTING                                         :{STRING}: {ORANGE}{STRING}
@@ -4732,7 +4744,7 @@ STR_ERROR_TERRAFORM_LIMIT_REACHED                               :{WHITE}... 지�
 STR_ERROR_CLEARING_LIMIT_REACHED                                :{WHITE}... 칸 제거 제한에 다다랐습니다
 STR_ERROR_TREE_PLANT_LIMIT_REACHED                              :{WHITE}... 나무 심기 제한에 다다랐습니다
 STR_ERROR_NAME_MUST_BE_UNIQUE                                   :{WHITE}이름은 유일해야 합니다
-STR_ERROR_GENERIC_OBJECT_IN_THE_WAY                             :{WHITE}중간에 {1:STRING}{G 1 "이" "가"} 있습니다.
+STR_ERROR_GENERIC_OBJECT_IN_THE_WAY                             :{WHITE}중간에 {1:STRING}{G 1 "이" "가"} 있습니다
 STR_ERROR_NOT_ALLOWED_WHILE_PAUSED                              :{WHITE}일시 정지 중에는 할 수 없습니다
 
 # Local authority errors
@@ -4900,7 +4912,7 @@ STR_ERROR_MUST_REMOVE_SIGNALS_FIRST                             :{WHITE}신호�
 STR_ERROR_NO_SUITABLE_RAILROAD_TRACK                            :{WHITE}적합한 철도 선로가 없습니다
 STR_ERROR_MUST_REMOVE_RAILROAD_TRACK                            :{WHITE}선로를 먼저 제거하십시오
 STR_ERROR_CROSSING_ON_ONEWAY_ROAD                               :{WHITE}도로가 일방통행이거나 막혔습니다
-STR_ERROR_CROSSING_DISALLOWED_RAIL                              :{WHITE}이 선로에는 건널목을 만들 수 없습니다.
+STR_ERROR_CROSSING_DISALLOWED_RAIL                              :{WHITE}이 선로에는 건널목을 만들 수 없습니다
 STR_ERROR_CROSSING_DISALLOWED_ROAD                              :{WHITE}이 도로에는 건널목을 만들 수 없습니다
 STR_ERROR_CAN_T_BUILD_SIGNALS_HERE                              :{WHITE}여기에 신호기를 건설할 수 없습니다...
 STR_ERROR_CAN_T_BUILD_RAILROAD_TRACK                            :{WHITE}여기에 선로를 건설할 수 없습니다...
@@ -5080,6 +5092,20 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}경로 �
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}경로를 복사할 수 없습니다...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... 이전 목적지에서 너무 멀리 떨어져 있습니다
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... 항공기의 항속거리가 충분하지 않습니다.
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}철도 역이 없습니다
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}버스 정류장이 없습니다
+STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}트럭 적하장이 없습니다
+STR_ERROR_NO_DOCK                                               :{WHITE}항구가 없습니다
+STR_ERROR_NO_AIRPORT                                            :{WHITE}공항/헬리포트가 없습니다
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}이 도로 종류와 호환 가능한 정류장이 없습니다
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}이 전차 선로 종류와 호환 가능한 정류장이 없습니다
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}굴절형 자동차가 이용할 수 있는 정류장이 없습니다.{}굴절형 자동차는 터미널식 정류장이 아니라 통과식 정류장을 사용해야 합니다
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}이 항공기는 이 공항에 착륙할 수 없습니다
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}이 헬리콥터는 이 공항에 착륙할 수 없습니다
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}철도 경유지가 없습니다
+STR_ERROR_NO_BUOY                                               :{WHITE}부표가 없습니다
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}차량의 시간표를 정할 수 없습니다...

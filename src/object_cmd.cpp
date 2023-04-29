@@ -171,7 +171,7 @@ void BuildObject(ObjectType type, TileIndex tile, CompanyID owner, Town *town, u
 		if (IsWaterTile(t)) ClearNeighbourNonFloodingStates(t);
 		WaterClass wc = (IsWaterTile(t) ? GetWaterClass(t) : WATER_CLASS_INVALID);
 		/* Update company infrastructure counts for objects build on canals owned by nobody. */
-		if (wc == WATER_CLASS_CANAL && owner != OWNER_NONE && (IsTileOwner(tile, OWNER_NONE) || IsTileOwner(tile, OWNER_WATER))) {
+		if (wc == WATER_CLASS_CANAL && owner != OWNER_NONE && (IsTileOwner(t, OWNER_NONE) || IsTileOwner(t, OWNER_WATER))) {
 			Company::Get(owner)->infrastructure.water++;
 			DirtyCompanyInfrastructureWindows(owner);
 		}
@@ -659,7 +659,7 @@ static void DrawTile_Object(TileInfo *ti, DrawTileProcParams params)
 	DrawBridgeMiddle(ti);
 }
 
-static int GetSlopePixelZ_Object(TileIndex tile, uint x, uint y)
+static int GetSlopePixelZ_Object(TileIndex tile, uint x, uint y, bool ground_vehicle)
 {
 	if (IsObjectType(tile, OBJECT_OWNED_LAND)) {
 		int z;

@@ -239,7 +239,7 @@ static SignalType GetDefaultSignalType()
  */
 static void GenericPlaceSignals(TileIndex tile)
 {
-	TrackBits trackbits = TrackStatusToTrackBits(GetTileTrackStatus(tile, TRANSPORT_RAIL, 0));
+	TrackBits trackbits = TrackdirBitsToTrackBits(GetTileTrackdirBits(tile, TRANSPORT_RAIL, 0));
 
 	if (trackbits & TRACK_BIT_VERT) { // N-S direction
 		trackbits = (_tile_fract_coords.x <= _tile_fract_coords.y) ? TRACK_BIT_RIGHT : TRACK_BIT_LEFT;
@@ -591,7 +591,7 @@ struct BuildRailToolbarWindow : Window {
 			if (rti->max_speed > 0) {
 				SetDParam(0, STR_TOOLBAR_RAILTYPE_VELOCITY);
 				SetDParam(1, rti->strings.toolbar_caption);
-				SetDParam(2, rti->max_speed);
+				SetDParam(2, PackVelocity(rti->max_speed, VEH_TRAIN));
 			} else {
 				SetDParam(0, rti->strings.toolbar_caption);
 			}

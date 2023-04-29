@@ -26,6 +26,7 @@
 #include "script_gui.h"
 #include "script_log.hpp"
 #include "script_scanner.hpp"
+#include "script_config.hpp"
 #include "../ai/ai.hpp"
 #include "../ai/ai_config.hpp"
 #include "../ai/ai_info.hpp"
@@ -56,19 +57,21 @@ struct ScriptListWindow : public Window {
 	CompanyID slot;                     ///< The company we're selecting a new Script for.
 	int line_height;                    ///< Height of a row in the matrix widget.
 	Scrollbar *vscroll;                 ///< Cache of the vertical scrollbar.
+	bool show_all;                      ///< Whether to show all available versions.
 
 	/**
 	 * Constructor for the window.
 	 * @param desc The description of the window.
 	 * @param slot The company we're changing the Script for.
+	 * @param show_all Whether to show all available versions.
 	 */
-	ScriptListWindow(WindowDesc *desc, CompanyID slot) : Window(desc),
-		slot(slot)
+	ScriptListWindow(WindowDesc *desc, CompanyID slot, bool show_all) : Window(desc),
+		slot(slot), show_all(show_all)
 	{
 		if (slot == OWNER_DEITY) {
-			this->info_list = Game::GetUniqueInfoList();
+			this->info_list = this->show_all ? Game::GetInfoList() : Game::GetUniqueInfoList();
 		} else {
-			this->info_list = AI::GetUniqueInfoList();
+			this->info_list = this->show_all ? AI::GetInfoList() : AI::GetUniqueInfoList();
 		}
 
 		this->CreateNestedTree();
@@ -122,11 +125,14 @@ struct ScriptListWindow : public Window {
 					DrawString(tr, this->slot == OWNER_DEITY ? STR_AI_CONFIG_NONE : STR_AI_CONFIG_RANDOM_AI, this->selected == -1 ? TC_WHITE : TC_ORANGE);
 					tr.top += this->line_height;
 				}
+				StringID str = this->show_all ? STR_AI_CONFIG_NAME_VERSION : STR_JUST_RAW_STRING;
 				int i = 0;
 				for (const auto &item : *this->info_list) {
 					i++;
 					if (this->vscroll->IsVisible(i)) {
-						DrawString(tr, item.second->GetName(), (this->selected == i - 1) ? TC_WHITE : TC_ORANGE);
+						SetDParamStr(0, item.second->GetName());
+						SetDParam(1, item.second->GetVersion());
+						DrawString(tr, str, (this->selected == i - 1) ? TC_WHITE : TC_ORANGE);
 						tr.top += this->line_height;
 					}
 				}
@@ -270,13 +276,14 @@ static WindowDesc _script_list_desc(
 );
 
 /**
- * Open the AI list window to chose an AI for the given company slot.
- * @param slot The slot to change the AI of.
+ * Open the Script list window to chose a script for the given company slot.
+ * @param slot The slot to change the script of.
+ * @param show_all Whether to show all available versions.
  */
-void ShowScriptListWindow(CompanyID slot)
+void ShowScriptListWindow(CompanyID slot, bool show_all)
 {
 	DeleteWindowByClass(WC_SCRIPT_LIST);
-	new ScriptListWindow(&_script_list_desc, slot);
+	new ScriptListWindow(&_script_list_desc, slot, show_all);
 }
 
 
@@ -479,7 +486,7 @@ struct ScriptSettingsWindow : public Window {
 								list.emplace_back(new DropDownListCharStringItem(config_item.labels->Find(i)->second, i, false));
 							}
 
-							ShowDropDownListAt(this, std::move(list), old_val, -1, wi_rect, COLOUR_ORANGE, true);
+							ShowDropDownListAt(this, std::move(list), old_val, -1, wi_rect, COLOUR_ORANGE);
 						}
 					}
 				} else if (IsInsideMM(x, 0, SETTING_BUTTON_WIDTH)) {
@@ -506,7 +513,7 @@ struct ScriptSettingsWindow : public Window {
 				} else if (!bool_item && !config_item.complete_labels) {
 					/* Display a query box so users can enter a custom value. */
 					SetDParam(0, old_val);
-					ShowQueryString(STR_JUST_INT, STR_CONFIG_SETTING_QUERY_CAPTION, 10, this, CS_NUMERAL, QSF_NONE);
+					ShowQueryString(STR_JUST_INT, STR_CONFIG_SETTING_QUERY_CAPTION, INT32_DIGITS_WITH_SIGN_AND_TERMINATION, this, CS_NUMERAL_SIGNED, QSF_NONE);
 				}
 				this->SetDirty();
 				break;
@@ -874,9 +881,7 @@ struct ScriptDebugWindow : public Window {
 		}
 		if (this->autoscroll) {
 			int scroll_pos = std::max(0, log->used - this->vscroll->GetCapacity());
-			if (scroll_pos != this->vscroll->GetPosition()) {
-				this->vscroll->SetPosition(scroll_pos);
-
+			if (this->vscroll->SetPosition(scroll_pos)) {
 				/* We need a repaint */
 				this->SetWidgetDirty(WID_SCRD_SCROLLBAR);
 				this->SetWidgetDirty(WID_SCRD_LOG_PANEL);

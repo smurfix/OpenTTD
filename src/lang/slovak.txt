@@ -1274,7 +1274,9 @@ STR_CONFIG_SETTING_HORIZONTAL_POS_RIGHT                         :vpravo
 
 STR_CONFIG_SETTING_MAXIMUM_INITIAL_LOAN                         :Maximálny počiatočný úver: {STRING}
 STR_CONFIG_SETTING_MAXIMUM_INITIAL_LOAN_HELPTEXT                :Maximálna množstvo peňazí ktoré si môže spoločnosť požičať (bez inflácie)
+STR_CONFIG_SETTING_MAXIMUM_INITIAL_LOAN_VALUE                   :{CURRENCY_LONG}
 ###setting-zero-is-special
+STR_CONFIG_SETTING_MAXIMUM_INITIAL_LOAN_DISABLED                :Žiadny úver {RED}Vyžaduje Herný skript na poskytnutie počiatočných prostriedkov
 
 STR_CONFIG_SETTING_INTEREST_RATE                                :Úroková sadzba: {STRING}
 STR_CONFIG_SETTING_INTEREST_RATE_HELPTEXT                       :Úroková sadzba úveru; kontroluje infláciu ak je povolená
@@ -1874,6 +1876,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Ak je zapnuté,
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Minimálny vek spoločnosti na obchodovanie s podielmi: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Určuje minimálny vek spoločnosti na to, aby od nej mohli ostatné spoločnosti kupovať a predavať podiely.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Percentáž zisku na zaplatenie podávacieho systému: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Percento príjmov dať na strednú ´nohu´ vo feeder systémoch, získate väčšiu kontrolu nad príjmami
@@ -2019,7 +2022,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Často je viac 
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Jednotky rýchlosti: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Vždy, keď sa zobrazí rýchlosť v užívateľskom rozhraní, zobrazí sa vo vybraných jednotkách
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Imperiálne (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Metrické (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -2424,7 +2427,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Nová spoločn
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Založiť novú spoločnosť a pripojiť sa k nej
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Toto ste vy
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Toto je hosť hry
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} klient{P "" "i" "ov"} / {NUM} spoločnos{P "ť" "ti" "tí"}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} klient{P "" "i" "ov"} - {NUM}/{NUM} spoločnos{P "ť" "ti" "tí"}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}Počet aktuálne pripojených klientov, počet spoločností a maximálny počet spoločností povolený správcom servera
 
 # Matches ConnectionType
 ###length 5
@@ -3418,6 +3422,8 @@ STR_NEWGRF_ERROR_MSG_INFO                                       :{SILVER}{STRING
 STR_NEWGRF_ERROR_MSG_WARNING                                    :{RED}Upozornenie: {SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_ERROR                                      :{RED}Chyba: {SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_FATAL                                      :{RED}Kritická chyba: {SILVER}{STRING}
+STR_NEWGRF_ERROR_FATAL_POPUP                                    :{WHITE}NewGRF "{STRING}" vrátil fatálnu chybu:{}{STRING}
+STR_NEWGRF_ERROR_POPUP                                          :{WHITE}NewGRF "{STRING}" vrátil chybu:{}{STRING}
 STR_NEWGRF_ERROR_VERSION_NUMBER                                 :{1:STRING} nebude fungovať s TTDPatch verziou nahlásenou OpenTTD.
 STR_NEWGRF_ERROR_DOS_OR_WINDOWS                                 :{1:STRING} je pre verziu {2:STRING} TTD
 STR_NEWGRF_ERROR_UNSET_SWITCH                                   :{1:STRING} je navrhnutý pre použitie s {2:STRING}
@@ -4593,7 +4599,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}Odstrán
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}Odstrániť obmedzenie maximánej rýchlosti označeného príkazu. Ctrl+klik vymaže rýchlosť pre všetky príkazy
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}Reset meškania
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Vynulovať počítadlo meškania, takže vozidlo pôjde presne
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Vynulovať počítadlo meškania, takže vozidlo pôjde presne. Ctrl+klik vynuluje celú skupinu, takže posledné vozidlo bude bez meškania a ostatné prídu skôr
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}Automaticky vyplniť
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}Vyplniť časový plán automaticky s hodnotami z nasledujúcej trasy. Ctrl+klik - pokúsiť sa udržať čakacie doby
@@ -4688,7 +4694,9 @@ STR_SCREENSHOT_HEIGHTMAP_SCREENSHOT                             :{BLACK}Snímka 
 STR_SCREENSHOT_MINIMAP_SCREENSHOT                               :{BLACK}Snímka minimapy
 
 # Script Parameters
-STR_AI_SETTINGS_CAPTION_AI                                      :{WHITE}Parametre AI
+STR_AI_SETTINGS_CAPTION                                         :{WHITE}{STRING} Parametre
+STR_AI_SETTINGS_CAPTION_AI                                      :AI
+STR_AI_SETTINGS_CAPTION_GAMESCRIPT                              :Herný skript
 STR_AI_SETTINGS_CLOSE                                           :{BLACK}Zavrieť
 STR_AI_SETTINGS_RESET                                           :{BLACK}Resetovať
 STR_AI_SETTINGS_SETTING                                         :{STRING}: {ORANGE}{STRING}
@@ -5145,6 +5153,20 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Nie je m
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Nemožno kopírovať zoznam príkazov ...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... príliš ďaleko z predchádzajúceho cieľa
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... lietadlo nemá dostatočný dosah
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}Nenašla sa žiadna železničná stanica
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}Nenašla sa žiadna autobusová stanica
+STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}Nenašla sa žiadna nakladacia rampa
+STR_ERROR_NO_DOCK                                               :{WHITE}Nenašiel sa žiadny prístav
+STR_ERROR_NO_AIRPORT                                            :{WHITE}Nenašlo sa žiadne letisko/heliport
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}Nenašli sa žiadne zastávky s kompatibilným typom cesty
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}Nenašli sa žiadne zastávky s kompatibilným typom električky
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}Nenašli sa žiadne zastávky vhodné pre kĺbové cestné vozidlá.{}Kĺbové cestné vozidlá vyžadujú prejazdovú zastávku, nie zastávku v zálive
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}Toto lietadlo nemôže pristáť na tomto heliporte
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}Táto helikoptéra nemôže pristáť na tomto letisku
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}Nenašiel sa žiadny železničný smerový bod
+STR_ERROR_NO_BUOY                                               :{WHITE}Nenašla sa žiadna bója
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Vozidlu nie je možné zadať cestovný poriadok ...

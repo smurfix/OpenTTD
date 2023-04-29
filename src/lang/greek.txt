@@ -1912,6 +1912,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Όταν είν
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Ελάχιστη ηλικία εταιρίας για συναλλαγή μετοχών: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Ορίστε την ελάχιστη ηλικία μίας εταιρίας για να μπορούν άλλοι να αγοράσουν ή να πουλήσουν μετοχές από αυτές.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Το ποσοστό κέρδους από το σκέλος μεταφοράς στα συστήματα τροφοδότησης: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Το ποσοστό του εισοδήματος που δίνεται στα ενδιάμεσα σκέλη των συστημάτων τροφοδότησης, δίνοντας μεγαλύτερο έλεγχο στο εισόδημα
@@ -2057,7 +2058,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Συχνά υπ
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Μονάδες μέτρησης ταχύτητας: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Όποτε εμφανίζεται μια ταχύτητα στη διεπαφή χρήστη, να εμφανίζεται στην επιλεγμένη μονάδα
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Αυτοκρατορικό (μίλια/ώρα)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Μετρικό (χλμ/ώρα)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -2462,7 +2463,6 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Νέα ετα�
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Δημιουργήστε μία νέα εταιρία και συμμετέχετε σε αυτήν
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Αυτός/η είστε εσείς
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Αυτός/η είναι ο/η οικοδεσπότης του παιχνιδιού
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} πελάτης/ες / {NUM} εταιρία/ες
 
 # Matches ConnectionType
 ###length 5
@@ -5185,6 +5185,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Δεν �
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Αδύνατο να αντιγραφεί η λίστα εντολών...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... πολύ μακριά από τον προηγούμενο προορισμό
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... δεν επαρκεί η εμβέλεια του αεροσκάφους
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Δεν μπορεί να δρομολογηθεί το όχημα...

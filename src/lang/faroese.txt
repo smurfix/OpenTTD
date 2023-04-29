@@ -1603,6 +1603,7 @@ STR_CONFIG_SETTING_STARTING_YEAR                                :Byrjunar ár: {
 STR_CONFIG_SETTING_ALLOW_SHARES                                 :Loyv keypi av partabrøvum frá øðrum fyritøkum: {STRING}
 STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Um gilda, er loyvt at keypa og selja fyritøku partabrøv. Partabrøv verða einans tøk hjá fyritøkum ið hava rokki ein ávísan aldur
 
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Prosentpartur av deilvinningi at gjalda í veitingar kervum: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Prosentpartur av inntøku ið verður útgoldi til millum liðini í veitara kervum (umskipan), gevur betri ræðið í inntøkuni
@@ -1680,7 +1681,7 @@ STR_CONFIG_SETTING_LARGER_TOWNS_DISABLED                        :Eingin
 
 
 
-###length 4
+###length 5
 
 ###length 3
 
@@ -4113,6 +4114,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Kann ikk
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Kann ikki avrita boðslista...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... ov langt frá fyrra staði
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... flogfarið røkkur ikki
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Kann ikki gera tíðarætlan fyri akfrar...

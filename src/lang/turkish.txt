@@ -1809,6 +1809,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Etkinleştirild
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Hisse satmak için gerekli minimum şirket yaşı: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Bir şirketin hisselerinin satılabileceği ve diğer şirketlerin alabileceği minimum şirket yaşını belirleyin.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Besleme sistemlerinde, bölümlerden elde edilen kardan ödenecek yüzde: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Besleme sistemlerinde, sistemi oluşturan ara bölümlere verilen kar yüzdesi. Böylece kar miktarı üzerinde daha fazla kontrol elde edilmiş olur
@@ -1954,7 +1955,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Sıklıkla iki 
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Hız birimi: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Kullanıcı arayüzünde hız görüntülendiğinde, bunu seçili birimde göster.
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Imperial (İngiliz ölçü birimleri) (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Metrik (km/s)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (Uluslararası Ölçüm Sistemi) (m/s)
@@ -2359,7 +2360,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Yeni şirket)
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Yeni bir şirket oluştur ve ona katıl
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Bu sensin
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Bu, oyunun ev sahibi
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} oyuncu / {NUM} şirket
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} oyuncu - {NUM}/{NUM} şirket
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}Şu anda bağlı olan istemci sayısı, şirket sayısı ve sunucu sahibi tarafından izin verilen maksimum şirket sayısı
 
 # Matches ConnectionType
 ###length 5
@@ -3353,6 +3355,8 @@ STR_NEWGRF_ERROR_MSG_INFO                                       :{SILVER}{STRING
 STR_NEWGRF_ERROR_MSG_WARNING                                    :{RED}Uyarı: {SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_ERROR                                      :{RED}Hata: {SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_FATAL                                      :{RED}Ölümcül hata: {SILVER}{STRING}
+STR_NEWGRF_ERROR_FATAL_POPUP                                    :{WHITE}NewGRF "{STRING}" bir ölümcül hata bildirdi:{}{STRING}
+STR_NEWGRF_ERROR_POPUP                                          :{WHITE}NewGRF "{STRING}" bir ölümcül hata bildirdi:{}{STRING}
 STR_NEWGRF_ERROR_VERSION_NUMBER                                 :{1:STRING} OpenTTD tarafından belirtilen TTDPatch sürümüyle çalışmayacaktır
 STR_NEWGRF_ERROR_DOS_OR_WINDOWS                                 :{1:STRING}, TTD'nin {2:STRING} sürümü içindir
 STR_NEWGRF_ERROR_UNSET_SWITCH                                   :{1:STRING}, {2:STRING} ile kullanılmak için tasarlanmıştır
@@ -4528,7 +4532,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}Hız Sı
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}Seçili emrin azami seyahat hızını sil. Ctrl+Tıklama bütün emirlerin azami hızlarını siler
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}Gecikme sayacını sıfırla
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Geç kalma sayacını sıfırla, böylece araç zamanında gitmiş sayılacak
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Geç kalma sayacını sıfırla, böylece araç zamanında gitmiş sayılacak. Ctrl ile tıklamak bütün grubu sıfırlar böylece en son araç zamanında ve diğer tüm araçlar erken gelmiş sayılacak.
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}Otomatik doldur
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}Zaman tablosunu bir sonraki yolculuktaki değerlerle otomatik doldur Bekleme sürelerini tutmak için Ctrl ile tıklanır
@@ -4623,7 +4627,9 @@ STR_SCREENSHOT_HEIGHTMAP_SCREENSHOT                             :{BLACK}Yüksekl
 STR_SCREENSHOT_MINIMAP_SCREENSHOT                               :{BLACK}Küçük harita ekran görüntüsü
 
 # Script Parameters
-STR_AI_SETTINGS_CAPTION_AI                                      :{WHITE}YZ Parametreleri
+STR_AI_SETTINGS_CAPTION                                         :{WHITE}{STRING} Parametreler
+STR_AI_SETTINGS_CAPTION_AI                                      :YZ
+STR_AI_SETTINGS_CAPTION_GAMESCRIPT                              :Oyun Betiği
 STR_AI_SETTINGS_CLOSE                                           :{BLACK}Kapat
 STR_AI_SETTINGS_RESET                                           :{BLACK}Yeniden başlat
 STR_AI_SETTINGS_SETTING                                         :{STRING}: {ORANGE}{STRING}
@@ -5080,6 +5086,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Paylaş�
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Talimat listesi kopyalanamiyor...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... önceki hedeften çok uzak
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... uçağın menzili yeterli değil
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Aracın zaman çizelgesi oluşturulamıyor...

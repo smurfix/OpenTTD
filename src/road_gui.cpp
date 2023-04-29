@@ -463,7 +463,7 @@ struct BuildRoadToolbarWindow : Window {
 			if (this->rti->max_speed > 0) {
 				SetDParam(0, STR_TOOLBAR_RAILTYPE_VELOCITY);
 				SetDParam(1, this->rti->strings.toolbar_caption);
-				SetDParam(2, this->rti->max_speed / 2);
+				SetDParam(2, PackVelocity(this->rti->max_speed / 2, VEH_ROAD));
 			} else {
 				SetDParam(0, this->rti->strings.toolbar_caption);
 			}
@@ -1475,9 +1475,11 @@ public:
 
 	void UpdateBuildingHeight(uint height)
 	{
-		if (height > this->building_height) {
+		height = std::max<uint>(2, height);
+		if (height != this->building_height) {
+			int y_delta = (height - this->building_height) * ScaleGUITrad(8) * 2;
 			this->building_height = height;
-			this->ReInit();
+			this->ReInit(0, y_delta);
 		}
 	}
 
@@ -1568,12 +1570,12 @@ public:
 					int x = (r.Width()  - ScaleSpriteTrad(64)) / 2 + ScaleSpriteTrad(31);
 					int y = (r.Height() + ScaleSpriteTrad(48)) / 2 - ScaleSpriteTrad(31);
 					if (spec != nullptr && spec->height > 2) y += (spec->height - 2) * ScaleSpriteTrad(4);
-					if (spec == nullptr || disabled) {
+					if (spec == nullptr || (disabled && !HasBit(spec->flags, RSF_BUILD_MENU_DRAW_DISABLED_VIEWS))) {
 						StationPickerDrawSprite(x, y, st, INVALID_RAILTYPE, _cur_roadtype, widget - WID_BROS_STATION_NE);
-						if (disabled) GfxFillRect(1, 1, r.Width() - 1, r.Height() - 1, PC_BLACK, FILLRECT_CHECKER);
 					} else {
 						DrawRoadStopTile(x, y, _cur_roadtype, spec, st, widget - WID_BROS_STATION_NE);
 					}
+					if (disabled) GfxFillRect(1, 1, r.Width() - 1, r.Height() - 1, PC_BLACK, FILLRECT_CHECKER);
 				}
 				break;
 			}
@@ -1624,6 +1626,9 @@ public:
 	void OnResize() override {
 		if (this->vscrollList != nullptr) {
 			this->vscrollList->SetCapacityFromWidget(this, WID_BROS_NEWST_LIST);
+		}
+		if (this->vscrollMatrix != nullptr) {
+			this->GetWidget<NWidgetMatrix>(WID_BROS_MATRIX)->SetClicked(_roadstop_gui_settings.roadstop_type);
 		}
 	}
 

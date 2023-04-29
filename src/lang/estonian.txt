@@ -1864,6 +1864,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Kui on aktiveer
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Ettevõtte vanuse alampiir aktsiakauplemiseks: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Määra alampiir ettevõtte vanusele, enne kui teised saavad selle aktsiaid osta ja müüa.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Protsent tuludest mis läheb 'kanna edasi' süsteemis alumistesse lülidesse: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Protsent tuludest mis antakse edasi 'kanna edasi' süsteemidele. Lubab täpsemalt jaotada kasumit erinevate harude vahel.
@@ -2009,7 +2010,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Kauba vedamisel
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Kiirusühikud: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Liideses näidatakse kiirust valitud mõõdustikus
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Inglise mõõdustik (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Meetermõõdustik (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI-süsteem (m/s)
@@ -2415,7 +2416,6 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Uus ettevõte)
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Loo uus ettevõte ja liitu sellega
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Tema oled sina
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Tema on mängu korraldaja
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} klient{P "" i} / {NUM} ettevõt{P e teid}
 
 # Matches ConnectionType
 ###length 5
@@ -5141,6 +5141,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Korraldu
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Sihtpunktide nimekirja ei saa kopeerida...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... liiga kaugel eelmisest sihtpunktist
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... ebapiisav õhusõiduki lennuulatus
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Sõidukile ei saa graafikut määrata...

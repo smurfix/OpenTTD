@@ -95,7 +95,7 @@
 {
 	if (!IsValidIndustryType(industry_type)) return false;
 
-	const bool deity = ScriptObject::GetCompany() == OWNER_DEITY;
+	const bool deity = ScriptCompanyMode::IsDeity();
 	if (::GetIndustryProbabilityCallback(industry_type, deity ? IACT_RANDOMCREATION : IACT_USERCREATION, 1) == 0) return false;
 	if (deity) return true;
 	if (!::GetIndustrySpec(industry_type)->IsRawIndustry()) return true;
@@ -108,7 +108,7 @@
 {
 	if (!IsValidIndustryType(industry_type)) return false;
 
-	const bool deity = ScriptObject::GetCompany() == OWNER_DEITY;
+	const bool deity = ScriptCompanyMode::IsDeity();
 	if (!deity && !::GetIndustrySpec(industry_type)->IsRawIndustry()) return false;
 	if (::GetIndustryProbabilityCallback(industry_type, deity ? IACT_RANDOMCREATION : IACT_USERCREATION, 1) == 0) return false;
 
@@ -118,6 +118,7 @@
 
 /* static */ bool ScriptIndustryType::BuildIndustry(IndustryType industry_type, TileIndex tile)
 {
+	EnforceDeityOrCompanyModeValid(false);
 	EnforcePrecondition(false, CanBuildIndustry(industry_type));
 	EnforcePrecondition(false, ScriptMap::IsValidTile(tile));
 
@@ -128,6 +129,7 @@
 
 /* static */ bool ScriptIndustryType::ProspectIndustry(IndustryType industry_type)
 {
+	EnforceDeityOrCompanyModeValid(false);
 	EnforcePrecondition(false, CanProspectIndustry(industry_type));
 
 	uint32 seed = ScriptBase::Rand();
@@ -155,10 +157,10 @@
 	return (::GetIndustrySpec(industry_type)->behaviour & INDUSTRYBEH_AI_AIRSHIP_ROUTES) != 0;
 }
 
-/* static */ IndustryType ScriptIndustryType::ResolveNewGRFID(uint32 grfid, uint16 grf_local_id)
+/* static */ IndustryType ScriptIndustryType::ResolveNewGRFID(SQInteger grfid, SQInteger grf_local_id)
 {
 	EnforcePrecondition(INVALID_INDUSTRYTYPE, IsInsideBS(grf_local_id, 0x00, NUM_INDUSTRYTYPES_PER_GRF));
 
-	grfid = BSWAP32(grfid); // Match people's expectations.
+	grfid = BSWAP32(GB(grfid, 0, 32)); // Match people's expectations.
 	return _industry_mngr.GetID(grf_local_id, grfid);
 }

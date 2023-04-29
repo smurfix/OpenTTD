@@ -22,6 +22,7 @@
 #include "game_config.hpp"
 #include "game_info.hpp"
 #include "../script/script_gui.h"
+#include "../script_config.hpp"
 #include "../table/strings.h"
 
 #include "../safeguards.h"
@@ -253,12 +254,12 @@ struct GSConfigWindow : public Window {
 		switch (widget) {
 			case WID_GSC_GSLIST: {
 				this->InvalidateData();
-				if (click_count > 1 && UserIsAllowedToChangeGameScript()) ShowScriptListWindow((CompanyID)OWNER_DEITY);
+				if (click_count > 1 && UserIsAllowedToChangeGameScript()) ShowScriptListWindow((CompanyID)OWNER_DEITY, _ctrl_pressed);
 				break;
 			}
 
 			case WID_GSC_CHANGE:  // choose other Game Script
-				ShowScriptListWindow((CompanyID)OWNER_DEITY);
+				ShowScriptListWindow((CompanyID)OWNER_DEITY, _ctrl_pressed);
 				break;
 
 			case WID_GSC_CONTENT_DOWNLOAD:
@@ -318,7 +319,7 @@ struct GSConfigWindow : public Window {
 								list.emplace_back(new DropDownListCharStringItem(config_item.labels->Find(i)->second, i, false));
 							}
 
-							ShowDropDownListAt(this, std::move(list), old_val, -1, wi_rect, COLOUR_ORANGE, true);
+							ShowDropDownListAt(this, std::move(list), old_val, -1, wi_rect, COLOUR_ORANGE);
 						}
 					}
 				} else if (IsInsideMM(x, 0, SETTING_BUTTON_WIDTH)) {
@@ -345,7 +346,7 @@ struct GSConfigWindow : public Window {
 				} else if (!bool_item && !config_item.complete_labels) {
 					/* Display a query box so users can enter a custom value. */
 					SetDParam(0, old_val);
-					ShowQueryString(STR_JUST_INT, STR_CONFIG_SETTING_QUERY_CAPTION, 10, this, CS_NUMERAL, QSF_NONE);
+					ShowQueryString(STR_JUST_INT, STR_CONFIG_SETTING_QUERY_CAPTION, INT32_DIGITS_WITH_SIGN_AND_TERMINATION, this, CS_NUMERAL_SIGNED, QSF_NONE);
 				}
 				this->SetDirty();
 				break;

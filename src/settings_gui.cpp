@@ -1791,6 +1791,7 @@ static SettingsContainer &GetSettingsTree()
 		SettingsPage *localisation = main->Add(new SettingsPage(STR_CONFIG_SETTING_LOCALISATION));
 		{
 			localisation->Add(new SettingEntry("locale.units_velocity"));
+			localisation->Add(new SettingEntry("locale.units_velocity_nautical"));
 			localisation->Add(new SettingEntry("locale.units_power"));
 			localisation->Add(new SettingEntry("locale.units_weight"));
 			localisation->Add(new SettingEntry("locale.units_volume"));
@@ -2043,6 +2044,7 @@ static SettingsContainer &GetSettingsTree()
 			company->Add(new SettingEntry("company.infra_others_buy_in_depot[3]"));
 			company->Add(new SettingEntry("company.advance_order_on_clone"));
 			company->Add(new SettingEntry("company.copy_clone_add_to_group"));
+			company->Add(new SettingEntry("company.remain_if_next_order_same_station"));
 		}
 
 		SettingsPage *accounting = main->Add(new SettingsPage(STR_CONFIG_SETTING_ACCOUNTING));
@@ -2122,6 +2124,7 @@ static SettingsContainer &GetSettingsTree()
 			limitations->Add(new SettingEntry("vehicle.max_ships"));
 			limitations->Add(new SettingEntry("vehicle.max_train_length"));
 			limitations->Add(new SettingEntry("vehicle.through_load_speed_limit"));
+			limitations->Add(new SettingEntry("vehicle.rail_depot_speed_limit"));
 			limitations->Add(new SettingEntry("station.station_spread"));
 			limitations->Add(new SettingEntry("station.distant_join_stations"));
 			limitations->Add(new SettingEntry("construction.road_stop_on_town_road"));
@@ -2742,7 +2745,7 @@ struct GameSettingsWindow : Window {
 						}
 					}
 
-					ShowDropDownListAt(this, std::move(list), value, -1, wi_rect, COLOUR_ORANGE, true);
+					ShowDropDownListAt(this, std::move(list), value, -1, wi_rect, COLOUR_ORANGE);
 				}
 			}
 			this->SetDirty();
@@ -2803,7 +2806,7 @@ struct GameSettingsWindow : Window {
 				int64 value64 = value;
 				/* Show the correct currency or velocity translated value */
 				if (sd->flags & SF_GUI_CURRENCY) value64 *= _currency->rate;
-				if (sd->flags & SF_GUI_VELOCITY) value64 = ConvertKmhishSpeedToDisplaySpeed((uint)value64);
+				if (sd->flags & SF_GUI_VELOCITY) value64 = ConvertKmhishSpeedToDisplaySpeed((uint)value64, VEH_TRAIN);
 
 				this->valuewindow_entry = pe;
 				if (sd->flags & SF_DECIMAL1 || (sd->flags & SF_GUI_VELOCITY && _settings_game.locale.units_velocity == 3)) {
@@ -2854,7 +2857,7 @@ struct GameSettingsWindow : Window {
 			value = (int32)ClampToI32(llvalue);
 
 			/* Save the correct velocity-translated value */
-			if (sd->flags & SF_GUI_VELOCITY) value = ConvertDisplaySpeedToKmhishSpeed(value);
+			if (sd->flags & SF_GUI_VELOCITY) value = ConvertDisplaySpeedToKmhishSpeed(value, VEH_TRAIN);
 		} else {
 			value = sd->def;
 		}

@@ -180,7 +180,7 @@ bool IsPossibleDockingTile(TileIndex t)
 		case MP_RAILWAY:
 		case MP_STATION:
 		case MP_TUNNELBRIDGE:
-			return TrackStatusToTrackBits(GetTileTrackStatus(t, TRANSPORT_WATER, 0)) != TRACK_BIT_NONE;
+			return TrackdirBitsToTrackBits(GetTileTrackdirBits(t, TRANSPORT_WATER, 0)) != TRACK_BIT_NONE;
 
 		default:
 			return false;
@@ -513,7 +513,7 @@ CommandCost CmdBuildCanal(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
 
 		if (flags & DC_EXEC) {
 			if (IsTileType(current_tile, MP_WATER) && IsCanal(current_tile)) {
-				Owner owner = GetTileOwner(tile);
+				Owner owner = GetTileOwner(current_tile);
 				if (Company::IsValidID(owner)) {
 					Company::Get(owner)->infrastructure.water--;
 					DirtyCompanyInfrastructureWindows(owner);
@@ -537,14 +537,11 @@ CommandCost CmdBuildCanal(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
 					FALLTHROUGH;
 
 				default:
-					/* If we overbuild a water object with a canal, don't update the infrastructure total. */
-					bool is_existing_canal = IsTileType(current_tile, MP_WATER) && IsCanal(current_tile);
-					if (Company::IsValidID(_current_company) && !is_existing_canal) {
+					MakeCanal(current_tile, _current_company, Random());
+					if (Company::IsValidID(_current_company)) {
 						Company::Get(_current_company)->infrastructure.water++;
 						DirtyCompanyInfrastructureWindows(_current_company);
 					}
-
-					MakeCanal(current_tile, _current_company, Random());
 					break;
 			}
 			MarkTileDirtyByTile(current_tile);
@@ -1000,7 +997,7 @@ void DrawShipDepotSprite(int x, int y, Axis axis, DepotPart part)
 }
 
 
-static int GetSlopePixelZ_Water(TileIndex tile, uint x, uint y)
+static int GetSlopePixelZ_Water(TileIndex tile, uint x, uint y, bool ground_vehicle)
 {
 	int z;
 	Slope tileh = GetTilePixelSlope(tile, &z);
@@ -1327,7 +1324,7 @@ void TileLoop_Water(TileIndex tile)
 	if (IsTileType(tile, MP_WATER)) AmbientSoundEffect(tile);
 
 	/* At day lengths > 4, handle flooding in auxiliary tile loop */
-	if (_settings_game.economy.day_length_factor > 4) return;
+	if (_settings_game.economy.day_length_factor > 4 && _game_mode != GM_EDITOR) return;
 
 	if (IsNonFloodingWaterTile(tile)) return;
 

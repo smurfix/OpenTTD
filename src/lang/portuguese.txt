@@ -1809,6 +1809,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Quando ativo, p
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Idade mínima da empresa para negociar ações: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Definir a idade mínima de uma companhia a partir da qual outros jogadores poderão comprar ou vender ações da mesma.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Percentagem do lucro do serviço a pagar em trajectos de um transporte que alimenta outro transporte: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Percentagem da receita dada a trajectos intermédios em sistemas em que um transporte alimenta outro, dando maior controlo sobre a receita
@@ -1954,7 +1955,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Frequentemente 
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Unidades de velocidade: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Quando uma velocidade é mostrada no interface de utilizador, mostrar na unidade selecionada
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Imperial (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Métrico (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -2359,7 +2360,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Nova empresa)
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Criar uma nova empresa e juntar-se a ela
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Este é você
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Este é o anfitrião do jogo
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} cliente{P "" s} / {NUM} companhi{P a as}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} cliente{P "" s} - {NUM}/{NUM} companhi{P a as}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}O número de clientes ligados atualmente, número de empresas e número máximo de empresas permitido pelo administrador do servidor
 
 # Matches ConnectionType
 ###length 5
@@ -4126,7 +4128,7 @@ STR_REPLACE_ALL_ROADTYPE                                        :Todos os veícu
 
 ###length 2
 STR_REPLACE_HELP_RAILTYPE                                       :{BLACK}Selecione o tipo de carril para o qual deseja efectuar a substituição dos motores
-STR_REPLACE_HELP_ROADTYPE                                       :BLACK}Selecione o tipo de estrada para o qual deseja efectuar a substituição dos motores
+STR_REPLACE_HELP_ROADTYPE                                       :{BLACK}Selecione o tipo de estrada para o qual deseja efectuar a substituição dos motores
 ###next-name-looks-similar
 
 STR_REPLACE_HELP_REPLACE_INFO_TAB                               :{BLACK}Exibe o tipo de motor que substituirá o que está seleccionado à esquerda, se algum
@@ -4530,7 +4532,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}Remover 
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}Limpar a velocidade máxima de viagem da ordem selecionada. Ctrl+Clique limpa as velocidades para todas as ordens.
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}Apagar Contador Atraso
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Limpar o contador de atraso, para que o veículo passe a estar a horas
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Limpar o contador de atraso, para que o veículo esteja pontual. Ctrl+Click reiniciará o grupo todo, para que o último veículo esteja pontual e todos os outros estejam antecipados.
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}Auto preencher
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}Preencher o horário automaticamente com os valores da próxima viagem. Ctrl+Clique para tentar manter os tempos de espera.
@@ -5084,6 +5086,20 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Impossí
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Não é possível copiar a lista de ordens...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... muito distante do destino anterior
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... o avião não tem alcance suficiente
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}Não existe estação ferroviária
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}Não existe paragem de autocarro
+STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}Não existe estação de camiões
+STR_ERROR_NO_DOCK                                               :{WHITE}Não existe doca
+STR_ERROR_NO_AIRPORT                                            :{WHITE}Não existe aeroporto/heliporto
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}Não existem paragens com tipo de estrada compatível
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}Não existem paragens compatíveis com o tipo de elétrico
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}Não existem paragens adequadas para veículos rodoviários articulados.{}Os veículos rodoviários articulados requerem paragens de rua, e não paragens em becos/terminais
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}Este avião não pode aterrar neste heliporto
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}Este helicóptero não pode aterrar neste aeroporto
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}Não existe ponto de passagem ferroviário
+STR_ERROR_NO_BUOY                                               :{WHITE}Não existe bóia
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Impossível programar veículo...

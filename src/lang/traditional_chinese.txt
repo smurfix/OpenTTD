@@ -1206,7 +1206,9 @@ STR_CONFIG_SETTING_HORIZONTAL_POS_RIGHT                         :靠右
 
 STR_CONFIG_SETTING_MAXIMUM_INITIAL_LOAN                         :最大貸款額：{STRING}
 STR_CONFIG_SETTING_MAXIMUM_INITIAL_LOAN_HELPTEXT                :公司最多可借多少錢（此設定的值排除了通貨膨脹因素）。
+STR_CONFIG_SETTING_MAXIMUM_INITIAL_LOAN_VALUE                   :{CURRENCY_LONG}
 ###setting-zero-is-special
+STR_CONFIG_SETTING_MAXIMUM_INITIAL_LOAN_DISABLED                :無貸款 {RED} 需要有遊戲腳本以提供初始資金
 
 STR_CONFIG_SETTING_INTEREST_RATE                                :息率：{STRING}
 STR_CONFIG_SETTING_INTEREST_RATE_HELPTEXT                       :設定貸款息率。如啟用了通貨膨脹的設定，則此設定同時決定通脹率。
@@ -1806,6 +1808,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :啟用此選項
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :容許公司買賣股票的最小年齡：{STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :設定容許公司買賣股票的最小年齡。
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :轉運服務所得的收入百分比：{STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :設定進行轉運的車輛在卸載被轉運的貨物時，獲得的收入佔貨物總收入的百分比。此選項讓玩家更有效地控制收入分配方式。
@@ -1951,7 +1954,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :貨物分配功
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :速度單位：{STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :在界面上以所選擇的單位表示速度。
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :英制（英里/小時）
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :米制（公里/小時）
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :國際單位（米/秒）
@@ -2356,7 +2359,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :（新公司）
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}創立並加入一個新公司
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}這是你
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}這是遊戲的主持端
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM}個用戶端 / {NUM}所公司
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM}個用戶端 {NUM}/{NUM}所公司
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}目前已連線客戶端的數量、公司數量，以及伺服器管理員所允許的最大公司數量
 
 # Matches ConnectionType
 ###length 5
@@ -3350,6 +3354,8 @@ STR_NEWGRF_ERROR_MSG_INFO                                       :{SILVER}{STRING
 STR_NEWGRF_ERROR_MSG_WARNING                                    :{RED}警告：{SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_ERROR                                      :{RED}錯誤：{SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_FATAL                                      :{RED}嚴重錯誤：{SILVER}{STRING}
+STR_NEWGRF_ERROR_FATAL_POPUP                                    :{WHITE}發生嚴重 NewGRF "{STRING}" 錯誤的處理方式：{}{STRING}
+STR_NEWGRF_ERROR_POPUP                                          :{WHITE}發生NewGRF "{STRING}" 錯誤:{}{STRING}
 STR_NEWGRF_ERROR_VERSION_NUMBER                                 :{1:STRING} 跟由 OpenTTD 回報的 TTDPatch 版本不合
 STR_NEWGRF_ERROR_DOS_OR_WINDOWS                                 :{1:STRING} 只適合用於 TTD 版本 {2:STRING}。
 STR_NEWGRF_ERROR_UNSET_SWITCH                                   :{1:STRING} 必須跟 {2:STRING} 一起使用
@@ -4620,7 +4626,9 @@ STR_SCREENSHOT_HEIGHTMAP_SCREENSHOT                             :{BLACK}高度�
 STR_SCREENSHOT_MINIMAP_SCREENSHOT                               :{BLACK}小地圖截圖
 
 # Script Parameters
-STR_AI_SETTINGS_CAPTION_AI                                      :{WHITE}AI參數
+STR_AI_SETTINGS_CAPTION                                         :{WHITE}{STRING} 參數
+STR_AI_SETTINGS_CAPTION_AI                                      :AI 參數
+STR_AI_SETTINGS_CAPTION_GAMESCRIPT                              :遊戲腳本
 STR_AI_SETTINGS_CLOSE                                           :{BLACK}關閉
 STR_AI_SETTINGS_RESET                                           :{BLACK}重設
 STR_AI_SETTINGS_SETTING                                         :{STRING}：{ORANGE}{STRING}
@@ -5077,6 +5085,20 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}無法�
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}無法複製指令清單...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... 與上個目的地相距太遠
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... 飛機的飛行範圍不足
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}沒有火車站
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}沒有公車站
+STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}沒有貨車站
+STR_ERROR_NO_DOCK                                               :{WHITE}這裡沒有碼頭
+STR_ERROR_NO_AIRPORT                                            :{WHITE}沒有機場/直昇機場
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}沒有兼容此道路類型的站點
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}沒有兼容此有軌電車道路類型的站點
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}沒有適合聯結式公路車的停車站.{}聯結式公路車需要通過式的停車站，而非港式的停車站
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}這架飛機不能降落在這個直昇機場
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}這架直昇機不能降落在這個機場
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}沒有鐵路路點
+STR_ERROR_NO_BUOY                                               :{WHITE}沒有浮標
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}無法為車輛加入時刻表...

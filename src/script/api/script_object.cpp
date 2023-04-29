@@ -319,7 +319,7 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 		throw Script_FatalError("You are not allowed to execute any DoCommand (even indirect) in your constructor, Save(), Load(), and any valuator.");
 	}
 
-	if (ScriptObject::GetCompany() != OWNER_DEITY && !::Company::IsValidID(ScriptObject::GetCompany())) {
+	if (!ScriptCompanyMode::IsDeity() && !ScriptCompanyMode::IsValid()) {
 		ScriptObject::SetLastError(ScriptError::ERR_PRECONDITION_INVALID_COMPANY);
 		return false;
 	}
@@ -410,4 +410,14 @@ void ScriptObject::InitializeRandomizers()
 	for (Owner owner = OWNER_BEGIN; owner < OWNER_END; owner++) {
 		ScriptObject::GetRandomizer(owner).SetSeed(random.Next());
 	}
+}
+
+/* static */ bool ScriptObject::IsNewUniqueLogMessage(const std::string &msg)
+{
+	return !GetStorage()->seen_unique_log_messages.contains(msg);
+}
+
+/* static */ void ScriptObject::RegisterUniqueLogMessage(std::string &&msg)
+{
+	GetStorage()->seen_unique_log_messages.emplace(std::move(msg));
 }

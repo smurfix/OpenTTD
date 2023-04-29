@@ -42,6 +42,8 @@
 
 #include "table/strings.h"
 
+#include "3rdparty/robin_hood/robin_hood.h"
+
 #include "safeguards.h"
 
 /* DestinationID must be at least as large as every these below, because it can
@@ -250,6 +252,12 @@ void Order::MakeChangeCounter()
 	this->flags = 0;
 }
 
+void Order::MakeLabel(OrderLabelSubType subtype)
+{
+	this->type = OT_LABEL;
+	this->flags = subtype;
+}
+
 /**
  * Make this depot/station order also a refit order.
  * @param cargo   the cargo type to change to.
@@ -357,6 +365,25 @@ void InvalidateVehicleOrder(const Vehicle *v, int data)
 
 	SetWindowDirty(WC_VEHICLE_ORDERS,    v->index);
 	SetWindowDirty(WC_VEHICLE_TIMETABLE, v->index);
+}
+
+const char *Order::GetLabelText() const
+{
+	assert(this->IsType(OT_LABEL) && this->GetLabelSubType() == OLST_TEXT);
+	if (this->extra == nullptr) return "";
+	const char *text = (const char *)(this->extra->cargo_type_flags);
+	if (ttd_strnlen(text, lengthof(this->extra->cargo_type_flags)) == lengthof(this->extra->cargo_type_flags)) {
+		/* Not null terminated, give up */
+		return "";
+	}
+	return text;
+}
+
+void Order::SetLabelText(const char *text)
+{
+	assert(this->IsType(OT_LABEL) && this->GetLabelSubType() == OLST_TEXT);
+	this->CheckExtraInfoAlloced();
+	strecpy((char *)(this->extra->cargo_type_flags), text, (char *)(lastof(this->extra->cargo_type_flags)));
 }
 
 /**
@@ -610,6 +637,11 @@ const Order *OrderList::GetNextDecisionNode(const Order *next, uint hops, CargoT
  */
 CargoMaskedStationIDStack OrderList::GetNextStoppingStation(const Vehicle *v, CargoTypes cargo_mask, const Order *first, uint hops) const
 {
+	static robin_hood::unordered_flat_set<const Order *> seen_conditional_branches;
+	if (hops == 0) {
+		seen_conditional_branches.clear();
+	}
+
 	const Order *next = first;
 	if (first == nullptr) {
 		next = this->GetOrderAt(v->cur_implicit_order_index);
@@ -630,14 +662,21 @@ CargoMaskedStationIDStack OrderList::GetNextStoppingStation(const Vehicle *v, Ca
 
 		/* Resolve possibly nested conditionals by estimation. */
 		while (next != nullptr && next->IsType(OT_CONDITIONAL)) {
+			if (!seen_conditional_branches.insert(next).second) {
+				/* Already handled this branch */
+				return CargoMaskedStationIDStack(cargo_mask, INVALID_STATION);
+			}
 			/* We return both options of conditional orders. */
 			const Order *skip_to = this->GetNextDecisionNode(
 					this->GetOrderAt(next->GetConditionSkipToOrder()), hops, cargo_mask);
 			const Order *advance = this->GetNextDecisionNode(
 					this->GetNext(next), hops, cargo_mask);
-			if (advance == nullptr || advance == first || skip_to == advance) {
+			auto seen_target = [&](const Order *target) -> bool {
+				return target->IsType(OT_CONDITIONAL) && seen_conditional_branches.contains(target);
+			};
+			if (advance == nullptr || advance == first || skip_to == advance || seen_target(advance)) {
 				next = (skip_to == first) ? nullptr : skip_to;
-			} else if (skip_to == nullptr || skip_to == first) {
+			} else if (skip_to == nullptr || skip_to == first || seen_target(skip_to)) {
 				next = (advance == first) ? nullptr : advance;
 			} else {
 				CargoMaskedStationIDStack st1 = this->GetNextStoppingStation(v, cargo_mask, skip_to, hops);
@@ -663,7 +702,8 @@ CargoMaskedStationIDStack OrderList::GetNextStoppingStation(const Vehicle *v, Ca
 			});
 			if (invalid) return CargoMaskedStationIDStack(cargo_mask, INVALID_STATION);
 		}
-	} while (next->IsType(OT_GOTO_DEPOT) || next->IsType(OT_RELEASE_SLOT) || next->IsType(OT_COUNTER) || next->GetDestination() == v->last_station_visited);
+	} while (next->IsType(OT_GOTO_DEPOT) || next->IsType(OT_RELEASE_SLOT) || next->IsType(OT_COUNTER) || next->IsType(OT_DUMMY) || next->IsType(OT_LABEL)
+			|| (next->IsBaseStationOrder() && next->GetDestination() == v->last_station_visited));
 
 	return CargoMaskedStationIDStack(cargo_mask, next->GetDestination());
 }
@@ -1269,6 +1309,28 @@ CommandCost CmdInsertOrderIntl(DoCommandFlag flags, Vehicle *v, VehicleOrderID s
 			break;
 		}
 
+		case OT_LABEL: {
+			switch (new_order.GetLabelSubType()) {
+				case OLST_TEXT:
+					break;
+
+				case OLST_DEPARTURES_VIA: {
+					const BaseStation *st = BaseStation::GetIfValid(new_order.GetDestination());
+					if (st == nullptr) return CMD_ERROR;
+
+					if (st->owner != OWNER_NONE) {
+						CommandCost ret = CheckInfraUsageAllowed(v->type, st->owner);
+						if (ret.Failed()) return ret;
+					}
+					break;
+				}
+
+				default:
+					return CMD_ERROR;
+			}
+			break;
+		}
+
 		default: return CMD_ERROR;
 	}
 
@@ -1779,33 +1841,45 @@ CommandCost CmdModifyOrder(TileIndex tile, DoCommandFlag flags, uint32 p1, uint3
 
 	Order *order = v->GetOrder(sel_ord);
 	assert(order != nullptr);
-	switch (order->GetType()) {
-		case OT_GOTO_STATION:
-			if (mof != MOF_NON_STOP && mof != MOF_STOP_LOCATION && mof != MOF_UNLOAD && mof != MOF_LOAD && mof != MOF_CARGO_TYPE_UNLOAD && mof != MOF_CARGO_TYPE_LOAD && mof != MOF_RV_TRAVEL_DIR) return CMD_ERROR;
-			break;
+	if (mof == MOF_COLOUR) {
+		if (order->GetType() == OT_IMPLICIT) return CMD_ERROR;
+	} else {
+		switch (order->GetType()) {
+			case OT_GOTO_STATION:
+				if (mof != MOF_NON_STOP && mof != MOF_STOP_LOCATION && mof != MOF_UNLOAD && mof != MOF_LOAD && mof != MOF_CARGO_TYPE_UNLOAD && mof != MOF_CARGO_TYPE_LOAD && mof != MOF_RV_TRAVEL_DIR) return CMD_ERROR;
+				break;
 
-		case OT_GOTO_DEPOT:
-			if (mof != MOF_NON_STOP && mof != MOF_DEPOT_ACTION) return CMD_ERROR;
-			break;
+			case OT_GOTO_DEPOT:
+				if (mof != MOF_NON_STOP && mof != MOF_DEPOT_ACTION) return CMD_ERROR;
+				break;
 
-		case OT_GOTO_WAYPOINT:
-			if (mof != MOF_NON_STOP && mof != MOF_WAYPOINT_FLAGS && mof != MOF_RV_TRAVEL_DIR) return CMD_ERROR;
-			break;
+			case OT_GOTO_WAYPOINT:
+				if (mof != MOF_NON_STOP && mof != MOF_WAYPOINT_FLAGS && mof != MOF_RV_TRAVEL_DIR) return CMD_ERROR;
+				break;
 
-		case OT_CONDITIONAL:
-			if (mof != MOF_COND_VARIABLE && mof != MOF_COND_COMPARATOR && mof != MOF_COND_VALUE && mof != MOF_COND_VALUE_2 && mof != MOF_COND_VALUE_3 && mof != MOF_COND_DESTINATION) return CMD_ERROR;
-			break;
+			case OT_CONDITIONAL:
+				if (mof != MOF_COND_VARIABLE && mof != MOF_COND_COMPARATOR && mof != MOF_COND_VALUE && mof != MOF_COND_VALUE_2 && mof != MOF_COND_VALUE_3 && mof != MOF_COND_DESTINATION) return CMD_ERROR;
+				break;
 
-		case OT_RELEASE_SLOT:
-			if (mof != MOF_SLOT) return CMD_ERROR;
-			break;
+			case OT_RELEASE_SLOT:
+				if (mof != MOF_SLOT) return CMD_ERROR;
+				break;
 
-		case OT_COUNTER:
-			if (mof != MOF_COUNTER_ID && mof != MOF_COUNTER_OP && mof != MOF_COUNTER_VALUE) return CMD_ERROR;
-			break;
+			case OT_COUNTER:
+				if (mof != MOF_COUNTER_ID && mof != MOF_COUNTER_OP && mof != MOF_COUNTER_VALUE) return CMD_ERROR;
+				break;
 
-		default:
-			return CMD_ERROR;
+			case OT_LABEL:
+				if (order->GetLabelSubType() == OLST_TEXT) {
+					if (mof != MOF_LABEL_TEXT) return CMD_ERROR;
+				} else {
+					return CMD_ERROR;
+				}
+				break;
+
+			default:
+				return CMD_ERROR;
+		}
 	}
 
 	switch (mof) {
@@ -2001,6 +2075,15 @@ CommandCost CmdModifyOrder(TileIndex tile, DoCommandFlag flags, uint32 p1, uint3
 			break;
 
 		case MOF_COUNTER_VALUE:
+			break;
+
+		case MOF_COLOUR:
+			if (data >= COLOUR_END && data != INVALID_COLOUR) {
+				return CMD_ERROR;
+			}
+			break;
+
+		case MOF_LABEL_TEXT:
 			break;
 	}
 
@@ -2243,6 +2326,14 @@ CommandCost CmdModifyOrder(TileIndex tile, DoCommandFlag flags, uint32 p1, uint3
 				order->GetXDataRef() = data;
 				break;
 
+			case MOF_COLOUR:
+				order->SetColour((Colours)data);
+				break;
+
+			case MOF_LABEL_TEXT:
+				order->SetLabelText(text == nullptr ? "" : text);
+				break;
+
 			default: NOT_REACHED();
 		}
 
@@ -2420,13 +2511,13 @@ CommandCost CmdCloneOrder(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
 					 * are temporarily invalid due to reconstruction. */
 					const Station *st = Station::Get(order->GetDestination());
 					if (CanVehicleUseStation(src, st) && !CanVehicleUseStation(dst, st)) {
-						return_cmd_error(STR_ERROR_CAN_T_COPY_SHARE_ORDER);
+						return CommandCost::DualErrorMessage(STR_ERROR_CAN_T_COPY_SHARE_ORDER, GetVehicleCannotUseStationReason(dst, st));
 					}
 				}
 				if (OrderGoesToRoadDepot(dst, order)) {
 					const Depot *dp = Depot::GetIfValid(order->GetDestination());
-					if (!dp || (GetPresentRoadTypes(dp->xy) & RoadVehicle::From(dst)->compatible_roadtypes) == 0) {
-						return_cmd_error(STR_ERROR_CAN_T_COPY_SHARE_ORDER);
+					if (dp != nullptr && (GetPresentRoadTypes(dp->xy) & RoadVehicle::From(dst)->compatible_roadtypes) == 0) {
+						return CommandCost::DualErrorMessage(STR_ERROR_CAN_T_COPY_SHARE_ORDER, RoadTypeIsTram(RoadVehicle::From(dst)->roadtype) ? STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE : STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE);
 					}
 				}
 			}
@@ -2501,14 +2592,16 @@ CommandCost CmdCloneOrder(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
 			/* Trucks can't copy all the orders from busses (and visa versa),
 			 * and neither can helicopters and aircraft. */
 			for (const Order *order : src->Orders()) {
-				if (OrderGoesToStation(dst, order) &&
-						!CanVehicleUseStation(dst, Station::Get(order->GetDestination()))) {
-					return_cmd_error(STR_ERROR_CAN_T_COPY_SHARE_ORDER);
+				if (OrderGoesToStation(dst, order)) {
+					const Station *st = Station::Get(order->GetDestination());
+					if (!CanVehicleUseStation(dst, st)) {
+						return CommandCost::DualErrorMessage(STR_ERROR_CAN_T_COPY_SHARE_ORDER, GetVehicleCannotUseStationReason(dst, st));
+					}
 				}
 				if (OrderGoesToRoadDepot(dst, order)) {
 					const Depot *dp = Depot::GetIfValid(order->GetDestination());
-					if (!dp || (GetPresentRoadTypes(dp->xy) & RoadVehicle::From(dst)->compatible_roadtypes) == 0) {
-						return_cmd_error(STR_ERROR_CAN_T_COPY_SHARE_ORDER);
+					if (dp != nullptr && (GetPresentRoadTypes(dp->xy) & RoadVehicle::From(dst)->compatible_roadtypes) == 0) {
+						return CommandCost::DualErrorMessage(STR_ERROR_CAN_T_COPY_SHARE_ORDER, RoadTypeIsTram(RoadVehicle::From(dst)->roadtype) ? STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE : STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE);
 					}
 				}
 			}
@@ -2767,6 +2860,7 @@ void RemoveOrderFromAllVehicles(OrderType type, DestinationID destination, bool 
 			if (ot == OT_GOTO_DEPOT && (o->GetDepotActionType() & ODATFB_NEAREST_DEPOT) != 0) return false;
 			if (ot == OT_GOTO_DEPOT && hangar && v->type != VEH_AIRCRAFT) return false; // Not an aircraft? Can't have a hangar order.
 			if (ot == OT_IMPLICIT || (v->type == VEH_AIRCRAFT && ot == OT_GOTO_DEPOT && !hangar)) ot = OT_GOTO_STATION;
+			if (ot == OT_LABEL && o->GetLabelSubType() == OLST_DEPARTURES_VIA && (type == OT_GOTO_STATION || type == OT_GOTO_WAYPOINT) && o->GetDestination() == destination) return true;
 			return (ot == type && o->GetDestination() == destination);
 		});
 	}
@@ -3158,6 +3252,9 @@ VehicleOrderID AdvanceOrderIndexDeferred(const Vehicle *v, VehicleOrderID index)
 				break;
 			}
 
+			case OT_DUMMY:
+				break;
+
 			default:
 				return index;
 		}
@@ -3320,6 +3417,13 @@ bool UpdateOrderDest(Vehicle *v, const Order *order, int conditional_depth, bool
 			v->IncrementRealOrderIndex();
 			break;
 
+		case OT_DUMMY:
+		case OT_LABEL:
+			assert(!pbs_look_ahead);
+			UpdateVehicleTimetable(v, true);
+			v->IncrementRealOrderIndex();
+			break;
+
 		default:
 			v->SetDestTile(0);
 			return false;
@@ -3450,6 +3554,19 @@ bool ProcessOrders(Vehicle *v)
 	}
 
 	return UpdateOrderDest(v, order) && may_reverse;
+}
+
+bool Order::UseOccupancyValueForAverage() const
+{
+	if (this->GetOccupancy() == 0) return false;
+	if (this->GetOccupancy() > 1) return true;
+
+	if (this->IsType(OT_GOTO_STATION)) {
+		OrderUnloadFlags unload_type = this->GetUnloadType();
+		if ((unload_type == OUFB_TRANSFER || unload_type == OUFB_UNLOAD) && this->GetLoadType() == OLFB_NO_LOAD) return false;
+	}
+
+	return true;
 }
 
 /**
@@ -3592,6 +3709,7 @@ const char *GetOrderTypeName(OrderType order_type)
 		"OT_LOADING_ADVANCE",
 		"OT_RELEASE_SLOT",
 		"OT_COUNTER",
+		"OT_LABEL",
 	};
 	static_assert(lengthof(names) == OT_END);
 	if (order_type < OT_END) return names[order_type];

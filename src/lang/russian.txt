@@ -321,6 +321,7 @@ STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA}{NBSP}м
 STR_UNITS_VELOCITY_METRIC                                       :{COMMA}{NBSP}км/ч
 STR_UNITS_VELOCITY_SI                                           :{COMMA}{NBSP}м/с
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}кл./день
+STR_UNITS_VELOCITY_KNOTS                                        :{COMMA}{NBSP}уз{P ел ла лов}
 
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}{NBSP}лс
 STR_UNITS_POWER_METRIC                                          :{COMMA}{NBSP}лс
@@ -470,17 +471,17 @@ STR_GOTO_ORDER_VIEW_TOOLTIP                                     :{BLACK}Пока
 STR_TOOLBAR_TOOLTIP_PAUSE_GAME                                  :{BLACK}Пауза
 STR_TOOLBAR_TOOLTIP_FORWARD                                     :{BLACK}Ускорить игру
 STR_TOOLBAR_TOOLTIP_OPTIONS                                     :{BLACK}Настройки
-STR_TOOLBAR_TOOLTIP_SAVE_GAME_ABANDON_GAME                      :{BLACK}Сохранение игры, главное меню, выход
-STR_TOOLBAR_TOOLTIP_DISPLAY_MAP                                 :{BLACK}Показать карту
+STR_TOOLBAR_TOOLTIP_SAVE_GAME_ABANDON_GAME                      :{BLACK}Сохранение/загрузка игры; главное меню; выход
+STR_TOOLBAR_TOOLTIP_DISPLAY_MAP                                 :{BLACK}Карта; окна просмотра; грузовые потоки; таблички
 STR_TOOLBAR_TOOLTIP_DISPLAY_TOWN_DIRECTORY                      :{BLACK}Список городов
-STR_TOOLBAR_TOOLTIP_DISPLAY_SUBSIDIES                           :{BLACK}Показать субсидии
+STR_TOOLBAR_TOOLTIP_DISPLAY_SUBSIDIES                           :{BLACK}Субсидии
 STR_TOOLBAR_TOOLTIP_DISPLAY_LIST_OF_COMPANY_STATIONS            :{BLACK}Список станций
-STR_TOOLBAR_TOOLTIP_DISPLAY_COMPANY_FINANCES                    :{BLACK}Показать финансовую информацию компании
-STR_TOOLBAR_TOOLTIP_DISPLAY_COMPANY_GENERAL                     :{BLACK}Показать основную информацию о компании
-STR_TOOLBAR_TOOLTIP_DISPLAY_STORY_BOOK                          :{BLACK}Показать историю компании
-STR_TOOLBAR_TOOLTIP_DISPLAY_GOALS_LIST                          :{BLACK}Показать список задач
-STR_TOOLBAR_TOOLTIP_DISPLAY_GRAPHS                              :{BLACK}Показать графики
-STR_TOOLBAR_TOOLTIP_DISPLAY_COMPANY_LEAGUE                      :{BLACK}Показать рейтинги компаний
+STR_TOOLBAR_TOOLTIP_DISPLAY_COMPANY_FINANCES                    :{BLACK}Информация о финансах компаний
+STR_TOOLBAR_TOOLTIP_DISPLAY_COMPANY_GENERAL                     :{BLACK}Основная информация о компаниях
+STR_TOOLBAR_TOOLTIP_DISPLAY_STORY_BOOK                          :{BLACK}История компаний
+STR_TOOLBAR_TOOLTIP_DISPLAY_GOALS_LIST                          :{BLACK}Список задач
+STR_TOOLBAR_TOOLTIP_DISPLAY_GRAPHS                              :{BLACK}Графики компаний и оплаты грузоперевозок
+STR_TOOLBAR_TOOLTIP_DISPLAY_COMPANY_LEAGUE                      :{BLACK}Рейтинги компаний
 STR_TOOLBAR_TOOLTIP_FUND_CONSTRUCTION_OF_NEW                    :{BLACK}Список существующих предприятий; создание новых
 STR_TOOLBAR_TOOLTIP_DISPLAY_LIST_OF_COMPANY_TRAINS              :{BLACK}Список поездов. Ctrl+щелчок переключает отображение по группам.
 STR_TOOLBAR_TOOLTIP_DISPLAY_LIST_OF_COMPANY_ROAD_VEHICLES       :{BLACK}Список автотранспорта. Ctrl+щелчок переключает отображение по группам.
@@ -495,8 +496,8 @@ STR_TOOLBAR_TOOLTIP_BUILD_SHIP_DOCKS                            :{BLACK}Стро
 STR_TOOLBAR_TOOLTIP_BUILD_AIRPORTS                              :{BLACK}Строительство аэропортов
 STR_TOOLBAR_TOOLTIP_LANDSCAPING                                 :{BLACK}Открыть панель ландшафта для изменения рельефа, посадки деревьев и т.д.
 STR_TOOLBAR_TOOLTIP_SHOW_SOUND_MUSIC_WINDOW                     :{BLACK}Настройка звука и музыки
-STR_TOOLBAR_TOOLTIP_SHOW_LAST_MESSAGE_NEWS                      :{BLACK}Показать последнее сообщение; настройки сообщений
-STR_TOOLBAR_TOOLTIP_LAND_BLOCK_INFORMATION                      :{BLACK}Информация о территории, консоль, отладка скриптов, снимки экрана, об игре
+STR_TOOLBAR_TOOLTIP_SHOW_LAST_MESSAGE_NEWS                      :{BLACK}Показать последнее сообщение; настройки и удаление сообщений
+STR_TOOLBAR_TOOLTIP_LAND_BLOCK_INFORMATION                      :{BLACK}Информация о территории, об игре и инструментах разработчика, снимки экрана
 STR_TOOLBAR_TOOLTIP_SWITCH_TOOLBAR                              :{BLACK}Переключить панели инструментов
 
 # Extra tooltips for the scenario editor toolbar
@@ -908,7 +909,7 @@ STR_SMALLMAP_LEGENDA_TRANSPORT_ROUTES                           :{TINY_FONT}{BLA
 STR_SMALLMAP_LEGENDA_FOREST                                     :{TINY_FONT}{BLACK}Лес
 STR_SMALLMAP_LEGENDA_RAILROAD_STATION                           :{TINY_FONT}{BLACK}Ж/д станция
 STR_SMALLMAP_LEGENDA_TRUCK_LOADING_BAY                          :{TINY_FONT}{BLACK}Грузовой терминал
-STR_SMALLMAP_LEGENDA_BUS_STATION                                :{TINY_FONT}{BLACK}Автобусная станция
+STR_SMALLMAP_LEGENDA_BUS_STATION                                :{TINY_FONT}{BLACK}Автобусная остановка
 STR_SMALLMAP_LEGENDA_AIRPORT_HELIPORT                           :{TINY_FONT}{BLACK}Аэропорт/Вертодром
 STR_SMALLMAP_LEGENDA_DOCK                                       :{TINY_FONT}{BLACK}Пристань
 STR_SMALLMAP_LEGENDA_ROUGH_LAND                                 :{TINY_FONT}{BLACK}Бездорожье
@@ -1958,7 +1959,10 @@ STR_CONFIG_SETTING_ALLOW_SHARES                                 :Разреши�
 STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Разрешает торговлю акциями транспортных компаний. Акции выпускаются компаниями через некоторое время после основания.
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Мин. возраст компании для выпуска акций: {STRING}
-STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Минимальный возраст, которого должна достичь компания для начала выпуска акций, которыми смогут торговать другие игроки.
+STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Минимальный возраст, которого должна достичь компания для начала выпуска акций, которые смогут покупать и продавать другие игроки.
+STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_VALUE                   :{COMMA} {P год года лет}
+###setting-zero-is-special
+STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_NO_MIN                  :без ограничений по возрасту
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Процент дохода, начисляемый при частичной перевозке: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Процент прибыли, начисляемый транспорту за частичную перевозку груза.
@@ -2102,13 +2106,15 @@ STR_CONFIG_SETTING_DEMAND_SIZE_HELPTEXT                         :Установ�
 STR_CONFIG_SETTING_SHORT_PATH_SATURATION                        :Предел загрузки коротких маршрутов перед использованием вместительных: {STRING}
 STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :При наличии нескольких маршрутов между станциями алгоритм распределения грузов будет использовать кратчайший маршрут до его загрузки, потом следующий по длине и т.{NBSP}д. При избытке груза маршруты будут перегружаться начиная с самых производительных. Загрузка рассчитывается исходя из оценки пропускной способности (которая может быть неточной) и интенсивности использования. Эта настройка определяет, насколько загружать маршрут перед тем, как начать использовать следующий. Установите значение ниже 100% для того, чтобы избежать задержки груза, если пропускная способность маршрута будет переоценена алгоритмом.
 
-STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Система единиц для скорости: {STRING}
+STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Система единиц скорости наземных ТС: {STRING}
+STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_NAUTICAL         :Система единиц скорости водных и воздушных ТС: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Показывать значения скорости в выбранной системе единиц
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :английская (миль/ч)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :метрическая (км/ч)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :СИ (м/с)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_GAMEUNITS        :внутриигровая (клетки в день)
+STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_KNOTS            :узлы
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_POWER                     :Система единиц для мощности: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_POWER_HELPTEXT            :Показывать значения мощности двигателей транспортных средств в выбранной системе единиц
@@ -2509,7 +2515,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Новая к�
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Основать новую транспортную компанию и присоединиться к ней
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Это вы!
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Это организатор игры
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} клиент{P "" а ов} / {NUM} компани{P я и й}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}Клиентов: {NUM}; компаний: {NUM}/{NUM}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}Количество подключённых в данный момент клиентов, существующих компаний и максимально допустимое количество компаний
 
 # Matches ConnectionType
 ###length 5
@@ -2920,7 +2927,7 @@ STR_BUILD_DEPOT_TRAM_ORIENTATION_SELECT_TOOLTIP                 :{BLACK}Выбо
 
 # Road vehicle station construction window
 STR_STATION_BUILD_BUS_ORIENTATION                               :{WHITE}Направление остановки
-STR_STATION_BUILD_BUS_ORIENTATION_TOOLTIP                       :{BLACK}Выберите направление автобусной остановки
+STR_STATION_BUILD_BUS_ORIENTATION_TOOLTIP                       :{BLACK}Выберите направление остановки
 STR_STATION_BUILD_TRUCK_ORIENTATION                             :{WHITE}Ориентация терминала
 STR_STATION_BUILD_TRUCK_ORIENTATION_TOOLTIP                     :{BLACK}Выберите направление грузового терминала
 STR_STATION_BUILD_PASSENGER_TRAM_ORIENTATION                    :{WHITE}Направление пассажирской трамвайной остановки
@@ -4716,7 +4723,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}Сбро
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}Сбросить ограничение скорости движения для выделенного задания. Ctrl+щелчок - сбросить время для всех заданий.
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}Сбросить счетчик опозд.
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Сбросить счётчик отклонения от графика, чтобы транспорт снова считался приходящим вовремя
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Сбросить счётчик опоздания, чтобы ТС считалось идущим по графику. Ctrl+щелчок сбросит счётчики у всей группы, так что последнее ТС будет идти по графику, а остальные - раньше графика.
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}Авторасчёт
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}Заполнить график автоматически временем, затраченным на движение в следующей поездке. Ctrl+щелчок - не изменять время ожидания.
@@ -4770,6 +4777,7 @@ STR_AI_CONFIG_AILIST_TOOLTIP                                    :{BLACK}Моду
 STR_AI_CONFIG_HUMAN_PLAYER                                      :Человек
 STR_AI_CONFIG_RANDOM_AI                                         :Случайный ИИ
 STR_AI_CONFIG_NONE                                              :(нет)
+STR_AI_CONFIG_NAME_VERSION                                      :{STRING} {YELLOW}v{NUM}
 STR_AI_CONFIG_MAX_COMPETITORS                                   :{LTBLUE}Максимальное количество конкурентов: {ORANGE}{COMMA}
 
 STR_AI_CONFIG_MOVE_UP                                           :{BLACK}Вверх
@@ -4783,7 +4791,7 @@ STR_AI_CONFIG_AI                                                :{SILVER}ИИ
 
 STR_AI_CONFIG_CHANGE_AI                                         :{BLACK}ИИ
 STR_AI_CONFIG_CHANGE_GAMESCRIPT                                 :{BLACK}Игровой скрипт
-STR_AI_CONFIG_CHANGE_TOOLTIP                                    :{BLACK}Загрузить другой скрипт
+STR_AI_CONFIG_CHANGE_TOOLTIP                                    :{BLACK}Загрузить другой скрипт. Ctrl+щелчок - показать все доступные версии.
 STR_AI_CONFIG_CONFIGURE                                         :{BLACK}Конфигурация
 STR_AI_CONFIG_CONFIGURE_TOOLTIP                                 :{BLACK}Настроить параметры скрипта
 
@@ -5270,6 +5278,20 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Нево
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Невозможно скопировать маршрут...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... слишком далеко от предыдущей точки
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... дальность полёта воздушного судна недостаточна
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}Железнодорожные станции отсутствуют
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}Автобусные остановки отсутствуют
+STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}Грузовые терминалы отсутствуют
+STR_ERROR_NO_DOCK                                               :{WHITE}Пристани отсутствуют
+STR_ERROR_NO_AIRPORT                                            :{WHITE}Аэропорты и вертолётные площадки отсутствуют
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}Отсутствуют остановки с подходящим типом дороги
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}Отсутствуют остановки с подходящим типом трамвайных путей
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}Отсутствуют остановки, способные обслуживать сочленённые транспортные средства.{}Для такого транспорта требуются сквозные остановки; оконечные не подходят.
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}Этот самолёт не может приземлиться на вертолётной площадке
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}Этот вертолёт не может приземлиться в данном аэропорту
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}Маршрутные точки отсутствуют
+STR_ERROR_NO_BUOY                                               :{WHITE}Буи отсутствуют
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Не удалось составить график движения для этого транспорта...

@@ -158,6 +158,8 @@
 	<tr><td>4</td><td>10</td><td>Do not automatically build connecting road pieces.</br>This requires <font face="monospace">road_stops</font>, version 3.</td></tr>
 	<tr><td>5</td><td>20</td><td>Only show in the road build menu (not tram).</br>This requires <font face="monospace">road_stops</font>, version 4.</td></tr>
 	<tr><td>6</td><td>40</td><td>Only show in the tram build menu (not road).</br>This requires <font face="monospace">road_stops</font>, version 4.</td></tr>
+	<tr><td>7</td><td>80</td><td>Use custom graphics for disabled road stop views.</br>This requires <font face="monospace">road_stops</font>, version 8.</td></tr>
+	<tr><td>8</td><td>100</td><td>Read the road stop draw mode from variable 0x100, this overrides the <a href="#roadstop_draw_mode">roadstop_draw_mode</a> property.</br>This requires <font face="monospace">road_stops</font>, version 9.</td></tr>
 	</table>
 	The default value is 0 (no flags enabled).
 	</p>
@@ -183,7 +185,8 @@
 	<p>This property sets the height used to size the road stop build window previews.<br />
 	The nominal height for the road stop preview is set to at least: 32 + "value of this property" * 8.<br />
 	This similar to <a href="https://newgrf-specs.tt-wiki.net/wiki/Action0/Objects#Building_height_.2816.29">Object variable 16</a>.<br />
-	The total property length is 1 byte.</a>.
+	The total property length is 1 byte.<br />
+	This requires <font face="monospace">road_stops</font>, version 6.
 	</p>
 
 	<p style="padding-top: 0.25em;">
@@ -235,6 +238,7 @@
 		<tr><td><a href="#roadstop_animation_frame_nearby_tiles">66</a></td><td><a href="#roadstop_animation_frame_nearby_tiles">roadstop_animation_frame_nearby_tiles</a></td><td>Animation frame of nearby tile</td></tr>
 		<tr><td><a href="#roadstop_land_info_nearby_tiles">67</a></td><td><a href="#roadstop_land_info_nearby_tiles">roadstop_land_info_nearby_tiles</a></td><td>Land info of nearby tiles</td></tr>
 		<tr><td><a href="#roadstop_road_stop_info_nearby_tiles">68</a></td><td><a href="#roadstop_road_stop_info_nearby_tiles">roadstop_road_stop_info_nearby_tiles</a></td><td>Road stop info of nearby tiles</td></tr>
+		<tr><td></td><td><a href="#roadstop_road_stop_info_nearby_tiles_v2">roadstop_road_stop_info_nearby_tiles_v2</a></td><td>Road stop info of nearby tiles (v2)</td></tr>
 		<tr><td><a href="https://newgrf-specs.tt-wiki.net/wiki/VariationalAction2/BaseStation">69</a></td><td></td><td>Information about cargo accepted in the past (BaseStation)</td></tr>
 		<tr><td><a href="#roadstop_road_stop_grfid_nearby_tiles">6A</a></td><td><a href="#roadstop_road_stop_grfid_nearby_tiles">roadstop_road_stop_grfid_nearby_tiles</a></td><td>GRFID of nearby road stop tiles</td></tr>
 		<tr><td><a href="#roadstop_road_info_nearby_tiles">6B</a></td><td><a href="#roadstop_road_info_nearby_tiles">roadstop_road_info_nearby_tiles</a></td><td>Road info of nearby plain road tiles</td></tr>
@@ -307,6 +311,18 @@
 		2 - East-bound only<br />
 		3 - No entry
 	</td></tr>
+	<tr><td>2 - 3</td><td>
+		Inferred one-way road information, from examining the road layout:<br />
+		0 - Two-way traffic<br />
+		1 - West-bound only<br />
+		2 - East-bound only<br />
+		3 - No entry<br />
+		This requires <font face="monospace">road_stops</font>, version 8.
+	</td></tr>
+	<tr><td>4</td><td>
+		1 if the road stop is being drawn in the build window<br />
+		This requires <font face="monospace">road_stops</font>, version 9.
+	</td></tr>
 	</table>
 	<br />
 	The remaining bits are reserved for future use and should be masked.
@@ -358,7 +374,7 @@
 	The remaining bits are reserved for future use and should be masked.
 	</p>
 
-	<h4 id="roadstop_road_stop_info_nearby_tiles">Road stop of nearby tile v2 (mappable variable: roadstop_road_stop_info_nearby_tiles_v2)</h4>
+	<h4 id="roadstop_road_stop_info_nearby_tiles_v2">Road stop of nearby tile v2 (mappable variable: roadstop_road_stop_info_nearby_tiles_v2)</h4>
 	<p>This has a similar value to <a href="#roadstop_road_stop_info_nearby_tiles">68</a>/<a href="#roadstop_road_stop_info_nearby_tiles">roadstop_road_stop_info_nearby_tiles</a>, above.<br />
 
 	<table>
@@ -386,7 +402,8 @@
 		3 - No entry
 	</table>
 	<br />
-	The remaining bits are reserved for future use and should be masked.
+	The remaining bits are reserved for future use and should be masked.<br />
+	This requires <font face="monospace">road_stops</font>, version 7.
 	</p>
 
 	<h4 id="roadstop_road_stop_grfid_nearby_tiles">GRFID of nearby road stop tile (6A, or mappable variable: roadstop_road_stop_grfid_nearby_tiles)</h4>

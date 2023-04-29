@@ -316,7 +316,8 @@ struct MusicSettings {
 /** Settings related to currency/unit systems. */
 struct LocaleSettings {
 	byte        currency;                         ///< currency we currently use
-	byte        units_velocity;                   ///< unit system for velocity
+	byte        units_velocity;                   ///< unit system for velocity of trains and road vehicles
+	byte        units_velocity_nautical;          ///< unit system for velocity of ships and aircraft
 	byte        units_power;                      ///< unit system for power
 	byte        units_weight;                     ///< unit system for weight
 	byte        units_volume;                     ///< unit system for volume
@@ -646,6 +647,7 @@ struct VehicleSettings {
 	bool   roadveh_cant_quantum_tunnel;      ///< enable or disable vehicles quantum tunelling through over vehicles when blocked
 	bool   drive_through_train_depot;        ///< enable drive-through train depot emulation
 	uint16 through_load_speed_limit;         ///< maximum speed for through load
+	uint16 rail_depot_speed_limit;           ///< maximum speed entering/existing rail depots
 };
 
 /** Settings related to the economy. */
@@ -767,6 +769,7 @@ struct CompanySettings {
 	uint16 timetable_autofill_rounding;      ///< round up timetable times to be a multiple of this number of ticks
 	bool advance_order_on_clone;             ///< when cloning a vehicle or copying/sharing an order list, advance the current order to a suitable point
 	bool copy_clone_add_to_group;            ///< whether to add cloned vehicles to the source vehicle's group, when cloning a vehicle without sharing orders
+	bool remain_if_next_order_same_station;  ///< if the next order is for the same station, start loading/unloading again instead of leaving.
 
 	byte old_simulated_wormhole_signals;     ///< no longer needs a setting: tunnel/bridge signal simulation spacing
 };

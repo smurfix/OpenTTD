@@ -1843,6 +1843,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Se abilitata, c
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Età minima della compagnia per lo scambio delle sue azioni: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Imposta l'età minima di una compagnia affinchè sia possibile acquistarne o venderne le azioni.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Percentuale profitto da pagare per una tappa di trasferimento: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Percentuale di ricavi assegnata ai tratti intermedi di una catena di trasferimenti, in questo si conferisce un maggiore controllo sul reddito.
@@ -1988,7 +1989,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :È frequente ch
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Unità di velocità: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Seleziona le unità di misura da utilizzare per mostrare le velocità nell'interfaccia utente
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Imperiali (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Metriche (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -2393,7 +2394,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Nuova compagni
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Crea una nuova compagnia e controllala
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Questo sei tu
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Questo è l'host del gioco
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} client{P "" s} / {NUM} compan{P y ies}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} client{P "" s} - {NUM}/{NUM} compagni{P a e}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}Il numero di client attualmente connessi, il numero di compagnie e il numero massimo di compagnie consentito dall'amministratore del server.
 
 # Matches ConnectionType
 ###length 5
@@ -4570,7 +4572,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}Elimina 
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}Elimina l'impostazione del limite di velocità per l'ordine selezionato. CTRL+clic rimuove la velocità da tutti gli ordini
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}Azzera ritardo
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Azzera il contatore del ritardo, in modo che il veicolo sia considerato in orario
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Azzera il contatore dei ritardi, in modo che il veicolo sia puntuale. Ctrl+clic azzera l'intero gruppo, in modo che l'ultimo veicolo sia puntuale e tutti gli altri siano in anticipo.
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}Auto
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}Riempie automaticamente la tabella oraria con i tempi del prossimo viaggio. CTRL+clic per cercare di mantenere i tempi di attesa
@@ -5124,6 +5126,20 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Impossib
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Impossibile copiare la lista degli ordini...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... troppo lontano dalla destinazione precedente
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... l'aeromobile non ha sufficiente autonomia
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}Non c'è una stazione ferroviaria
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}Non c'è una stazione degli autobus
+STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}Non c'è una stazione per i camion
+STR_ERROR_NO_DOCK                                               :{WHITE}Non c'è un molo
+STR_ERROR_NO_AIRPORT                                            :{WHITE}Non c'è un aeroporto/eliporto
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}Non ci sono fermate con un tipo di strada compatibile
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}Non ci sono fermate con un tipo di tram compatibile
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}Non esistono fermate adatte agli autoarticolati.{}Gli autoarticolati necessitano di una fermata passante e non di una fermata a baia.
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}L'aereo non può atterrare in questo eliporto
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}L'elicottero non può atterrare in questo aeroporto
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}Non c'è un waypoint ferroviario
+STR_ERROR_NO_BUOY                                               :{WHITE}Non c'è nessuna boa
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Impossibile dare un orario al veicolo...

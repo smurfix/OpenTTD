@@ -236,7 +236,7 @@ static bool FindNearIndustryName(TileIndex tile, void *user_data)
 	return !sni->indtypes[indtype];
 }
 
-static StringID GenerateStationName(Station *st, TileIndex tile, StationNaming name_class)
+static StringID GenerateStationName(Station *st, TileIndex tile, StationNaming name_class, bool force_change = false)
 {
 	static const uint32 _gen_station_name_bits[] = {
 		0,                                       // STATIONNAMING_RAIL
@@ -256,7 +256,7 @@ static StringID GenerateStationName(Station *st, TileIndex tile, StationNaming n
 	std::bitset<MAX_EXTRA_STATION_NAMES> extra_names;
 
 	for (const Station *s : Station::Iterate()) {
-		if (s != st && s->town == t) {
+		if ((force_change || s != st) && s->town == t) {
 			if (s->indtype != IT_INVALID) {
 				indtypes[s->indtype] = true;
 				StringID name = GetIndustrySpec(s->indtype)->station_name;
@@ -281,6 +281,8 @@ static StringID GenerateStationName(Station *st, TileIndex tile, StationNaming n
 			}
 		}
 	}
+
+	st->extra_name_index = UINT16_MAX;
 
 	TileIndex indtile = tile;
 	StationNameInformation sni = { free_names, indtypes };
@@ -2190,7 +2192,13 @@ CommandCost CmdBuildRoadStop(TileIndex tile, DoCommandFlag flags, uint32 p1, uin
 			RoadType tram_rt = MayHaveRoad(cur_tile) ? GetRoadType(cur_tile, RTT_TRAM) : INVALID_ROADTYPE;
 			Owner road_owner = road_rt != INVALID_ROADTYPE ? GetRoadOwner(cur_tile, RTT_ROAD) : _current_company;
 			Owner tram_owner = tram_rt != INVALID_ROADTYPE ? GetRoadOwner(cur_tile, RTT_TRAM) : _current_company;
-			DisallowedRoadDirections drd = IsNormalRoadTile(cur_tile) ? GetDisallowedRoadDirections(cur_tile) : DRD_NONE;
+
+			DisallowedRoadDirections drd = DRD_NONE;
+			if (IsNormalRoadTile(cur_tile)){
+				drd = GetDisallowedRoadDirections(cur_tile);
+			} else if (IsDriveThroughStopTile(cur_tile)) {
+				drd = GetDriveThroughStopDisallowedRoadDirections(cur_tile);
+			}
 
 			if (IsTileType(cur_tile, MP_STATION) && IsAnyRoadStop(cur_tile)) {
 				RemoveRoadStop(cur_tile, flags, specindex);
@@ -3201,6 +3209,8 @@ static CommandCost RemoveDock(TileIndex tile, DoCommandFlag flags)
 		ClearDockingTilesCheckingNeighbours(tile2);
 
 		for (Ship *s : Ship::Iterate()) {
+			if (!s->IsPrimaryVehicle()) continue;
+
 			/* Find all ships going to our dock. */
 			if (s->current_order.GetDestination() != st->index) {
 				continue;
@@ -3543,7 +3553,9 @@ draw_default_foundation:
 		StationType type = GetStationType(ti->tile);
 
 		const RoadStopSpec *stopspec = GetRoadStopSpec(ti->tile);
+		RoadStopDrawMode stop_draw_mode = (RoadStopDrawMode)0;
 		if (stopspec != nullptr) {
+			stop_draw_mode = stopspec->draw_mode;
 			int view = dir;
 			if (IsDriveThroughStopTile(ti->tile)) view += 4;
 			st = BaseStation::GetByTile(ti->tile);
@@ -3551,6 +3563,9 @@ draw_default_foundation:
 			const SpriteGroup *group = object.Resolve();
 			if (group != nullptr && group->type == SGT_TILELAYOUT) {
 				const DrawTileSprites *dts = ((const TileLayoutSpriteGroup *)group)->ProcessRegisters(nullptr);
+				if (HasBit(stopspec->flags, RSF_DRAW_MODE_REGISTER)) {
+					stop_draw_mode = (RoadStopDrawMode)GetRegister(0x100);
+				}
 				t = dts;
 				if (type == STATION_ROADWAYPOINT && (stopspec->draw_mode & ROADSTOP_DRAW_MODE_WAYP_GROUND)) {
 					draw_ground = true;
@@ -3568,7 +3583,7 @@ draw_default_foundation:
 		}
 
 		if (IsDriveThroughStopTile(ti->tile)) {
-			if (type != STATION_ROADWAYPOINT && (stopspec == nullptr || (stopspec->draw_mode & ROADSTOP_DRAW_MODE_OVERLAY) != 0)) {
+			if (type != STATION_ROADWAYPOINT && (stopspec == nullptr || (stop_draw_mode & ROADSTOP_DRAW_MODE_OVERLAY) != 0)) {
 				uint sprite_offset = axis == AXIS_X ? 1 : 0;
 				DrawRoadOverlays(ti, PAL_NONE, road_rti, tram_rti, sprite_offset, sprite_offset);
 			}
@@ -3581,7 +3596,7 @@ draw_default_foundation:
 			/* Non-drivethrough road stops are only valid for roads. */
 			assert_tile(road_rt != INVALID_ROADTYPE && tram_rt == INVALID_ROADTYPE, ti->tile);
 
-			if ((stopspec == nullptr || (stopspec->draw_mode & ROADSTOP_DRAW_MODE_ROAD) != 0) && road_rti->UsesOverlay()) {
+			if ((stopspec == nullptr || (stop_draw_mode & ROADSTOP_DRAW_MODE_ROAD) != 0) && road_rti->UsesOverlay()) {
 				SpriteID ground = GetCustomRoadSprite(road_rti, ti->tile, ROTSG_ROADSTOP);
 				DrawGroundSprite(ground + dir, PAL_NONE);
 			}
@@ -3653,7 +3668,7 @@ void StationPickerDrawSprite(int x, int y, StationType st, RailType railtype, Ro
 	DrawRailTileSeqInGUI(x, y, t, (st == STATION_WAYPOINT || st == STATION_ROADWAYPOINT) ? 0 : total_offset, 0, pal);
 }
 
-static int GetSlopePixelZ_Station(TileIndex tile, uint x, uint y)
+static int GetSlopePixelZ_Station(TileIndex tile, uint x, uint y, bool ground_vehicle)
 {
 	return GetTileMaxPixelZ(tile);
 }
@@ -3663,83 +3678,89 @@ static Foundation GetFoundation_Station(TileIndex tile, Slope tileh)
 	return FlatteningFoundation(tileh);
 }
 
+static void FillTileDescRoadStop(TileIndex tile, TileDesc *td)
+{
+	RoadType road_rt = GetRoadTypeRoad(tile);
+	RoadType tram_rt = GetRoadTypeTram(tile);
+	Owner road_owner = INVALID_OWNER;
+	Owner tram_owner = INVALID_OWNER;
+	if (road_rt != INVALID_ROADTYPE) {
+		const RoadTypeInfo *rti = GetRoadTypeInfo(road_rt);
+		td->roadtype = rti->strings.name;
+		td->road_speed = rti->max_speed / 2;
+		road_owner = GetRoadOwner(tile, RTT_ROAD);
+	}
+
+	if (tram_rt != INVALID_ROADTYPE) {
+		const RoadTypeInfo *rti = GetRoadTypeInfo(tram_rt);
+		td->tramtype = rti->strings.name;
+		td->tram_speed = rti->max_speed / 2;
+		tram_owner = GetRoadOwner(tile, RTT_TRAM);
+	}
+
+	if (IsDriveThroughStopTile(tile)) {
+		/* Is there a mix of owners? */
+		if ((tram_owner != INVALID_OWNER && tram_owner != td->owner[0]) ||
+				(road_owner != INVALID_OWNER && road_owner != td->owner[0])) {
+			uint i = 1;
+			if (road_owner != INVALID_OWNER) {
+				td->owner_type[i] = STR_LAND_AREA_INFORMATION_ROAD_OWNER;
+				td->owner[i] = road_owner;
+				i++;
+			}
+			if (tram_owner != INVALID_OWNER) {
+				td->owner_type[i] = STR_LAND_AREA_INFORMATION_TRAM_OWNER;
+				td->owner[i] = tram_owner;
+			}
+		}
+	}
+}
+
+void FillTileDescRailStation(TileIndex tile, TileDesc *td)
+{
+	const StationSpec *spec = GetStationSpec(tile);
+
+	if (spec != nullptr) {
+		td->station_class = StationClass::Get(spec->cls_id)->name;
+		td->station_name  = spec->name;
+
+		if (spec->grf_prop.grffile != nullptr) {
+			const GRFConfig *gc = GetGRFConfig(spec->grf_prop.grffile->grfid);
+			td->grf = gc->GetName();
+		}
+	}
+
+	const RailtypeInfo *rti = GetRailTypeInfo(GetRailType(tile));
+	td->rail_speed = rti->max_speed;
+	td->railtype = rti->strings.name;
+}
+
+void FillTileDescAirport(TileIndex tile, TileDesc *td)
+{
+	const AirportSpec *as = Station::GetByTile(tile)->airport.GetSpec();
+	td->airport_class = AirportClass::Get(as->cls_id)->name;
+	td->airport_name = as->name;
+
+	const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);
+	td->airport_tile_name = ats->name;
+
+	if (as->grf_prop.grffile != nullptr) {
+		const GRFConfig *gc = GetGRFConfig(as->grf_prop.grffile->grfid);
+		td->grf = gc->GetName();
+	} else if (ats->grf_prop.grffile != nullptr) {
+		const GRFConfig *gc = GetGRFConfig(ats->grf_prop.grffile->grfid);
+		td->grf = gc->GetName();
+	}
+}
+
 static void GetTileDesc_Station(TileIndex tile, TileDesc *td)
 {
 	td->owner[0] = GetTileOwner(tile);
-
-	if (IsAnyRoadStopTile(tile)) {
-		RoadType road_rt = GetRoadTypeRoad(tile);
-		RoadType tram_rt = GetRoadTypeTram(tile);
-		Owner road_owner = INVALID_OWNER;
-		Owner tram_owner = INVALID_OWNER;
-		if (road_rt != INVALID_ROADTYPE) {
-			const RoadTypeInfo *rti = GetRoadTypeInfo(road_rt);
-			td->roadtype = rti->strings.name;
-			td->road_speed = rti->max_speed / 2;
-			road_owner = GetRoadOwner(tile, RTT_ROAD);
-		}
-
-		if (tram_rt != INVALID_ROADTYPE) {
-			const RoadTypeInfo *rti = GetRoadTypeInfo(tram_rt);
-			td->tramtype = rti->strings.name;
-			td->tram_speed = rti->max_speed / 2;
-			tram_owner = GetRoadOwner(tile, RTT_TRAM);
-		}
-
-		if (IsDriveThroughStopTile(tile)) {
-			/* Is there a mix of owners? */
-			if ((tram_owner != INVALID_OWNER && tram_owner != td->owner[0]) ||
-					(road_owner != INVALID_OWNER && road_owner != td->owner[0])) {
-				uint i = 1;
-				if (road_owner != INVALID_OWNER) {
-					td->owner_type[i] = STR_LAND_AREA_INFORMATION_ROAD_OWNER;
-					td->owner[i] = road_owner;
-					i++;
-				}
-				if (tram_owner != INVALID_OWNER) {
-					td->owner_type[i] = STR_LAND_AREA_INFORMATION_TRAM_OWNER;
-					td->owner[i] = tram_owner;
-				}
-			}
-		}
-	}
-
 	td->build_date = BaseStation::GetByTile(tile)->build_date;
 
-	if (HasStationTileRail(tile)) {
-		const StationSpec *spec = GetStationSpec(tile);
-
-		if (spec != nullptr) {
-			td->station_class = StationClass::Get(spec->cls_id)->name;
-			td->station_name  = spec->name;
-
-			if (spec->grf_prop.grffile != nullptr) {
-				const GRFConfig *gc = GetGRFConfig(spec->grf_prop.grffile->grfid);
-				td->grf = gc->GetName();
-			}
-		}
-
-		const RailtypeInfo *rti = GetRailTypeInfo(GetRailType(tile));
-		td->rail_speed = rti->max_speed;
-		td->railtype = rti->strings.name;
-	}
-
-	if (IsAirport(tile)) {
-		const AirportSpec *as = Station::GetByTile(tile)->airport.GetSpec();
-		td->airport_class = AirportClass::Get(as->cls_id)->name;
-		td->airport_name = as->name;
-
-		const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);
-		td->airport_tile_name = ats->name;
-
-		if (as->grf_prop.grffile != nullptr) {
-			const GRFConfig *gc = GetGRFConfig(as->grf_prop.grffile->grfid);
-			td->grf = gc->GetName();
-		} else if (ats->grf_prop.grffile != nullptr) {
-			const GRFConfig *gc = GetGRFConfig(ats->grf_prop.grffile->grfid);
-			td->grf = gc->GetName();
-		}
-	}
+	if (IsAnyRoadStopTile(tile)) FillTileDescRoadStop(tile, td);
+	if (HasStationRail(tile)) FillTileDescRailStation(tile, td);
+	if (IsAirport(tile)) FillTileDescAirport(tile, td);
 
 	StringID str;
 	switch (GetStationType(tile)) {
@@ -4708,7 +4729,8 @@ static bool IsUniqueStationName(const char *name)
  * @param tile unused
  * @param flags operation to perform
  * @param p1 station ID that is to be renamed
- * @param p2 unused
+ * @param p2 various bitstuffed elements
+ * - p2 = (bit 0) - whether to generate a new default name, if resetting name
  * @param text the new name or an empty string when resetting to the default
  * @return the cost of this operation or an error
  */
@@ -4731,11 +4753,70 @@ CommandCost CmdRenameStation(TileIndex tile, DoCommandFlag flags, uint32 p1, uin
 		st->cached_name.clear();
 		if (reset) {
 			st->name.clear();
+			if (HasBit(p2, 0) && st->industry == nullptr) {
+				StationNaming name_class;
+				if (st->facilities & FACIL_AIRPORT) {
+					name_class = STATIONNAMING_AIRPORT;
+				} else if (st->facilities & FACIL_DOCK) {
+					name_class = STATIONNAMING_DOCK;
+				} else if (st->facilities & FACIL_TRAIN) {
+					name_class = STATIONNAMING_RAIL;
+				} else if (st->facilities & (FACIL_BUS_STOP | FACIL_TRUCK_STOP)) {
+					name_class = STATIONNAMING_ROAD;
+				} else {
+					name_class = STATIONNAMING_RAIL;
+				}
+				Random(); // Advance random seed each time this is called
+				st->string_id = GenerateStationName(st, st->xy, name_class, true);
+			}
 		} else {
 			st->name = text;
 		}
 
 		st->UpdateVirtCoord();
+		InvalidateWindowData(WC_STATION_LIST, st->owner, 1);
+	}
+
+	return CommandCost();
+}
+
+/**
+ * Exchange station names
+ * @param tile tile of other station to exchange name with
+ * @param flags operation to perform
+ * @param p1 station ID to exchange name with
+ * @param p2 unused
+ * @param text unused
+ * @return the cost of this operation or an error
+ */
+CommandCost CmdExchangeStationNames(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const char *text)
+{
+	Station *st = Station::GetIfValid(p1);
+	if (st == nullptr) return CMD_ERROR;
+
+	CommandCost ret = CheckOwnership(st->owner);
+	if (ret.Failed()) return ret;
+
+	if (st->industry != nullptr) return CommandCost(STR_ERROR_STATION_ATTACHED_TO_INDUSTRY);
+
+	if (!IsTileType(tile, MP_STATION)) return CommandCost(STR_ERROR_THERE_IS_NO_STATION);
+	Station *st2 = Station::GetByTile(tile);
+
+	ret = CheckOwnership(st2->owner);
+	if (ret.Failed()) return ret;
+
+	if (st2->industry != nullptr) return CommandCost(STR_ERROR_STATION_ATTACHED_TO_INDUSTRY);
+
+	if (st->town != st2->town) return CommandCost(STR_ERROR_STATIONS_NOT_IN_SAME_TOWN);
+
+	if (flags & DC_EXEC) {
+		st->cached_name.clear();
+		st2->cached_name.clear();
+		std::swap(st->name, st2->name);
+		std::swap(st->string_id, st2->string_id);
+		std::swap(st->extra_name_index, st2->extra_name_index);
+		st->UpdateVirtCoord();
+		st2->UpdateVirtCoord();
 		InvalidateWindowData(WC_STATION_LIST, st->owner, 1);
 	}
 

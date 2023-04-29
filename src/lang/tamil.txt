@@ -1632,6 +1632,7 @@ STR_CONFIG_SETTING_ECONOMY_TYPE_FROZEN                          :உறைந்
 STR_CONFIG_SETTING_ALLOW_SHARES                                 :மற்ற நிறுவனங்களின் பங்குகளை வாங்குவதை அனுமதிக்கவும்: {STRING}
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :பங்குகள் பரிமாற்றத்திற்கு தேவையான குறைந்தபட்ச நிறுவன வயது: {STRING}
+###setting-zero-is-special
 
 
 STR_CONFIG_SETTING_DRAG_SIGNALS_DENSITY                         :இழுத்தால், சிக்னல்களை இடவும், ஒவ்வொறு: {STRING}
@@ -1738,7 +1739,7 @@ STR_CONFIG_SETTING_DEMAND_DISTANCE_HELPTEXT                     :இதை 0 ஐ
 
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :வேக அலகுகள்: {STRING}
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :இம்பீரியல் (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :மெட்ரிக் (கி.மீ/மணிநேரம்)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (மீ/நொடி)
@@ -2098,7 +2099,6 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(புதி�
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}புதிய நிறுவனத்தினை நிறுவி விளையாடு
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :இது நீன்கள்
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}இது விலையாட்டின் வழங்குபவர்
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} வாடிக்கையாளர்{P "" கள்} / {NUM} நிறுவன{P ம் ங்கள்}
 
 # Matches ConnectionType
 ###length 5
@@ -4566,6 +4566,8 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}கட�
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}கட்டளைப் பட்டியலை பிரதி செய்ய இயலாது...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... முந்தைய இடத்திலிருந்து நெடுந்தூரம் உள்ளது
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... விமானத்தால் அதிக தூரம் பறக்க இயலாது
+
+# Extra messages which go on the third line of errors, explaining why orders failed
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}வாகனத்தை கால அட்டவணை செய்ய இயலாது...

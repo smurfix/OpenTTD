@@ -1566,7 +1566,7 @@ static ChangeInfoResult ShipVehicleChangeInfo(uint engine, int numinfo, int prop
 					ei->cargo_type = ctype;
 				} else {
 					ei->cargo_type = CT_INVALID;
-					grfmsg(2, "RailVehicleChangeInfo: Invalid cargo type %d, using first refittable", ctype);
+					grfmsg(2, "ShipVehicleChangeInfo: Invalid cargo type %d, using first refittable", ctype);
 				}
 				break;
 			}
@@ -1945,7 +1945,7 @@ static ChangeInfoResult StationChangeInfo(uint stid, int numinfo, int prop, cons
 
 			case 0x0A: { // Copy sprite layout
 				byte srcid = buf->ReadByte();
-				const StationSpec *srcstatspec = _cur.grffile->stations[srcid];
+				const StationSpec *srcstatspec = srcid >= NUM_STATIONS_PER_GRF ? nullptr : _cur.grffile->stations[srcid];
 
 				if (srcstatspec == nullptr) {
 					grfmsg(1, "StationChangeInfo: Station %u is not defined, cannot copy sprite layout to %u.", srcid, stid + i);
@@ -1999,7 +1999,7 @@ static ChangeInfoResult StationChangeInfo(uint stid, int numinfo, int prop, cons
 
 			case 0x0F: { // Copy custom layout
 				byte srcid = buf->ReadByte();
-				const StationSpec *srcstatspec = _cur.grffile->stations[srcid];
+				const StationSpec *srcstatspec = srcid >= NUM_STATIONS_PER_GRF ? nullptr : _cur.grffile->stations[srcid];
 
 				if (srcstatspec == nullptr) {
 					grfmsg(1, "StationChangeInfo: Station %u is not defined, cannot copy tile layout to %u.", srcid, stid + i);
@@ -4255,6 +4255,7 @@ static ChangeInfoResult IgnoreObjectProperty(uint prop, ByteReader *buf)
 		case 0x14:
 		case 0x16:
 		case 0x17:
+		case 0x18:
 			buf->ReadByte();
 			break;
 
@@ -5046,16 +5047,22 @@ static ChangeInfoResult IgnoreRoadStopProperty(uint prop, ByteReader *buf)
 	switch (prop) {
 		case 0x09:
 		case 0x0C:
+		case 0x0F:
+		case 0x11:
 			buf->ReadByte();
 			break;
 
 		case 0x0A:
 		case 0x0B:
+		case 0x0E:
+		case 0x10:
+		case 0x15:
 			buf->ReadWord();
 			break;
 
 		case 0x08:
 		case 0x0D:
+		case 0x12:
 			buf->ReadDWord();
 			break;
 
@@ -5176,7 +5183,7 @@ static ChangeInfoResult RoadStopChangeInfo(uint id, int numinfo, int prop, const
 				if (MappedPropertyLengthMismatch(buf, 4, mapping_entry)) break;
 				FALLTHROUGH;
 			case 0x12: // General flags
-				rs->flags = (uint8)buf->ReadDWord(); // Future-proofing, size this as 4 bytes, but we only need one byte's worth of flags at present
+				rs->flags = (uint16)buf->ReadDWord(); // Future-proofing, size this as 4 bytes, but we only need two bytes' worth of flags at present
 				break;
 
 			case A0RPI_ROADSTOP_MIN_BRIDGE_HEIGHT:
@@ -5345,6 +5352,7 @@ static const char *_feature_names[] = {
 	"TRAMTYPES",
 	"ROADSTOPS",
 	"NEWLANDSCAPE",
+	"TOWN",
 };
 static_assert(lengthof(_feature_names) == GSF_END);
 
@@ -5483,6 +5491,7 @@ static void FeatureChangeInfo(ByteReader *buf)
 		/* GSF_TRAMTYPES */     TramTypeChangeInfo,
 		/* GSF_ROADSTOPS */     RoadStopChangeInfo,
 		/* GSF_NEWLANDSCAPE */  NewLandscapeChangeInfo,
+		/* GSF_FAKE_TOWNS */    nullptr,
 	};
 	static_assert(GSF_END == lengthof(handler));
 	static_assert(lengthof(handler) == lengthof(_cur.grffile->action0_property_remaps), "Action 0 feature list length mismatch");
@@ -5680,16 +5689,10 @@ static const CallbackResultSpriteGroup *NewCallbackResultSpriteGroup(uint16 grou
 	return NewCallbackResultSpriteGroupNoTransform(result);
 }
 
-/* Helper function to either create a callback or link to a previously
- * defined spritegroup. */
-static const SpriteGroup *GetGroupFromGroupID(byte setid, byte type, uint16 groupid)
+static const SpriteGroup *GetGroupFromGroupIDNoCBResult(uint16 setid, byte type, uint16 groupid)
 {
-	if (HasBit(groupid, 15)) {
-		return NewCallbackResultSpriteGroup(groupid);
-	}
-
-	if (groupid > MAX_SPRITEGROUP || _cur.spritegroups[groupid] == nullptr) {
-		grfmsg(1, "GetGroupFromGroupID(0x%02X:0x%02X): Groupid 0x%04X does not exist, leaving empty", setid, type, groupid);
+	if ((size_t)groupid >= _cur.spritegroups.size() || _cur.spritegroups[groupid] == nullptr) {
+		grfmsg(1, "GetGroupFromGroupID(0x%04X:0x%02X): Groupid 0x%04X does not exist, leaving empty", setid, type, groupid);
 		return nullptr;
 	}
 
@@ -5698,8 +5701,21 @@ static const SpriteGroup *GetGroupFromGroupID(byte setid, byte type, uint16 grou
 	return result;
 }
 
+/* Helper function to either create a callback or link to a previously
+ * defined spritegroup. */
+static const SpriteGroup *GetGroupFromGroupID(uint16 setid, byte type, uint16 groupid)
+{
+	if (HasBit(groupid, 15)) {
+		return NewCallbackResultSpriteGroup(groupid);
+	}
+
+	return GetGroupFromGroupIDNoCBResult(setid, type, groupid);
+}
+
 static const SpriteGroup *GetGroupByID(uint16 groupid)
 {
+	if ((size_t)groupid >= _cur.spritegroups.size()) return nullptr;
+
 	const SpriteGroup *result = _cur.spritegroups[groupid];
 	return result;
 }
@@ -5712,14 +5728,14 @@ static const SpriteGroup *GetGroupByID(uint16 groupid)
  * @param spriteid Raw value from the GRF for the new spritegroup; describes either the return value or the referenced spritegroup.
  * @return Created spritegroup.
  */
-static const SpriteGroup *CreateGroupFromGroupID(byte feature, byte setid, byte type, uint16 spriteid)
+static const SpriteGroup *CreateGroupFromGroupID(byte feature, uint16 setid, byte type, uint16 spriteid)
 {
 	if (HasBit(spriteid, 15)) {
 		return NewCallbackResultSpriteGroup(spriteid);
 	}
 
 	if (!_cur.IsValidSpriteSet(feature, spriteid)) {
-		grfmsg(1, "CreateGroupFromGroupID(0x%02X:0x%02X): Sprite set %u invalid", setid, type, spriteid);
+		grfmsg(1, "CreateGroupFromGroupID(0x%04X:0x%02X): Sprite set %u invalid", setid, type, spriteid);
 		return nullptr;
 	}
 
@@ -5773,6 +5789,17 @@ static void ProcessDeterministicSpriteGroupRanges(const std::vector<Deterministi
 	}
 }
 
+static VarSpriteGroupScopeOffset ParseRelativeScopeByte(byte relative)
+{
+	VarSpriteGroupScopeOffset var_scope_count = (GB(relative, 6, 2) << 8);
+	if ((relative & 0xF) == 0) {
+		SetBit(var_scope_count, 15);
+	} else {
+		var_scope_count |= (relative & 0xF);
+	}
+	return var_scope_count;
+}
+
 /* Action 0x02 */
 static void NewSpriteGroup(ByteReader *buf)
 {
@@ -5780,6 +5807,7 @@ static void NewSpriteGroup(ByteReader *buf)
 	 *
 	 * B feature       see action 1
 	 * B set-id        ID of this particular definition
+	 *                 This is an extended byte if feature "more_action2_ids" is tested for
 	 * B type/num-entries
 	 *                 if 80 or greater, this is a randomized or variational
 	 *                 list definition, see below
@@ -5795,13 +5823,23 @@ static void NewSpriteGroup(ByteReader *buf)
 		return;
 	}
 
-	uint8 setid   = buf->ReadByte();
+	uint16 setid  = HasBit(_cur.grffile->observed_feature_tests, GFTOF_MORE_ACTION2_IDS) ? buf->ReadExtendedByte() : buf->ReadByte();
 	uint8 type    = buf->ReadByte();
 
 	/* Sprite Groups are created here but they are allocated from a pool, so
 	 * we do not need to delete anything if there is an exception from the
 	 * ByteReader. */
 
+	/* Decoded sprite type */
+	enum SpriteType {
+		STYPE_NORMAL,
+		STYPE_DETERMINISTIC,
+		STYPE_DETERMINISTIC_RELATIVE,
+		STYPE_DETERMINISTIC_RELATIVE_2,
+		STYPE_RANDOMIZED,
+		STYPE_CB_FAILURE,
+	};
+	SpriteType stype = STYPE_NORMAL;
 	switch (type) {
 		/* Deterministic Sprite Group */
 		case 0x81: // Self scope, byte
@@ -5810,7 +5848,73 @@ static void NewSpriteGroup(ByteReader *buf)
 		case 0x86: // Parent scope, word
 		case 0x89: // Self scope, dword
 		case 0x8A: // Parent scope, dword
+			stype = STYPE_DETERMINISTIC;
+			break;
+
+		/* Randomized Sprite Group */
+		case 0x80: // Self scope
+		case 0x83: // Parent scope
+		case 0x84: // Relative scope
+			stype = STYPE_RANDOMIZED;
+			break;
+
+		/* Extension type */
+		case 0x87:
+			if (HasBit(_cur.grffile->observed_feature_tests, GFTOF_MORE_VARACTION2_TYPES)) {
+				byte subtype = buf->ReadByte();
+				switch (subtype) {
+					case 0:
+						stype = STYPE_CB_FAILURE;
+						break;
+
+					case 1:
+						stype = STYPE_DETERMINISTIC_RELATIVE;
+						break;
+
+					case 2:
+						stype = STYPE_DETERMINISTIC_RELATIVE_2;
+						break;
+
+					default:
+						grfmsg(1, "NewSpriteGroup: Unknown 0x87 extension subtype %02X for feature %s, handling as CB failure", subtype, GetFeatureString(feature));
+						stype = STYPE_CB_FAILURE;
+						break;
+				}
+			}
+			break;
+
+		default:
+			break;
+	}
+
+	switch (stype) {
+		/* Deterministic Sprite Group */
+		case STYPE_DETERMINISTIC:
+		case STYPE_DETERMINISTIC_RELATIVE:
+		case STYPE_DETERMINISTIC_RELATIVE_2:
 		{
+			VarSpriteGroupScopeOffset var_scope_count = 0;
+			if (stype == STYPE_DETERMINISTIC_RELATIVE) {
+				var_scope_count = ParseRelativeScopeByte(buf->ReadByte());
+			} else if (stype == STYPE_DETERMINISTIC_RELATIVE_2) {
+				uint8 mode = buf->ReadByte();
+				uint8 offset = buf->ReadByte();
+				bool invalid = false;
+				if ((mode & 0x7F) >= VSGSRM_END) {
+					invalid = true;
+				}
+				if (HasBit(mode, 7)) {
+					/* Use variable 0x100 */
+					if (offset != 0) invalid = true;
+				}
+				if (invalid) {
+					grfmsg(1, "NewSpriteGroup: Unknown 0x87 extension subtype 2 relative mode: %02X %02X for feature %s, handling as CB failure", mode, offset, GetFeatureString(feature));
+					act_group = NewCallbackResultSpriteGroupNoTransform(CALLBACK_FAILED);
+					break;
+				}
+				var_scope_count = (mode << 8) | offset;
+			}
+
 			byte varadjust;
 			byte varsize;
 
@@ -5822,14 +5926,25 @@ static void NewSpriteGroup(ByteReader *buf)
 			group->feature = feature;
 			if (_action6_override_active) group->sg_flags |= SGF_ACTION6;
 			act_group = group;
-			group->var_scope = HasBit(type, 1) ? VSG_SCOPE_PARENT : VSG_SCOPE_SELF;
 
-			switch (GB(type, 2, 2)) {
-				default: NOT_REACHED();
-				case 0: group->size = DSG_SIZE_BYTE;  varsize = 1; break;
-				case 1: group->size = DSG_SIZE_WORD;  varsize = 2; break;
-				case 2: group->size = DSG_SIZE_DWORD; varsize = 4; break;
+			if (stype == STYPE_DETERMINISTIC_RELATIVE || stype == STYPE_DETERMINISTIC_RELATIVE_2) {
+				group->var_scope = (feature <= GSF_AIRCRAFT) ? VSG_SCOPE_RELATIVE : VSG_SCOPE_SELF;
+				group->var_scope_count = var_scope_count;
+
+				group->size = DSG_SIZE_DWORD;
+				varsize = 4;
+			} else {
+				group->var_scope = HasBit(type, 1) ? VSG_SCOPE_PARENT : VSG_SCOPE_SELF;
+
+				switch (GB(type, 2, 2)) {
+					default: NOT_REACHED();
+					case 0: group->size = DSG_SIZE_BYTE;  varsize = 1; break;
+					case 1: group->size = DSG_SIZE_WORD;  varsize = 2; break;
+					case 2: group->size = DSG_SIZE_DWORD; varsize = 4; break;
+				}
 			}
+
+			const VarAction2AdjustInfo info = { feature, GetGrfSpecFeatureForScope(feature, group->var_scope), varsize };
 
 			DeterministicSpriteGroupShadowCopy *shadow = nullptr;
 			if (unlikely(HasBit(_misc_debug_flags, MDF_NEWGRF_SG_SAVE_RAW))) {
@@ -5855,7 +5970,7 @@ static void NewSpriteGroup(ByteReader *buf)
 				adjust.variable  = buf->ReadByte();
 				if (adjust.variable == 0x7E) {
 					/* Link subroutine group */
-					adjust.subroutine = GetGroupFromGroupID(setid, type, buf->ReadByte());
+					adjust.subroutine = GetGroupFromGroupIDNoCBResult(setid, type, HasBit(_cur.grffile->observed_feature_tests, GFTOF_MORE_ACTION2_IDS) ? buf->ReadExtendedByte() : buf->ReadByte());
 				} else {
 					adjust.parameter = IsInsideMM(adjust.variable, 0x60, 0x80) ? buf->ReadByte() : 0;
 				}
@@ -5867,7 +5982,7 @@ static void NewSpriteGroup(ByteReader *buf)
 
 				if (adjust.variable == 0x11) {
 					for (const GRFVariableMapEntry &remap : _cur.grffile->grf_variable_remaps) {
-						if (remap.feature == feature && remap.input_shift == adjust.shift_num && remap.input_mask == adjust.and_mask) {
+						if (remap.feature == info.scope_feature && remap.input_shift == adjust.shift_num && remap.input_mask == adjust.and_mask) {
 							adjust.variable = remap.id;
 							adjust.shift_num = remap.output_shift;
 							adjust.and_mask = remap.output_mask;
@@ -5877,7 +5992,7 @@ static void NewSpriteGroup(ByteReader *buf)
 					}
 				} else if (adjust.variable == 0x7B && adjust.parameter == 0x11) {
 					for (const GRFVariableMapEntry &remap : _cur.grffile->grf_variable_remaps) {
-						if (remap.feature == feature && remap.input_shift == adjust.shift_num && remap.input_mask == adjust.and_mask) {
+						if (remap.feature == info.scope_feature && remap.input_shift == adjust.shift_num && remap.input_mask == adjust.and_mask) {
 							adjust.parameter = remap.id;
 							adjust.shift_num = remap.output_shift;
 							adjust.and_mask = remap.output_mask;
@@ -5906,7 +6021,7 @@ static void NewSpriteGroup(ByteReader *buf)
 
 			for (const DeterministicSpriteGroupAdjust &adjust : current_adjusts) {
 				group->adjusts.push_back(adjust);
-				OptimiseVarAction2Adjust(va2_opt_state, feature, varsize, group, group->adjusts.back());
+				OptimiseVarAction2Adjust(va2_opt_state, info, group, group->adjusts.back());
 			}
 
 			std::vector<DeterministicSpriteGroupRange> ranges;
@@ -5937,15 +6052,13 @@ static void NewSpriteGroup(ByteReader *buf)
 
 			ProcessDeterministicSpriteGroupRanges(ranges, group->ranges, group->default_group);
 
-			OptimiseVarAction2DeterministicSpriteGroup(va2_opt_state, feature, varsize, group, current_adjusts);
+			OptimiseVarAction2DeterministicSpriteGroup(va2_opt_state, info, group, current_adjusts);
 			current_adjusts.clear();
 			break;
 		}
 
 		/* Randomized Sprite Group */
-		case 0x80: // Self scope
-		case 0x83: // Parent scope
-		case 0x84: // Relative scope
+		case STYPE_RANDOMIZED:
 		{
 			assert(RandomizedSpriteGroup::CanAllocateItem());
 			RandomizedSpriteGroup *group = new RandomizedSpriteGroup();
@@ -5956,7 +6069,7 @@ static void NewSpriteGroup(ByteReader *buf)
 
 			if (HasBit(type, 2)) {
 				if (feature <= GSF_AIRCRAFT) group->var_scope = VSG_SCOPE_RELATIVE;
-				group->count = buf->ReadByte();
+				group->var_scope_count = ParseRelativeScopeByte(buf->ReadByte());
 			}
 
 			uint8 triggers = buf->ReadByte();
@@ -5986,8 +6099,12 @@ static void NewSpriteGroup(ByteReader *buf)
 			break;
 		}
 
+		case STYPE_CB_FAILURE:
+			act_group = NewCallbackResultSpriteGroupNoTransform(CALLBACK_FAILED);
+			break;
+
 		/* Neither a variable or randomized sprite group... must be a real group */
-		default:
+		case STYPE_NORMAL:
 		{
 			switch (feature) {
 				case GSF_TRAINS:
@@ -6175,12 +6292,17 @@ static void NewSpriteGroup(ByteReader *buf)
 					break;
 				}
 
+				case GSF_FAKE_TOWNS:
+					act_group = NewCallbackResultSpriteGroupNoTransform(CALLBACK_FAILED);
+					break;
+
 				/* Loading of Tile Layout and Production Callback groups would happen here */
 				default: grfmsg(1, "NewSpriteGroup: Unsupported feature %s, skipping", GetFeatureString(feature));
 			}
 		}
 	}
 
+	if ((size_t)setid >= _cur.spritegroups.size()) _cur.spritegroups.resize(setid + 1);
 	_cur.spritegroups[setid] = act_group;
 }
 
@@ -6243,7 +6365,7 @@ static CargoID TranslateCargo(uint8 feature, uint8 ctype)
 
 static bool IsValidGroupID(uint16 groupid, const char *function)
 {
-	if (groupid > MAX_SPRITEGROUP || _cur.spritegroups[groupid] == nullptr) {
+	if ((size_t)groupid >= _cur.spritegroups.size() || _cur.spritegroups[groupid] == nullptr) {
 		grfmsg(1, "%s: Spritegroup 0x%04X out of range or empty, skipping.", function, groupid);
 		return false;
 	}
@@ -6363,6 +6485,11 @@ static void CanalMapSpriteGroup(ByteReader *buf, uint8 idcount)
 
 static void StationMapSpriteGroup(ByteReader *buf, uint8 idcount)
 {
+	if (_cur.grffile->stations == nullptr) {
+		grfmsg(1, "StationMapSpriteGroup: No stations defined, skipping");
+		return;
+	}
+
 	uint8 *stations = AllocaM(uint8, idcount);
 	for (uint i = 0; i < idcount; i++) {
 		stations[i] = buf->ReadByte();
@@ -6378,7 +6505,7 @@ static void StationMapSpriteGroup(ByteReader *buf, uint8 idcount)
 		if (ctype == CT_INVALID) continue;
 
 		for (uint i = 0; i < idcount; i++) {
-			StationSpec *statspec = _cur.grffile->stations == nullptr ? nullptr : _cur.grffile->stations[stations[i]];
+			StationSpec *statspec = stations[i] >= NUM_STATIONS_PER_GRF ? nullptr : _cur.grffile->stations[stations[i]];
 
 			if (statspec == nullptr) {
 				grfmsg(1, "StationMapSpriteGroup: Station with ID 0x%02X does not exist, skipping", stations[i]);
@@ -6393,7 +6520,7 @@ static void StationMapSpriteGroup(ByteReader *buf, uint8 idcount)
 	if (!IsValidGroupID(groupid, "StationMapSpriteGroup")) return;
 
 	for (uint i = 0; i < idcount; i++) {
-		StationSpec *statspec = _cur.grffile->stations == nullptr ? nullptr : _cur.grffile->stations[stations[i]];
+		StationSpec *statspec = stations[i] >= NUM_STATIONS_PER_GRF ? nullptr : _cur.grffile->stations[stations[i]];
 
 		if (statspec == nullptr) {
 			grfmsg(1, "StationMapSpriteGroup: Station with ID 0x%02X does not exist, skipping", stations[i]);
@@ -6415,6 +6542,11 @@ static void StationMapSpriteGroup(ByteReader *buf, uint8 idcount)
 
 static void TownHouseMapSpriteGroup(ByteReader *buf, uint8 idcount)
 {
+	if (_cur.grffile->housespec == nullptr) {
+		grfmsg(1, "TownHouseMapSpriteGroup: No houses defined, skipping");
+		return;
+	}
+
 	uint8 *houses = AllocaM(uint8, idcount);
 	for (uint i = 0; i < idcount; i++) {
 		houses[i] = buf->ReadByte();
@@ -6427,13 +6559,8 @@ static void TownHouseMapSpriteGroup(ByteReader *buf, uint8 idcount)
 	uint16 groupid = buf->ReadWord();
 	if (!IsValidGroupID(groupid, "TownHouseMapSpriteGroup")) return;
 
-	if (_cur.grffile->housespec == nullptr) {
-		grfmsg(1, "TownHouseMapSpriteGroup: No houses defined, skipping");
-		return;
-	}
-
 	for (uint i = 0; i < idcount; i++) {
-		HouseSpec *hs = _cur.grffile->housespec[houses[i]];
+		HouseSpec *hs = houses[i] >= NUM_HOUSES_PER_GRF ? nullptr : _cur.grffile->housespec[houses[i]];
 
 		if (hs == nullptr) {
 			grfmsg(1, "TownHouseMapSpriteGroup: House %d undefined, skipping.", houses[i]);
@@ -6446,6 +6573,11 @@ static void TownHouseMapSpriteGroup(ByteReader *buf, uint8 idcount)
 
 static void IndustryMapSpriteGroup(ByteReader *buf, uint8 idcount)
 {
+	if (_cur.grffile->industryspec == nullptr) {
+		grfmsg(1, "IndustryMapSpriteGroup: No industries defined, skipping");
+		return;
+	}
+
 	uint8 *industries = AllocaM(uint8, idcount);
 	for (uint i = 0; i < idcount; i++) {
 		industries[i] = buf->ReadByte();
@@ -6458,13 +6590,8 @@ static void IndustryMapSpriteGroup(ByteReader *buf, uint8 idcount)
 	uint16 groupid = buf->ReadWord();
 	if (!IsValidGroupID(groupid, "IndustryMapSpriteGroup")) return;
 
-	if (_cur.grffile->industryspec == nullptr) {
-		grfmsg(1, "IndustryMapSpriteGroup: No industries defined, skipping");
-		return;
-	}
-
 	for (uint i = 0; i < idcount; i++) {
-		IndustrySpec *indsp = _cur.grffile->industryspec[industries[i]];
+		IndustrySpec *indsp = industries[i] >= NUM_INDUSTRYTYPES_PER_GRF ? nullptr : _cur.grffile->industryspec[industries[i]];
 
 		if (indsp == nullptr) {
 			grfmsg(1, "IndustryMapSpriteGroup: Industry %d undefined, skipping", industries[i]);
@@ -6477,6 +6604,11 @@ static void IndustryMapSpriteGroup(ByteReader *buf, uint8 idcount)
 
 static void IndustrytileMapSpriteGroup(ByteReader *buf, uint8 idcount)
 {
+	if (_cur.grffile->indtspec == nullptr) {
+		grfmsg(1, "IndustrytileMapSpriteGroup: No industry tiles defined, skipping");
+		return;
+	}
+
 	uint8 *indtiles = AllocaM(uint8, idcount);
 	for (uint i = 0; i < idcount; i++) {
 		indtiles[i] = buf->ReadByte();
@@ -6489,13 +6621,8 @@ static void IndustrytileMapSpriteGroup(ByteReader *buf, uint8 idcount)
 	uint16 groupid = buf->ReadWord();
 	if (!IsValidGroupID(groupid, "IndustrytileMapSpriteGroup")) return;
 
-	if (_cur.grffile->indtspec == nullptr) {
-		grfmsg(1, "IndustrytileMapSpriteGroup: No industry tiles defined, skipping");
-		return;
-	}
-
 	for (uint i = 0; i < idcount; i++) {
-		IndustryTileSpec *indtsp = _cur.grffile->indtspec[indtiles[i]];
+		IndustryTileSpec *indtsp = indtiles[i] >= NUM_INDUSTRYTILES_PER_GRF ? nullptr : _cur.grffile->indtspec[indtiles[i]];
 
 		if (indtsp == nullptr) {
 			grfmsg(1, "IndustrytileMapSpriteGroup: Industry tile %d undefined, skipping", indtiles[i]);
@@ -6688,6 +6815,11 @@ static void RoadTypeMapSpriteGroup(ByteReader *buf, uint8 idcount, RoadTramType 
 
 static void AirportMapSpriteGroup(ByteReader *buf, uint8 idcount)
 {
+	if (_cur.grffile->airportspec == nullptr) {
+		grfmsg(1, "AirportMapSpriteGroup: No airports defined, skipping");
+		return;
+	}
+
 	uint8 *airports = AllocaM(uint8, idcount);
 	for (uint i = 0; i < idcount; i++) {
 		airports[i] = buf->ReadByte();
@@ -6700,13 +6832,8 @@ static void AirportMapSpriteGroup(ByteReader *buf, uint8 idcount)
 	uint16 groupid = buf->ReadWord();
 	if (!IsValidGroupID(groupid, "AirportMapSpriteGroup")) return;
 
-	if (_cur.grffile->airportspec == nullptr) {
-		grfmsg(1, "AirportMapSpriteGroup: No airports defined, skipping");
-		return;
-	}
-
 	for (uint i = 0; i < idcount; i++) {
-		AirportSpec *as = _cur.grffile->airportspec[airports[i]];
+		AirportSpec *as = airports[i] >= NUM_AIRPORTS_PER_GRF ? nullptr : _cur.grffile->airportspec[airports[i]];
 
 		if (as == nullptr) {
 			grfmsg(1, "AirportMapSpriteGroup: Airport %d undefined, skipping", airports[i]);
@@ -6719,6 +6846,11 @@ static void AirportMapSpriteGroup(ByteReader *buf, uint8 idcount)
 
 static void AirportTileMapSpriteGroup(ByteReader *buf, uint8 idcount)
 {
+	if (_cur.grffile->airtspec == nullptr) {
+		grfmsg(1, "AirportTileMapSpriteGroup: No airport tiles defined, skipping");
+		return;
+	}
+
 	uint8 *airptiles = AllocaM(uint8, idcount);
 	for (uint i = 0; i < idcount; i++) {
 		airptiles[i] = buf->ReadByte();
@@ -6731,13 +6863,8 @@ static void AirportTileMapSpriteGroup(ByteReader *buf, uint8 idcount)
 	uint16 groupid = buf->ReadWord();
 	if (!IsValidGroupID(groupid, "AirportTileMapSpriteGroup")) return;
 
-	if (_cur.grffile->airtspec == nullptr) {
-		grfmsg(1, "AirportTileMapSpriteGroup: No airport tiles defined, skipping");
-		return;
-	}
-
 	for (uint i = 0; i < idcount; i++) {
-		AirportTileSpec *airtsp = _cur.grffile->airtspec[airptiles[i]];
+		AirportTileSpec *airtsp = airptiles[i] >= NUM_AIRPORTTILES_PER_GRF ? nullptr : _cur.grffile->airtspec[airptiles[i]];
 
 		if (airtsp == nullptr) {
 			grfmsg(1, "AirportTileMapSpriteGroup: Airport tile %d undefined, skipping", airptiles[i]);
@@ -7029,7 +7156,7 @@ static void FeatureNewName(ByteReader *buf)
 
 				switch (GB(id, 8, 8)) {
 					case 0xC4: // Station class name
-						if (_cur.grffile->stations == nullptr || _cur.grffile->stations[GB(id, 0, 8)] == nullptr) {
+						if (GB(id, 0, 8) >= NUM_STATIONS_PER_GRF || _cur.grffile->stations == nullptr || _cur.grffile->stations[GB(id, 0, 8)] == nullptr) {
 							grfmsg(1, "FeatureNewName: Attempt to name undefined station 0x%X, ignoring", GB(id, 0, 8));
 						} else {
 							StationClassID cls_id = _cur.grffile->stations[GB(id, 0, 8)]->cls_id;
@@ -7038,7 +7165,7 @@ static void FeatureNewName(ByteReader *buf)
 						break;
 
 					case 0xC5: // Station name
-						if (_cur.grffile->stations == nullptr || _cur.grffile->stations[GB(id, 0, 8)] == nullptr) {
+						if (GB(id, 0, 8) >= NUM_STATIONS_PER_GRF || _cur.grffile->stations == nullptr || _cur.grffile->stations[GB(id, 0, 8)] == nullptr) {
 							grfmsg(1, "FeatureNewName: Attempt to name undefined station 0x%X, ignoring", GB(id, 0, 8));
 						} else {
 							_cur.grffile->stations[GB(id, 0, 8)]->name = AddGRFString(_cur.grffile->grfid, id, lang, new_scheme, false, name, STR_UNDEFINED);
@@ -7046,7 +7173,7 @@ static void FeatureNewName(ByteReader *buf)
 						break;
 
 					case 0xC7: // Airporttile name
-						if (_cur.grffile->airtspec == nullptr || _cur.grffile->airtspec[GB(id, 0, 8)] == nullptr) {
+						if (GB(id, 0, 8) >= NUM_AIRPORTTILES_PER_GRF || _cur.grffile->airtspec == nullptr || _cur.grffile->airtspec[GB(id, 0, 8)] == nullptr) {
 							grfmsg(1, "FeatureNewName: Attempt to name undefined airport tile 0x%X, ignoring", GB(id, 0, 8));
 						} else {
 							_cur.grffile->airtspec[GB(id, 0, 8)]->name = AddGRFString(_cur.grffile->grfid, id, lang, new_scheme, false, name, STR_UNDEFINED);
@@ -7054,7 +7181,7 @@ static void FeatureNewName(ByteReader *buf)
 						break;
 
 					case 0xC9: // House name
-						if (_cur.grffile->housespec == nullptr || _cur.grffile->housespec[GB(id, 0, 8)] == nullptr) {
+						if (GB(id, 0, 8) >= NUM_HOUSES_PER_GRF || _cur.grffile->housespec == nullptr || _cur.grffile->housespec[GB(id, 0, 8)] == nullptr) {
 							grfmsg(1, "FeatureNewName: Attempt to name undefined house 0x%X, ignoring.", GB(id, 0, 8));
 						} else {
 							_cur.grffile->housespec[GB(id, 0, 8)]->building_name = AddGRFString(_cur.grffile->grfid, id, lang, new_scheme, false, name, STR_UNDEFINED);

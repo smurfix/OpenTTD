@@ -1,3 +1,9 @@
+openttd (13.1+jgrpp-0.53.1-1) smurf; urgency=medium
+
+  * Merge
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Sat, 29 Apr 2023 14:34:03 +0200
+
 openttd (13.0+jgrpp-0.51.1-3) smurf; urgency=medium
 
   * Reduce manual town growth

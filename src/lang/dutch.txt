@@ -1808,6 +1808,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :Wanneer ingesch
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Minimale leeftijd van bedrijf om aandelen te kunnen verhandelen: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Hiermee wordt de minimale leeftijd van een bedrijf ingesteld waarna anderen aandelen in dat bedrijf kunnen gaan kopen en verkopen.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Percentage van routeopbrengst in overdrachtssysteem: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Percentage van het inkomen besteed aan de intermediaire delen in feedersystemen waardoor er meer controle over de inkomsten is
@@ -1953,7 +1954,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Vaak zijn er me
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Snelheidseenheden: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Wanneer een snelheid wordt weergegeven in het gebruikersscherm, gebruik dan de geselecteerde eenheden
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Imperiaal (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Metrisch (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -2358,7 +2359,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Nieuw bedrijf)
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Een nieuw bedrijf maken en meedoen
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Dit ben jij
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Dit is de host van het spel
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} speler{P "" s} / {NUM} bedrij{P f ven}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} speler{P "" s} - {NUM}/{NUM} bedrij{P f ven}
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}Het aantal momenteel verbonden clients, het aantal bedrijven en het maximale aantal toegestane bedrijven door de serverbeheerder
 
 # Matches ConnectionType
 ###length 5
@@ -4529,7 +4531,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}Snelheid
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}Verwijder de maximumsnelheid van de gekozen order. Met Ctrl+klik wis je de snelheid voor alle orders
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}Vertragingsteller terugstellen
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Stel de vertragingsteller terug zodat het voertuig op tijd is
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Stel de vertragingsteller terug zodat het voertuig op tijd is. Ctrl+kllik stelt de hele groep terug zodat het laatste voertuig op tijd komt en alle andere te vroeg.
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}Automatisch vullen
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}Vul de dienstregeling automatisch in aan de hand van de volgende reis. Ctrl+klik om te proberen om wachttijden te bewaren
@@ -5083,6 +5085,20 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Kan niet
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Kan orderlijst niet kopiëren...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... te ver van vorige bestemming
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... vliegtuig heeft niet genoeg bereik
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}Er is geen station
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}Er is geen bussstation
+STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}Er is geen vrachtwagenlaadstation
+STR_ERROR_NO_DOCK                                               :{WHITE}Er is geen dok
+STR_ERROR_NO_AIRPORT                                            :{WHITE}Er is geen vliegveld/heliplatform
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}Er zijn geen haltes met een compatibel wegtype
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}Er zijn geen haltes met een compatibel type tram
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}Er zijn geen haltes die geschikt zijn voor gelede wegvoertuigen.{}Gelede wegvoertuigen kunnen alleen stoppen aan de weg, niet bij een laadplatform.
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}Dit vliegtuig kan niet landen op dit heliplatform
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}Deze helikopter kan niet landen op dit vliegveld
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}Er is geen routepunt
+STR_ERROR_NO_BUOY                                               :{WHITE}Er is geen boei
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Kan geen dienstregeling opzetten voor dit voertuig...

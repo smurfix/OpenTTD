@@ -282,6 +282,14 @@ enum CallbackID {
 
 	/** Called to determine the engine name to show. */
 	CBID_VEHICLE_NAME                    = 0x161, // 15 bit callback
+
+	/** Extended/non-standard callbacks follow */
+
+	/** Called to set town zones */
+	XCBID_TOWN_ZONES                     = 0xEC008001,
+
+	/** Called to get the name of the part of a ship for the refit window */
+	XCBID_SHIP_REFIT_PART_NAME           = 0xEC008002,
 };
 
 /**

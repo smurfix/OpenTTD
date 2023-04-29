@@ -48,6 +48,9 @@ STR_CONFIG_SETTING_TOWN_GROWTH_VERY_SLOW                        :Sehr langsam
 
 STR_ABOUT_MENU_SHOW_TOGGLE_MODIFIER_KEYS                        :Hilfstasten-Fenster
 
+STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_LABEL      :Eigener Zeitraum (Tage)
+STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM_LABEL   :Eigener Zeitraum (Echtzeitminuten)
+
 STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :mph
 STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
 STR_UNIT_NAME_VELOCITY_SI                                       :m/s
@@ -92,8 +95,6 @@ STR_SMALLMAP_SCREENSHOT                                         :{BLACK}Screensh
 STR_NEWS_VEHICLE_NO_DEPOT_ORDER                                 :{WHITE}{VEHICLE} hat keinen Depotauftrag im Fahrplan
 STR_NEWS_TRAIN_OVERSHOT_STATION                                 :{WHITE}{VEHICLE} konnte wegen zu hoher Geschwindigkeit nicht bei {STRING} anhalten
 
-STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_LABEL      :Eigener Zeitraum (Tage)
-STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM_LABEL   :Eigener Zeitraum (Echtzeitminuten)
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM            :Alle {COMMA}{NBSP}Tage
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_SINGULAR   :Jeden Tag
 STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM         :Alle {COMMA} Echtzeitminuten
@@ -147,7 +148,6 @@ STR_CONFIG_SETTING_REALISTIC_BRAKING_ASPECT_LIMITED_HELPTEXT    :In the realisti
 
 STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT                     :Maximalgeschwindigkeit für das durchgehende Beladen von Zügen: {STRING}
 STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT_HELPTEXT            :Die maximal erlaubte Ladegeschwindigkeit für Züge, die in einer Station durchgehend laden
-STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT_VAL                 :{VELOCITY}
 
 STR_CONFIG_SETTING_BACK_ONE_WAY_PBS_SAFE_WAITING                :Wegsuche bis zur Rückseite eines Einwegpfadsignals: {STRING}
 STR_CONFIG_SETTING_BACK_ONE_WAY_PBS_SAFE_WAITING_HELPTEXT       :Wenn aktiviert, wird der YAPF-Pfadsucher für Züge versuchen, einen Weg bis zur Rückseite des nächsten Einwegpfadsignals zu suchen.
@@ -1158,21 +1158,18 @@ STR_DEPARTURES_TIME_DEP                                         :{ORANGE}{DATE_W
 STR_DEPARTURES_TIME_ARR                                         :{ORANGE}{DATE_WALLCLOCK_TINY} {RED}{DOWN_ARROW}
 STR_DEPARTURES_TIME_BOTH                                        :{ORANGE}{1:DATE_WALLCLOCK_TINY} {RED}{DOWN_ARROW} {ORANGE}{0:DATE_WALLCLOCK_TINY} {GREEN}{UP_ARROW}
 STR_DEPARTURES_TERMINUS                                         :{ORANGE}{STATION}{STRING}
-STR_DEPARTURES_TERMINUS_VIA_STATION                             :{ORANGE}{STATION}{STRING} über {STATION}{STRING}
+STR_DEPARTURES_TERMINUS_VIA_STATION                             :{ORANGE}{STATION}{STRING} über {STRING}
 STR_DEPARTURES_TERMINUS_VIA                                     :{ORANGE}{STATION}{STRING} über
-STR_DEPARTURES_VIA                                              :{ORANGE}über {STATION}{STRING}
+STR_DEPARTURES_VIA                                              :{ORANGE}über {STRING}
 STR_DEPARTURES_TOC                                              :{ORANGE}{COMPANY}
 STR_DEPARTURES_GROUP                                            :{ORANGE}{GROUP}
 STR_DEPARTURES_VEH                                              :{ORANGE}{VEHICLE}
-STR_DEPARTURES_CALLING_AT                                       :{TINY_FONT}{ORANGE}Hält in:
-STR_DEPARTURES_CALLING_AT_LARGE                                 :{ORANGE}Hält in:
+STR_DEPARTURES_CALLING_AT                                       :{ORANGE}Hält in:
 STR_DEPARTURES_CALLING_AT_FIRST_STATION                         :{STATION}
 STR_DEPARTURES_CALLING_AT_STATION                               :{STRING}, {STATION}
 STR_DEPARTURES_CALLING_AT_LAST_STATION                          :{STRING} und {STATION}
-STR_DEPARTURES_CALLING_AT_LIST                                  :{TINY_FONT}{ORANGE}{STRING}.
-STR_DEPARTURES_CALLING_AT_LIST_LARGE                            :{ORANGE}{STRING}.
-STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS                   :{TINY_FONT}{ORANGE}{STRING}. Diese Fahrt verkehrt über {STATION}.
-STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS_LARGE             :{ORANGE}{STRING}. Diese Fahrt verkehrt über {STATION}.
+STR_DEPARTURES_CALLING_AT_LIST                                  :{ORANGE}{STRING}.
+STR_DEPARTURES_CALLING_AT_LIST_SMART_TERMINUS                   :{ORANGE}{STRING}. Diese Fahrt verkehrt über {STATION}.
 
 STR_DEPARTURES_TYPE_TRAIN                                       :{ORANGE}{TRAIN}
 STR_DEPARTURES_TYPE_TRAIN_SILVER                                :{SILVER}{TRAIN}
@@ -1609,18 +1606,7 @@ STR_ERROR_DEPOT_HAS_WRONG_RAIL_TYPE                             :{WHITE}Depot ka
 
 STR_ERROR_CANNOT_MODIFY_TRACK_TRAIN_APPROACHING                 :{WHITE}Herannahneder Zug ...
 
-STR_ERROR_NO_RAIL_STATION                                       :{WHITE}Da ist kein Bahnhof ...
-STR_ERROR_NO_BUS_STATION                                        :{WHITE}Da ist keine Bushaltestelle ...
-STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}Da ist keine LKW-Station ...
-STR_ERROR_NO_DOCK                                               :{WHITE}Da ist kein dock ...
-STR_ERROR_NO_AIRPORT                                            :{WHITE}Da ist kein Flughafen/Heliport ...
-STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}Da ist kein Station eines kompatiblen Straßen- oder Straßenbahngleistyps ...
-STR_ERROR_NO_STOP_ARTIC_VEH                                     :{WHITE}Da sind keine Stationsfelder, die für Gelenkfahrzeuge geeinget sind.{}Gelenkfahrzeuge benötigen eine Durchfahrtsstation, nicht solche mit einer Haltebucht ...
-STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}Das Flugzeug kann auf diesem Heliport nicht landen ...
-STR_ERROR_AIRPORT_NO_HELIS                                      :{WHITE}Der Hubschrauber kann auf diesem Flugplatz nicht landen ...
-STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}Da ist kein Wegpunkt ...
 STR_ERROR_NO_ROAD_WAYPOINT                                      :{WHITE}Da ist kein Wegpunkt ...
-STR_ERROR_NO_BUOY                                               :{WHITE}Da ist keine Boye ...
 
 # Plan related errors
 STR_ERROR_TOO_MANY_PLANS                                        :{WHITE}... zu viele Pläne

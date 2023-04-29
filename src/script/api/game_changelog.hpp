@@ -18,7 +18,13 @@
  * This version is not yet released. The following changes are not set in stone yet.
  *
  * API additions:
+ * \li GSCompanyMode::IsValid
+ * \li GSCompanyMode::IsDeity
  * \li GSTown::ROAD_LAYOUT_RANDOM
+ * \li GSVehicle::IsPrimaryVehicle
+ *
+ * API removals:
+ * \li GSError::ERR_PRECONDITION_TOO_MANY_PARAMETERS, that error is never returned anymore.
  *
  * \b 13.0
  *

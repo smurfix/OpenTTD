@@ -85,6 +85,7 @@
 #include "event_logs.h"
 #include "tunnelbridge.h"
 #include "worker_thread.h"
+#include "scope_info.h"
 
 #include "linkgraph/linkgraphschedule.h"
 #include "tracerestrict.h"
@@ -310,6 +311,7 @@ static void WriteSavegameInfo(const char *name)
 {
 	extern SaveLoadVersion _sl_version;
 	extern std::string _sl_xv_version_label;
+	extern SaveLoadVersion _sl_xv_upstream_version;
 	uint32 last_ottd_rev = 0;
 	byte ever_modified = 0;
 	bool removed_newgrfs = false;
@@ -330,6 +332,9 @@ static void WriteSavegameInfo(const char *name)
 	p += seprintf(p, lastof(buf), "Savegame ver: %d%s\n", _sl_version, type);
 	if (!_sl_xv_version_label.empty()) {
 		p += seprintf(p, lastof(buf), "    Version label: %s\n", _sl_xv_version_label.c_str());
+	}
+	if (_sl_xv_upstream_version != SL_MIN_VERSION) {
+		p += seprintf(p, lastof(buf), "    Upstream version: %u\n", _sl_xv_upstream_version);
 	}
 	for (size_t i = 0; i < XSLFI_SIZE; i++) {
 		if (_sl_xv_feature_versions[i] > 0) {
@@ -1191,39 +1196,53 @@ bool SafeLoad(const std::string &filename, SaveLoadOperation fop, DetailedFileTy
 
 	_game_mode = newgm;
 
-	switch (lf == nullptr ? SaveOrLoad(filename, fop, dft, subdir) : LoadWithFilter(lf)) {
-		case SL_OK: return true;
+	SaveOrLoadResult result = (lf == nullptr) ? SaveOrLoad(filename, fop, dft, subdir) : LoadWithFilter(lf);
+	if (result == SL_OK) return true;
 
-		case SL_REINIT:
-			if (error_detail != nullptr) *error_detail = GetSaveLoadErrorString();
-			if (_network_dedicated) {
-				/*
-				 * We need to reinit a network map...
-				 * We can't simply load the intro game here as that game has many
-				 * special cases which make clients desync immediately. So we fall
-				 * back to just generating a new game with the current settings.
-				 */
-				DEBUG(net, 0, "Loading game failed, so a new (random) game will be started");
-				MakeNewGame(false, true);
-				return false;
-			}
-			if (_network_server) {
-				/* We can't load the intro game as server, so disconnect first. */
-				NetworkDisconnect();
-			}
+	if (error_detail != nullptr) *error_detail = GetSaveLoadErrorString();
 
-			switch (ogm) {
-				default:
-				case GM_MENU:   LoadIntroGame();      break;
-				case GM_EDITOR: MakeNewEditorWorld(); break;
-			}
-			return false;
-
-		default:
-			if (error_detail != nullptr) *error_detail = GetSaveLoadErrorString();
-			_game_mode = ogm;
-			return false;
+	if (_network_dedicated && ogm == GM_MENU) {
+		/*
+		 * If we are a dedicated server *and* we just were in the menu, then we
+		 * are loading the first savegame. If that fails, not starting the
+		 * server is a better reaction than starting the server with a newly
+		 * generated map as it is quite likely to be started from a script.
+		 */
+		DEBUG(net, 0, "Loading requested map failed; closing server.");
+		_exit_game = true;
+		return false;
 	}
+
+	if (result != SL_REINIT) {
+		_game_mode = ogm;
+		return false;
+	}
+
+	if (_network_dedicated) {
+		/*
+		 * If we are a dedicated server, have already loaded/started a game,
+		 * and then loading the savegame fails in a manner that we need to
+		 * reinitialize everything. We must not fall back into the menu mode
+		 * with the intro game, as that is unjoinable by clients. So there is
+		 * nothing else to do than start a new game, as it might have failed
+		 * trying to reload the originally loaded savegame/scenario.
+		 */
+		DEBUG(net, 0, "Loading game failed, so a new (random) game will be started");
+		MakeNewGame(false, true);
+		return false;
+	}
+
+	if (_network_server) {
+		/* We can't load the intro game as server, so disconnect first. */
+		NetworkDisconnect();
+	}
+
+	switch (ogm) {
+		default:
+		case GM_MENU:   LoadIntroGame();      break;
+		case GM_EDITOR: MakeNewEditorWorld(); break;
+	}
+	return false;
 }
 
 void SwitchToMode(SwitchMode new_mode)
@@ -1343,15 +1362,18 @@ void SwitchToMode(SwitchMode new_mode)
 			}
 			break;
 
-		case SM_SAVE_GAME: // Save game.
+		case SM_SAVE_GAME: { // Save game.
 			/* Make network saved games on pause compatible to singleplayer mode */
-			if (SaveOrLoad(_file_to_saveload.name, SLO_SAVE, DFT_GAME_FILE, NO_DIRECTORY) != SL_OK) {
+			SaveModeFlags flags = SMF_NONE;
+			if (_game_mode == GM_EDITOR) flags |= SMF_SCENARIO;
+			if (SaveOrLoad(_file_to_saveload.name, SLO_SAVE, DFT_GAME_FILE, NO_DIRECTORY, true, flags) != SL_OK) {
 				SetDParamStr(0, GetSaveLoadErrorString());
 				ShowErrorMessage(STR_JUST_RAW_STRING, INVALID_STRING_ID, WL_ERROR);
 			} else {
 				DeleteWindowById(WC_SAVELOAD, 0);
 			}
 			break;
+		}
 
 		case SM_SAVE_HEIGHTMAP: // Save heightmap.
 			MakeHeightmapScreenshot(_file_to_saveload.name.c_str());
@@ -1451,37 +1473,54 @@ void CheckCaches(bool force_check, std::function<void(const char *)> log, CheckC
 		if (desync_level == 1 && _scaled_date_ticks % 500 != 0) return;
 	}
 
+	SCOPE_INFO_FMT([flags], "CheckCaches: %X", flags);
+
 	std::vector<std::string> saved_messages;
+	std::function<void(const char *)> log_orig;
 	if (flags & CHECK_CACHE_EMIT_LOG) {
-		log = [&saved_messages](const char *str) {
+		log_orig = std::move(log);
+		log = [&saved_messages, &log_orig](const char *str) {
+			if (log_orig) log_orig(str);
 			saved_messages.emplace_back(str);
 		};
 	}
 
 	char cclog_buffer[1024];
+	auto cclog_common = [&]() {
+		DEBUG(desync, 0, "%s", cclog_buffer);
+		if (log) {
+			log(cclog_buffer);
+		} else {
+			LogDesyncMsg(cclog_buffer);
+		}
+	};
+
 #define CCLOG(...) { \
 	seprintf(cclog_buffer, lastof(cclog_buffer), __VA_ARGS__); \
-	DEBUG(desync, 0, "%s", cclog_buffer); \
-	if (log) { \
-		log(cclog_buffer); \
-	} else { \
-		LogDesyncMsg(cclog_buffer); \
-	} \
+	cclog_common(); \
 }
 
 	auto output_veh_info = [&](char *&p, const Vehicle *u, const Vehicle *v, uint length) {
 		WriteVehicleInfo(p, lastof(cclog_buffer), u, v, length);
 	};
+	auto output_veh_info_single = [&](char *&p, const Vehicle *v) {
+		uint length = 0;
+		for (const Vehicle *u = v->First(); u != v; u = u->Next()) {
+			length++;
+		}
+		WriteVehicleInfo(p, lastof(cclog_buffer), v, v->First(), length);
+	};
 
 #define CCLOGV(...) { \
 	char *p = cclog_buffer + seprintf(cclog_buffer, lastof(cclog_buffer), __VA_ARGS__); \
 	output_veh_info(p, u, v, length); \
-	DEBUG(desync, 0, "%s", cclog_buffer); \
-	if (log) { \
-		log(cclog_buffer); \
-	} else { \
-		LogDesyncMsg(cclog_buffer); \
-	} \
+	cclog_common(); \
+}
+
+#define CCLOGV1(...) { \
+	char *p = cclog_buffer + seprintf(cclog_buffer, lastof(cclog_buffer), __VA_ARGS__); \
+	output_veh_info_single(p, v); \
+	cclog_common(); \
 }
 
 	if (flags & CHECK_CACHE_GENERAL) {
@@ -1793,18 +1832,40 @@ void CheckCaches(bool force_check, std::function<void(const char *)> log, CheckC
 
 		/* Check whether the caches are still valid */
 		for (Vehicle *v : Vehicle::Iterate()) {
-			byte buff[sizeof(VehicleCargoList)];
-			memcpy(buff, &v->cargo, sizeof(VehicleCargoList));
+			Money old_feeder_share = v->cargo.FeederShare();
+			uint old_count = v->cargo.TotalCount();
+			uint64 old_cargo_days_in_transit = v->cargo.CargoDaysInTransit();
+
 			v->cargo.InvalidateCache();
-			assert(memcmp(&v->cargo, buff, sizeof(VehicleCargoList)) == 0);
+
+			uint changed = 0;
+			if (v->cargo.FeederShare() != old_feeder_share) SetBit(changed, 0);
+			if (v->cargo.TotalCount() != old_count) SetBit(changed, 1);
+			if (v->cargo.CargoDaysInTransit() != old_cargo_days_in_transit) SetBit(changed, 2);
+			if (changed != 0) {
+				CCLOGV1("vehicle cargo cache mismatch: %c%c%c",
+						HasBit(changed, 0) ? 'f' : '-',
+						HasBit(changed, 1) ? 't' : '-',
+						HasBit(changed, 2) ? 'd' : '-');
+			}
 		}
 
 		for (Station *st : Station::Iterate()) {
 			for (CargoID c = 0; c < NUM_CARGO; c++) {
-				byte buff[sizeof(StationCargoList)];
-				memcpy(buff, &st->goods[c].cargo, sizeof(StationCargoList));
+				uint old_count = st->goods[c].cargo.TotalCount();
+				uint64 old_cargo_days_in_transit = st->goods[c].cargo.CargoDaysInTransit();
+
 				st->goods[c].cargo.InvalidateCache();
-				assert(memcmp(&st->goods[c].cargo, buff, sizeof(StationCargoList)) == 0);
+
+				uint changed = 0;
+				if (st->goods[c].cargo.TotalCount() != old_count) SetBit(changed, 0);
+				if (st->goods[c].cargo.CargoDaysInTransit() != old_cargo_days_in_transit) SetBit(changed, 1);
+				if (changed != 0) {
+					CCLOG("station cargo cache mismatch: station %i, company %i, cargo %u: %c%c",
+							st->index, (int)st->owner, c,
+							HasBit(changed, 0) ? 't' : '-',
+							HasBit(changed, 1) ? 'd' : '-');
+				}
 			}
 
 			/* Check docking tiles */
@@ -1842,6 +1903,14 @@ void CheckCaches(bool force_check, std::function<void(const char *)> log, CheckC
 			if (tv->Next()) assert_msg(tv->Next()->Prev() == tv, "%u", tv->index);
 		}
 
+		{
+			extern std::string ValidateTemplateReplacementCaches();
+			std::string template_validation_result = ValidateTemplateReplacementCaches();
+			if (!template_validation_result.empty()) {
+				CCLOG("Template replacement cache validation failed: %s", template_validation_result.c_str());
+			}
+		}
+
 		if (!TraceRestrictSlot::ValidateVehicleIndex()) CCLOG("Trace restrict slot vehicle index validation failed");
 		TraceRestrictSlot::ValidateSlotOccupants(log);
 
@@ -1872,8 +1941,9 @@ void CheckCaches(bool force_check, std::function<void(const char *)> log, CheckC
 		}
 	}
 
-#undef CCLOGV
 #undef CCLOG
+#undef CCLOGV
+#undef CCLOGV1
 }
 
 /**

@@ -46,11 +46,14 @@
 #include "debug_settings.h"
 #include "train_speed_adaptation.h"
 #include "event_logs.h"
+#include "3rdparty/cpp-btree/btree_map.h"
 
 #include "table/strings.h"
 #include "table/train_cmd.h"
 
 #include "safeguards.h"
+
+extern btree::btree_multimap<VehicleID, PendingSpeedRestrictionChange> _pending_speed_restriction_change_map;
 
 enum {
 	REALISTIC_BRAKING_MIN_SPEED = 5,
@@ -581,11 +584,10 @@ int GetTrainStopLocation(StationID station_id, TileIndex tile, Train *v, bool up
 			/* Determine the non-diagonal direction in which we will exit this tile */
 			DiagDirection dir = VehicleExitDir(front->direction, front->track);
 			/* Calculate next tile */
-			TileIndex tile = front->tile + TileOffsByDiagDir(dir);
+			TileIndex next_tile = front->tile + TileOffsByDiagDir(dir);
 
 			/* Determine the track status on the next tile */
-			TrackStatus ts = GetTileTrackStatus(tile, TRANSPORT_RAIL, 0, ReverseDiagDir(dir));
-			TrackdirBits trackdirbits = TrackStatusToTrackdirBits(ts) & DiagdirReachesTrackdirs(dir);
+			TrackdirBits trackdirbits = GetTileTrackdirBits(next_tile, TRANSPORT_RAIL, 0, ReverseDiagDir(dir)) & DiagdirReachesTrackdirs(dir);
 
 			/* mask unreachable track bits if we are forbidden to do 90deg turns */
 			TrackBits bits = TrackdirBitsToTrackBits(trackdirbits);
@@ -593,8 +595,8 @@ int GetTrainStopLocation(StationID station_id, TileIndex tile, Train *v, bool up
 				bits &= ~TrackCrossesTracks(FindFirstTrack(front->track));
 			}
 
-			if (bits == TRACK_BIT_NONE || !CheckCompatibleRail(front, tile, dir) || IsRailDepotTile(tile) ||
-					(KillFirstBit(trackdirbits) == TRACKDIR_BIT_NONE && HasOnewaySignalBlockingTrackdir(tile, FindFirstTrackdir(trackdirbits)))) {
+			if (bits == TRACK_BIT_NONE || !CheckCompatibleRail(front, next_tile, dir) || IsRailDepotTile(next_tile) ||
+					(KillFirstBit(trackdirbits) == TRACKDIR_BIT_NONE && HasOnewaySignalBlockingTrackdir(next_tile, FindFirstTrackdir(trackdirbits)))) {
 				/* next tile is an effective dead end */
 				int current_platform_remaining = *station_ahead - TILE_SIZE + GetTileMarginInFrontOfTrain(v);
 				int limit = GetTileMarginInFrontOfTrain(front) + (*station_length - current_platform_remaining) - ((v->gcache.cached_veh_length + 1) / 2);
@@ -942,8 +944,8 @@ static void ApplyLookAheadItem(const Train *v, const TrainReservationLookAheadIt
 				current_order_index++;
 				AdvanceOrderIndex(v, current_order_index);
 				order = v->GetOrder(current_order_index);
-				uint16 max_speed = order->GetMaxSpeed();
-				if (max_speed < UINT16_MAX) limit_advisory_speed(item.start, max_speed, item.z_pos);
+				uint16 order_max_speed = order->GetMaxSpeed();
+				if (order_max_speed < UINT16_MAX) limit_advisory_speed(item.start, order_max_speed, item.z_pos);
 			}
 			break;
 		}
@@ -978,7 +980,7 @@ static void AdvanceLookAheadPosition(Train *v)
 	v->lookahead->current_position++;
 	if (v->lookahead->zpos_refresh_remaining > 0) v->lookahead->zpos_refresh_remaining--;
 
-	if (v->lookahead->current_position > v->lookahead->reservation_end_position + 8) {
+	if (v->lookahead->current_position > v->lookahead->reservation_end_position + 8 && v->track != TRACK_BIT_DEPOT) {
 		/* Beyond end of lookahead, delete it, it will be recreated later with a new reservation */
 		v->lookahead.reset();
 		return;
@@ -1075,7 +1077,7 @@ Train::MaxSpeedInfo Train::GetCurrentMaxSpeedInfoInternal(bool update_state) con
 			if (u->track == TRACK_BIT_DEPOT) {
 				SetBit(const_cast<Train *>(this)->flags, VRF_CONSIST_SPEED_REDUCTION);
 				if (_settings_game.vehicle.train_acceleration_model == AM_REALISTIC) {
-					max_speed = std::min(max_speed, 61);
+					max_speed = std::min<int>(max_speed, _settings_game.vehicle.rail_depot_speed_limit);
 				}
 				continue;
 			}
@@ -1110,9 +1112,11 @@ Train::MaxSpeedInfo Train::GetCurrentMaxSpeedInfoInternal(bool update_state) con
 			}
 			TrainDecelerationStats stats(this, this->lookahead->cached_zpos);
 			if (HasBit(this->lookahead->flags, TRLF_DEPOT_END)) {
-				LimitSpeedFromLookAhead(max_speed, stats, this->lookahead->current_position, this->lookahead->reservation_end_position - TILE_SIZE, 61, this->lookahead->reservation_end_z - stats.z_pos);
+				LimitSpeedFromLookAhead(max_speed, stats, this->lookahead->current_position, this->lookahead->reservation_end_position - TILE_SIZE,
+						_settings_game.vehicle.rail_depot_speed_limit, this->lookahead->reservation_end_z - stats.z_pos);
 			} else {
-				LimitSpeedFromLookAhead(max_speed, stats, this->lookahead->current_position, this->lookahead->reservation_end_position, 0, this->lookahead->reservation_end_z - stats.z_pos);
+				LimitSpeedFromLookAhead(max_speed, stats, this->lookahead->current_position, this->lookahead->reservation_end_position,
+						0, this->lookahead->reservation_end_z - stats.z_pos);
 			}
 			VehicleOrderID current_order_index = this->cur_real_order_index;
 			const Order *order = &(this->current_order);
@@ -1382,7 +1386,7 @@ void DrawTrainEngine(int left, int right, int preferred_x, int y, EngineID engin
 		GetRailIcon(engine, false, y, image_type, &seq);
 
 		Rect16 rect = seq.GetBounds();
-		preferred_x = Clamp(preferred_x,
+		preferred_x = SoftClamp(preferred_x,
 				left - UnScaleGUI(rect.left),
 				right - UnScaleGUI(rect.right));
 
@@ -1458,7 +1462,7 @@ static CommandCost CmdBuildRailWagon(TileIndex tile, DoCommandFlag flags, const 
 
 		v->x_pos = x;
 		v->y_pos = y;
-		v->z_pos = GetSlopePixelZ(x, y);
+		v->z_pos = GetSlopePixelZ(x, y, true);
 		v->owner = _current_company;
 		v->track = TRACK_BIT_DEPOT;
 		v->vehstatus = VS_HIDDEN | VS_DEFPAL;
@@ -1598,7 +1602,7 @@ CommandCost CmdBuildRailVehicle(TileIndex tile, DoCommandFlag flags, const Engin
 		v->owner = _current_company;
 		v->x_pos = x;
 		v->y_pos = y;
-		v->z_pos = GetSlopePixelZ(x, y);
+		v->z_pos = GetSlopePixelZ(x, y, true);
 		v->track = TRACK_BIT_DEPOT;
 		SetBit(v->flags, VRF_CONSIST_SPEED_REDUCTION);
 		v->vehstatus = VS_HIDDEN | VS_STOPPED | VS_DEFPAL;
@@ -2216,6 +2220,7 @@ CommandCost CmdMoveRailVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, u
 				TraceRestrictRemoveVehicleFromAllSlots(src->index);
 				ClrBit(src->vehicle_flags, VF_HAVE_SLOT);
 			}
+			ClrBit(src->vehicle_flags, VF_REPLACEMENT_PENDING);
 			OrderBackup::ClearVehicle(src);
 		}
 
@@ -2592,6 +2597,19 @@ static Vehicle *TrainOnTileEnum(Vehicle *v, void *)
 	return v;
 }
 
+/**
+ * Check if a level crossing tile has a train on it
+ * @param tile tile to test
+ * @return true if a train is on the crossing
+ * @pre tile is a level crossing
+ */
+bool TrainOnCrossing(TileIndex tile)
+{
+	assert(IsLevelCrossingTile(tile));
+
+	return HasVehicleOnPos(tile, VEH_TRAIN, nullptr, &TrainOnTileEnum);
+}
+
 
 /**
  * Checks if a train is approaching a rail-road crossing
@@ -2641,7 +2659,7 @@ static bool TrainApproachingCrossing(TileIndex tile)
 static inline bool CheckLevelCrossing(TileIndex tile)
 {
 	/* reserved || train on crossing || train approaching crossing */
-	return HasCrossingReservation(tile) || HasVehicleOnPos(tile, VEH_TRAIN, nullptr, &TrainOnTileEnum) || TrainApproachingCrossing(tile);
+	return HasCrossingReservation(tile) || TrainOnCrossing(tile) || TrainApproachingCrossing(tile);
 }
 
 /**
@@ -2976,12 +2994,11 @@ void ReverseTrainDirection(Train *v)
 	if (crossing != INVALID_TILE) MaybeBarCrossingWithSound(crossing);
 
 	if (HasBit(v->flags, VRF_PENDING_SPEED_RESTRICTION)) {
-		auto range = pending_speed_restriction_change_map.equal_range(v->index);
-		for (auto it = range.first; it != range.second;) {
+		for (auto it = _pending_speed_restriction_change_map.lower_bound(v->index); it != _pending_speed_restriction_change_map.end() && it->first == v->index;) {
 			it->second.distance = (v->gcache.cached_total_length + (HasBit(it->second.flags, PSRCF_DIAGONAL) ? 8 : 4)) - it->second.distance;
 			if (it->second.distance == 0) {
 				v->speed_restriction = it->second.prev_speed;
-				it = pending_speed_restriction_change_map.erase(it);
+				it = _pending_speed_restriction_change_map.erase(it);
 			} else {
 				std::swap(it->second.prev_speed, it->second.new_speed);
 				++it;
@@ -4357,7 +4374,7 @@ static Track ChooseTrainTrack(Train *v, TileIndex tile, DiagDirection enterdir, 
 		 * the destination but instead to the next one if service isn't needed. */
 		CheckIfTrainNeedsService(v);
 		if (v->current_order.IsType(OT_DUMMY) || v->current_order.IsType(OT_CONDITIONAL) || v->current_order.IsType(OT_GOTO_DEPOT) ||
-				v->current_order.IsType(OT_RELEASE_SLOT) || v->current_order.IsType(OT_COUNTER)) {
+				v->current_order.IsType(OT_RELEASE_SLOT) || v->current_order.IsType(OT_COUNTER) || v->current_order.IsType(OT_LABEL)) {
 			ProcessOrders(v);
 		}
 	}
@@ -4433,7 +4450,7 @@ static Track ChooseTrainTrack(Train *v, TileIndex tile, DiagDirection enterdir, 
 		/* Extend reservation until we have found a safe position. */
 		DiagDirection exitdir = TrackdirToExitdir(res_dest.trackdir);
 		TileIndex     next_tile = TileAddByDiagDir(res_dest.tile, exitdir);
-		TrackBits     reachable = TrackdirBitsToTrackBits((TrackdirBits)(GetTileTrackStatus(next_tile, TRANSPORT_RAIL, 0))) & DiagdirReachesTracks(exitdir);
+		TrackBits     reachable = TrackdirBitsToTrackBits(GetTileTrackdirBits(next_tile, TRANSPORT_RAIL, 0)) & DiagdirReachesTracks(exitdir);
 		if (Rail90DegTurnDisallowedTilesFromDiagDir(res_dest.tile, next_tile, exitdir)) {
 			reachable &= ~TrackCrossesTracks(TrackdirToTrack(res_dest.trackdir));
 		}
@@ -4597,7 +4614,7 @@ bool TryPathReserve(Train *v, bool mark_as_stuck, bool first_tile_okay)
 	} else {
 		new_tile = TileAddByDiagDir(origin.tile, exitdir);
 	}
-	TrackBits reachable = TrackdirBitsToTrackBits(TrackStatusToTrackdirBits(GetTileTrackStatus(new_tile, TRANSPORT_RAIL, 0)) & DiagdirReachesTrackdirs(exitdir));
+	TrackBits reachable = TrackdirBitsToTrackBits(GetTileTrackdirBits(new_tile, TRANSPORT_RAIL, 0) & DiagdirReachesTrackdirs(exitdir));
 
 	if (Rail90DegTurnDisallowedTilesFromDiagDir(origin.tile, new_tile, exitdir)) reachable &= ~TrackCrossesTracks(TrackdirToTrack(origin.trackdir));
 
@@ -5344,29 +5361,29 @@ int ReversingDistanceTargetSpeed(const Train *v)
 
 void DecrementPendingSpeedRestrictions(Train *v)
 {
-	auto range = pending_speed_restriction_change_map.equal_range(v->index);
-	if (range.first == range.second) ClrBit(v->flags, VRF_PENDING_SPEED_RESTRICTION);
-	for (auto it = range.first; it != range.second;) {
+	bool remaining = false;
+	for (auto it = _pending_speed_restriction_change_map.lower_bound(v->index); it != _pending_speed_restriction_change_map.end() && it->first == v->index;) {
 		if (--it->second.distance == 0) {
 			v->speed_restriction = it->second.new_speed;
-			it = pending_speed_restriction_change_map.erase(it);
+			it = _pending_speed_restriction_change_map.erase(it);
 		} else {
 			++it;
+			remaining = true;
 		}
 	}
+	if (!remaining) ClrBit(v->flags, VRF_PENDING_SPEED_RESTRICTION);
 }
 
 void HandleTraceRestrictSpeedRestrictionAction(const TraceRestrictProgramResult &out, Train *v, Trackdir signal_td)
 {
 	if (out.flags & TRPRF_SPEED_RESTRICTION_SET) {
 		SetBit(v->flags, VRF_PENDING_SPEED_RESTRICTION);
-		auto range = pending_speed_restriction_change_map.equal_range(v->index);
-		for (auto it = range.first; it != range.second; ++it) {
+		for (auto it = _pending_speed_restriction_change_map.lower_bound(v->index); it != _pending_speed_restriction_change_map.end() && it->first == v->index; ++it) {
 			if ((uint16) (out.speed_restriction + 0xFFFF) < (uint16) (it->second.new_speed + 0xFFFF)) it->second.new_speed = out.speed_restriction;
 		}
 		uint16 flags = 0;
 		if (IsDiagonalTrack(TrackdirToTrack(signal_td))) SetBit(flags, PSRCF_DIAGONAL);
-		pending_speed_restriction_change_map.insert({ v->index, { (uint16) (v->gcache.cached_total_length + (HasBit(flags, PSRCF_DIAGONAL) ? 8 : 4)), out.speed_restriction, v->speed_restriction, flags } });
+		_pending_speed_restriction_change_map.insert({ v->index, { (uint16) (v->gcache.cached_total_length + (HasBit(flags, PSRCF_DIAGONAL) ? 8 : 4)), out.speed_restriction, v->speed_restriction, flags } });
 		if ((uint16) (out.speed_restriction + 0xFFFF) < (uint16) (v->speed_restriction + 0xFFFF)) v->speed_restriction = out.speed_restriction;
 	}
 	if (out.flags & TRPRF_SPEED_ADAPT_EXEMPT && !HasBit(v->flags, VRF_SPEED_ADAPTATION_EXEMPT)) {
@@ -5761,7 +5778,7 @@ bool TrainController(Train *v, Vehicle *nomove, bool reverse)
 
 				if (v->IsFrontEngine()) {
 					/* Check if track in front is free and see if we can leave wormhole. */
-					int z = GetSlopePixelZ(gp.x, gp.y) - v->z_pos;
+					int z = GetSlopePixelZ(gp.x, gp.y, true) - v->z_pos;
 					if (IsTileType(gp.new_tile, MP_TUNNELBRIDGE) &&	!(abs(z) > 2)) {
 						if (CheckTrainStayInWormHole(v, gp.new_tile)) {
 							v->cur_speed = 0;
@@ -6451,7 +6468,7 @@ static bool TrainLocoHandler(Train *v, bool mode)
 	/* exit if train is stopped */
 	if ((v->vehstatus & VS_STOPPED) && v->cur_speed == 0) return true;
 
-	bool valid_order = !v->current_order.IsType(OT_NOTHING) && v->current_order.GetType() != OT_CONDITIONAL && !v->current_order.IsType(OT_RELEASE_SLOT) && !v->current_order.IsType(OT_COUNTER);
+	bool valid_order = !v->current_order.IsType(OT_NOTHING) && v->current_order.GetType() != OT_CONDITIONAL && !v->current_order.IsType(OT_RELEASE_SLOT) && !v->current_order.IsType(OT_COUNTER) && !v->current_order.IsType(OT_LABEL);
 	if (ProcessOrders(v) && CheckReverseTrain(v)) {
 		v->wait_counter = 0;
 		v->cur_speed = 0;
@@ -6534,7 +6551,7 @@ static bool TrainLocoHandler(Train *v, bool mode)
 
 		bool may_reverse = ProcessOrders(v);
 
-		if (IsRailStationTile(v->tile) && GetStationIndex(v->tile) == station_id) {
+		if (IsRailStationTile(v->tile) && GetStationIndex(v->tile) == station_id && Company::Get(v->owner)->settings.remain_if_next_order_same_station) {
 			if (v->current_order.IsType(OT_GOTO_STATION) && v->current_order.GetDestination() == station_id &&
 					!(v->current_order.GetNonStopType() & ONSF_NO_STOP_AT_DESTINATION_STATION)) {
 				v->last_station_visited = station_id;
@@ -7061,51 +7078,42 @@ void ClearVehicleWindows(const Train *v)
 */
 CommandCost CmdTemplateReplaceVehicle(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const char *text)
 {
-	VehicleID vehicle_id = p1;
+	Train *incoming = Train::GetIfValid(p1);
 
-	Vehicle* vehicle = Vehicle::GetIfValid(vehicle_id);
-
-	if (vehicle == nullptr || vehicle->type != VEH_TRAIN) {
+	if (incoming == nullptr) {
 		return CMD_ERROR;
 	}
 
-	bool should_execute = (flags & DC_EXEC) != 0;
-
-	if (!should_execute) {
+	if (!(flags & DC_EXEC)) {
 		return CommandCost();
 	}
 
-	Train* incoming = Train::From(vehicle);
-	bool leaveDepot = (p2 != 0);
+	const bool leave_depot = (p2 != 0);
+	auto guard = scope_guard([&]() {
+		_new_vehicle_id = incoming->index;
+		if (leave_depot) incoming->vehstatus &= ~VS_STOPPED;
+	});
 
 	Train *new_chain = nullptr;
 	Train *remainder_chain = nullptr;
-	Train *tmp_chain = nullptr;
 	TemplateVehicle *tv = GetTemplateVehicleByGroupIDRecursive(incoming->group_id);
 	if (tv == nullptr) {
-		if (leaveDepot) incoming->vehstatus &= ~VS_STOPPED;
 		return CMD_ERROR;
 	}
 	EngineID eid = tv->engine_type;
 
-	_new_vehicle_id = p1;
-
-	CommandCost buy(EXPENSES_NEW_VEHICLES);
-	CommandCost move_cost(EXPENSES_NEW_VEHICLES);
 	CommandCost tmp_result(EXPENSES_NEW_VEHICLES);
 
-
 	/* first some tests on necessity and sanity */
-	if (tv == nullptr) return buy;
-	if (tv->IsReplaceOldOnly() && !vehicle->NeedsAutorenewing(Company::Get(vehicle->owner), false)) {
-		if (leaveDepot) incoming->vehstatus &= ~VS_STOPPED;
-		return buy;
+	if (tv == nullptr) return CommandCost();
+	if (tv->IsReplaceOldOnly() && !incoming->NeedsAutorenewing(Company::Get(incoming->owner), false)) {
+		return CommandCost();
 	}
 	bool need_replacement = !TrainMatchesTemplate(incoming, tv);
 	bool need_refit = !TrainMatchesTemplateRefit(incoming, tv);
 	bool use_refit = tv->refit_as_template;
 	CargoID store_refit_ct = CT_INVALID;
-	short store_refit_csubt = 0;
+	uint16 store_refit_csubt = 0;
 	// if a train shall keep its old refit, store the refit setting of its first vehicle
 	if (!use_refit) {
 		for (Train *getc = incoming; getc != nullptr; getc = getc->GetNextUnit()) {
@@ -7116,30 +7124,26 @@ CommandCost CmdTemplateReplaceVehicle(TileIndex tile, DoCommandFlag flags, uint3
 		}
 	}
 
-	// TODO: set result status to success/no success before returning
 	if (!need_replacement) {
 		if (!need_refit || !use_refit) {
-			/* before returning, release incoming train first if 2nd param says so */
-			if (leaveDepot) incoming->vehstatus &= ~VS_STOPPED;
-			return buy;
+			return CommandCost();
 		}
 	} else {
-		CommandCost buyCost = TestBuyAllTemplateVehiclesInChain(tv, tile);
-		if (!buyCost.Succeeded()) {
-			if (leaveDepot) incoming->vehstatus &= ~VS_STOPPED;
-			if (buyCost.GetErrorMessage() == INVALID_STRING_ID) return_cmd_error(STR_ERROR_CAN_T_BUY_TRAIN);
-			return buyCost;
-		} else if (!CheckCompanyHasMoney(buyCost)) {
-			if (leaveDepot) incoming->vehstatus &= ~VS_STOPPED;
-			return_cmd_error(STR_ERROR_NOT_ENOUGH_CASH_REQUIRES_CURRENCY);
+		CommandCost buy_cost = TestBuyAllTemplateVehiclesInChain(tv, tile);
+		if (buy_cost.Failed()) {
+			if (buy_cost.GetErrorMessage() == INVALID_STRING_ID) return CommandCost(STR_ERROR_CAN_T_BUY_TRAIN);
+			return buy_cost;
+		} else if (!CheckCompanyHasMoney(buy_cost)) {
+			return CommandCost(STR_ERROR_NOT_ENOUGH_CASH_REQUIRES_CURRENCY);
 		}
 	}
 
 	if (need_replacement || (need_refit && use_refit)) RegisterGameEvents(GEF_TBTR_REPLACEMENT);
 
-	/* define replacement behavior */
-	bool reuseDepot = tv->IsSetReuseDepotVehicles();
-	bool keepRemainders = tv->IsSetKeepRemainingVehicles();
+	TemplateDepotVehicles depot_vehicles;
+	if (tv->IsSetReuseDepotVehicles()) depot_vehicles.Init(tile);
+
+	CommandCost buy(EXPENSES_NEW_VEHICLES);
 
 	if (need_replacement) {
 		// step 1: generate primary for newchain and generate remainder_chain
@@ -7149,46 +7153,70 @@ CommandCost CmdTemplateReplaceVehicle(TileIndex tile, DoCommandFlag flags, uint3
 		// 3. primary might be available as orphan vehicle in the depot
 		// 4. we need to buy a new engine for the primary
 		// all options other than 1. need to make sure to copy incoming's primary's status
-		if (eid == incoming->engine_type) {                                                                       // 1
-			new_chain = incoming;
-			remainder_chain = incoming->GetNextUnit();
-			if (remainder_chain) {
-				move_cost.AddCost(CmdMoveRailVehicle(tile, flags, remainder_chain->index | (1 << 20), INVALID_VEHICLE, 0));
+		auto setup_head = [&]() -> CommandCost {
+			/* Case 1 */
+			if (eid == incoming->engine_type) {
+				new_chain = incoming;
+				remainder_chain = incoming->GetNextUnit();
+				if (remainder_chain) {
+					CommandCost move_cost = CmdMoveRailVehicle(tile, flags, remainder_chain->index | (1 << 20), INVALID_VEHICLE, 0);
+					if (move_cost.Failed()) {
+						/* This should not fail, if it does give up immediately */
+						return move_cost;
+					}
+				}
+				return CommandCost();
 			}
-		} else if ((tmp_chain = ChainContainsEngine(eid, incoming)) && tmp_chain != nullptr) {                       // 2
-			// new_chain is the needed engine, move it to an empty spot in the depot
-			new_chain = tmp_chain;
-			if (flags & DC_EXEC) ClearVehicleWindows(tmp_chain);
-			move_cost.AddCost(DoCommand(tile, new_chain->index, INVALID_VEHICLE, flags, CMD_MOVE_RAIL_VEHICLE));
-			remainder_chain = incoming;
-		} else if (reuseDepot && (tmp_chain = DepotContainsEngine(tile, eid, incoming)) && tmp_chain != nullptr) {   // 3
-			new_chain = tmp_chain;
-			if (flags & DC_EXEC) ClearVehicleWindows(tmp_chain);
-			move_cost.AddCost(DoCommand(tile, new_chain->index, INVALID_VEHICLE, flags, CMD_MOVE_RAIL_VEHICLE));
-			remainder_chain = incoming;
-		} else {                                                                                                  // 4
-			tmp_result = DoCommand(tile, eid, 0, flags, CMD_BUILD_VEHICLE);
+
+			/* Case 2 */
+			new_chain = ChainContainsEngine(eid, incoming);
+			if (new_chain != nullptr) {
+				/* new_chain is the needed engine, move it to an empty spot in the depot */
+				CommandCost move_cost = DoCommand(tile, new_chain->index, INVALID_VEHICLE, flags, CMD_MOVE_RAIL_VEHICLE);
+				if (move_cost.Succeeded()) {
+					remainder_chain = incoming;
+					return CommandCost();
+				}
+			}
+
+			/* Case 3 */
+			if (tv->IsSetReuseDepotVehicles()) {
+				new_chain = depot_vehicles.ContainsEngine(eid, incoming);
+				if (new_chain != nullptr) {
+					ClearVehicleWindows(new_chain);
+					CommandCost move_cost = DoCommand(tile, new_chain->index, INVALID_VEHICLE, flags, CMD_MOVE_RAIL_VEHICLE);
+					if (move_cost.Succeeded()) {
+						depot_vehicles.RemoveVehicle(new_chain->index);
+						remainder_chain = incoming;
+						return CommandCost();
+					}
+				}
+			}
+
+			/* Case 4 */
+			CommandCost buy_cost = DoCommand(tile, eid | (1 << 16), 0, flags, CMD_BUILD_VEHICLE);
 			/* break up in case buying the vehicle didn't succeed */
-			if (!tmp_result.Succeeded()) {
-				return tmp_result;
+			if (buy_cost.Failed()) {
+				return buy_cost;
 			}
-			buy.AddCost(tmp_result);
+			buy.AddCost(buy_cost);
 			new_chain = Train::Get(_new_vehicle_id);
-			/* make sure the newly built engine is not attached to any free wagons inside the depot */
-			move_cost.AddCost(DoCommand(tile, new_chain->index, INVALID_VEHICLE, flags, CMD_MOVE_RAIL_VEHICLE));
 			/* prepare the remainder chain */
 			remainder_chain = incoming;
-		}
+			return CommandCost();
+		};
+		CommandCost head_result = setup_head();
+		if (head_result.Failed()) return head_result;
+
 		// If we bought a new engine or reused one from the depot, copy some parameters from the incoming primary engine
-		if (incoming != new_chain && flags == DC_EXEC) {
+		if (incoming != new_chain) {
 			CopyHeadSpecificThings(incoming, new_chain, flags);
 			NeutralizeStatus(incoming);
 
 			// additionally, if we don't want to use the template refit, refit as incoming
 			// the template refit will be set further down, if we use it at all
 			if (!use_refit) {
-				uint32 cb = GetCmdRefitVeh(new_chain);
-				DoCommand(new_chain->tile, new_chain->index, store_refit_ct | store_refit_csubt << 8 | (1 << 16) | (1 << 31), flags, cb);
+				buy.AddCost(DoCommand(new_chain->tile, new_chain->index, store_refit_ct | store_refit_csubt << 8 | (1 << 16) | (1 << 31), flags, GetCmdRefitVeh(new_chain)));
 			}
 		}
 
@@ -7197,55 +7225,76 @@ CommandCost CmdTemplateReplaceVehicle(TileIndex tile, DoCommandFlag flags, uint3
 		// 1. needed engine might be within remainder_chain already
 		// 2. needed engine might be orphaned within the depot (copy status)
 		// 3. we need to buy (again)                           (copy status)
-		TemplateVehicle *cur_tmpl = tv->GetNextUnit();
 		Train *last_veh = new_chain;
-		while (cur_tmpl) {
-			// 1. engine contained in remainder chain
-			if ((tmp_chain = ChainContainsEngine(cur_tmpl->engine_type, remainder_chain)) && tmp_chain != nullptr)	{
-				// advance remainder_chain (if necessary) to not lose track of it
-				if (tmp_chain == remainder_chain) {
-					remainder_chain = remainder_chain->GetNextUnit();
+		for (TemplateVehicle *cur_tmpl = tv->GetNextUnit(); cur_tmpl != nullptr; cur_tmpl = cur_tmpl->GetNextUnit()) {
+			Train *new_part = nullptr;
+			auto setup_chain_part = [&]() {
+				/* Case 1: engine contained in remainder chain */
+				new_part = ChainContainsEngine(cur_tmpl->engine_type, remainder_chain);
+				if (new_part != nullptr) {
+					Train *remainder_chain_next = remainder_chain;
+					if (new_part == remainder_chain) {
+						remainder_chain_next = remainder_chain->GetNextUnit();
+					}
+					CommandCost move_cost = CmdMoveRailVehicle(tile, flags, new_part->index, last_veh->index, 0);
+					if (move_cost.Succeeded()) {
+						remainder_chain = remainder_chain_next;
+						return;
+					}
 				}
-				move_cost.AddCost(CmdMoveRailVehicle(tile, flags, tmp_chain->index, last_veh->index, 0));
-			}
-			// 2. engine contained somewhere else in the depot
-			else if (reuseDepot && (tmp_chain = DepotContainsEngine(tile, cur_tmpl->engine_type, new_chain)) && tmp_chain != nullptr) {
-				move_cost.AddCost(CmdMoveRailVehicle(tile, flags, tmp_chain->index, last_veh->index, 0));
-			}
-			// 3. must buy new engine
-			else {
-				tmp_result = DoCommand(tile, cur_tmpl->engine_type, 0, flags, CMD_BUILD_VEHICLE);
-				if (!tmp_result.Succeeded()) {
-					return tmp_result;
+
+				/* Case 2: engine contained somewhere else in the depot */
+				if (tv->IsSetReuseDepotVehicles()) {
+					new_part = depot_vehicles.ContainsEngine(cur_tmpl->engine_type, new_chain);
+					if (new_part != nullptr) {
+						CommandCost move_cost = CmdMoveRailVehicle(tile, flags, new_part->index, last_veh->index, 0);
+						if (move_cost.Succeeded()) {
+							depot_vehicles.RemoveVehicle(new_part->index);
+							return;
+						}
+					}
 				}
-				buy.AddCost(tmp_result);
-				tmp_chain = Train::Get(_new_vehicle_id);
-				move_cost.AddCost(CmdMoveRailVehicle(tile, flags, tmp_chain->index, last_veh->index, 0));
+
+				/* Case 3: must buy new engine */
+				CommandCost buy_cost = DoCommand(tile, cur_tmpl->engine_type | (1 << 16), 0, flags, CMD_BUILD_VEHICLE);
+				if (buy_cost.Failed()) {
+					new_part = nullptr;
+					return;
+				}
+				new_part = Train::Get(_new_vehicle_id);
+				CommandCost move_cost = CmdMoveRailVehicle(tile, flags, new_part->index, last_veh->index, 0);
+				if (move_cost.Succeeded()) {
+					buy.AddCost(buy_cost);
+				} else {
+					DoCommand(tile, new_part->index, 0, flags, CMD_SELL_VEHICLE);
+					new_part = nullptr;
+				}
+			};
+			setup_chain_part();
+			if (new_part != nullptr) {
+				last_veh = new_part;
 			}
 			// TODO: is this enough ? might it be that we bought a new wagon here and it now has std refit ?
-			if (need_refit && flags == DC_EXEC) {
+			if (need_refit && new_part != nullptr) {
 				if (use_refit) {
-					uint32 cb = GetCmdRefitVeh(tmp_chain);
-					DoCommand(tmp_chain->tile, tmp_chain->index, cur_tmpl->cargo_type | (cur_tmpl->cargo_subtype << 8) | (1 << 16) | (1 << 31), flags, cb);
+					DoCommand(tile, new_part->index, cur_tmpl->cargo_type | (cur_tmpl->cargo_subtype << 8) | (1 << 16) | (1 << 31), flags, GetCmdRefitVeh(new_part));
 				} else {
-					uint32 cb = GetCmdRefitVeh(tmp_chain);
-					DoCommand(tmp_chain->tile, tmp_chain->index, store_refit_ct | (store_refit_csubt << 8) | (1 << 16) | (1 << 31), flags, cb);
+					DoCommand(tile, new_part->index, store_refit_ct | (store_refit_csubt << 8) | (1 << 16) | (1 << 31), flags, GetCmdRefitVeh(new_part));
 				}
-				if (HasBit(tmp_chain->flags, VRF_REVERSE_DIRECTION) != HasBit(cur_tmpl->ctrl_flags, TVCF_REVERSED)) {
-					DoCommand(tmp_chain->tile, tmp_chain->index, true, flags, CMD_REVERSE_TRAIN_DIRECTION | CMD_MSG(STR_ERROR_CAN_T_REVERSE_DIRECTION_RAIL_VEHICLE));
+				if (HasBit(new_part->flags, VRF_REVERSE_DIRECTION) != HasBit(cur_tmpl->ctrl_flags, TVCF_REVERSED)) {
+					DoCommand(tile, new_part->index, true, flags, CMD_REVERSE_TRAIN_DIRECTION | CMD_MSG(STR_ERROR_CAN_T_REVERSE_DIRECTION_RAIL_VEHICLE));
 				}
 			}
-			cur_tmpl = cur_tmpl->GetNextUnit();
-			last_veh = tmp_chain;
+
 		}
-	}
-	/* no replacement done */
-	else {
+	} else {
+		/* no replacement done */
 		new_chain = incoming;
 	}
+
 	/// step 3: reorder and neutralize the remaining vehicles from incoming
-	// wagons remaining from remainder_chain should be filled up in as few freewagonchains as possible
-	// each locos might be left as singular in the depot
+	// wagons remaining from remainder_chain should be filled up in as few free wagon chains as possible
+	// each loco might be left as singular in the depot
 	// neutralize each remaining engine's status
 
 	// refit, only if the template option is set so
@@ -7254,18 +7303,15 @@ CommandCost CmdTemplateReplaceVehicle(TileIndex tile, DoCommandFlag flags, uint3
 	}
 
 	if (new_chain && remainder_chain) {
-		for (Train *ct = remainder_chain; ct; ct = ct->GetNextUnit()) {
+		for (Train *ct = remainder_chain; ct != nullptr; ct = ct->Next()) {
 			TransferCargoForTrain(ct, new_chain);
 		}
 	}
 
-	// point incoming to the newly created train so that starting/stopping from the calling function can be done
+	// point incoming to the newly created train so that starting/stopping affects the replacement train
 	incoming = new_chain;
-	if (leaveDepot && flags == DC_EXEC) {
-		new_chain->vehstatus &= ~VS_STOPPED;
-	}
 
-	if (remainder_chain && keepRemainders && flags == DC_EXEC) {
+	if (remainder_chain && tv->IsSetKeepRemainingVehicles()) {
 		BreakUpRemainders(remainder_chain);
 	} else if (remainder_chain) {
 		buy.AddCost(DoCommand(tile, remainder_chain->index | (1 << 20), 0, flags, CMD_SELL_VEHICLE));
@@ -7273,8 +7319,6 @@ CommandCost CmdTemplateReplaceVehicle(TileIndex tile, DoCommandFlag flags, uint3
 
 	/* Redraw main gui for changed statistics */
 	SetWindowClassesDirty(WC_TEMPLATEGUI_MAIN);
-
-	_new_vehicle_id = new_chain->index;
 
 	return buy;
 }

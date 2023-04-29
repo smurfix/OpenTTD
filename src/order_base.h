@@ -19,6 +19,7 @@
 #include "vehicle_type.h"
 #include "date_type.h"
 #include "schdispatch.h"
+#include "gfx_type.h"
 #include "saveload/saveload_common.h"
 
 #include <memory>
@@ -50,11 +51,33 @@ template <typename F> void IterateOrderRefcountMapForDestinationID(DestinationID
 void IntialiseOrderDestinationRefcountMap();
 void ClearOrderDestinationRefcountMap();
 
+/*
+ * xflags bits:
+ * Bit 0:    OT_CONDITIONAL: IsWaitTimetabled(): For branch travel time
+ * Bit 1:    IsWaitFixed(): Wait time fixed
+ * Bits 2-3: GetLeaveType(): Order leave type
+ * Bit 4:    IsTravelFixed(): Travel time fixed
+ * Bits 5-7: GetRoadVehTravelDirection(): Road vehicle travel direction
+ */
+/*
+ * xdata users:
+ * OT_COUNTER: Counter operation value (not counter ID)
+ * OCV_SLOT_OCCUPANCY, OCV_VEH_IN_SLOT: Trace restrict slot ID
+ * OCV_COUNTER_VALUE: Bits 0-15: Counter comparison value, Bits 16-31: Counter ID
+ * OCV_TIMETABLE: Timetable lateness/earliness
+ * OCV_TIME_DATE: Time/date
+ * OCV_CARGO_WAITING_AMOUNT: Bits 0-15: Cargo quantity comparison value, Bits 16-31: Via station ID + 2
+ * OCV_CARGO_LOAD_PERCENTAGE: Cargo percentage comparison value
+ * OCV_DISPATCH_SLOT: Bits 0-15: Dispatch schedule ID
+ * OCV_PERCENT: Bits 0-7: Jump counter
+ */
+
 struct OrderExtraInfo {
 	uint8 cargo_type_flags[NUM_CARGO] = {}; ///< Load/unload types for each cargo type.
 	uint32 xdata = 0;                       ///< Extra arbitrary data
 	uint16 dispatch_index = 0;              ///< Scheduled dispatch index + 1
 	uint8 xflags = 0;                       ///< Extra flags
+	uint8 colour = 0;                       ///< Order colour + 1
 };
 
 namespace upstream_sl {
@@ -182,6 +205,7 @@ public:
 	void MakeLoadingAdvance(StationID destination);
 	void MakeReleaseSlot();
 	void MakeChangeCounter();
+	void MakeLabel(OrderLabelSubType subtype);
 
 	/**
 	 * Is this a 'goto' order with a real destination?
@@ -203,7 +227,7 @@ public:
 
 	/**
 	 * Gets the destination of this order.
-	 * @pre IsType(OT_GOTO_WAYPOINT) || IsType(OT_GOTO_DEPOT) || IsType(OT_GOTO_STATION) || IsType(OT_RELEASE_SLOT) || IsType(OT_COUNTER).
+	 * @pre IsType(OT_GOTO_WAYPOINT) || IsType(OT_GOTO_DEPOT) || IsType(OT_GOTO_STATION) || IsType(OT_RELEASE_SLOT) || IsType(OT_COUNTER) || IsType(OT_LABEL).
 	 * @return the destination of the order.
 	 */
 	inline DestinationID GetDestination() const { return this->dest; }
@@ -211,7 +235,7 @@ public:
 	/**
 	 * Sets the destination of this order.
 	 * @param destination the new destination of the order.
-	 * @pre IsType(OT_GOTO_WAYPOINT) || IsType(OT_GOTO_DEPOT) || IsType(OT_GOTO_STATION) || IsType(OT_RELEASE_SLOT) || IsType(OT_COUNTER).
+	 * @pre IsType(OT_GOTO_WAYPOINT) || IsType(OT_GOTO_DEPOT) || IsType(OT_GOTO_STATION) || IsType(OT_RELEASE_SLOT) || IsType(OT_COUNTER) || IsType(OT_LABEL).
 	 */
 	inline void SetDestination(DestinationID destination) { this->dest = destination; }
 
@@ -424,7 +448,7 @@ public:
 	 * explicitly set (but travel_time is actually unused for conditionals). */
 
 	/* Does this order not have any associated travel or wait times */
-	inline bool HasNoTimetableTimes() const { return this->IsType(OT_COUNTER) || this->IsType(OT_RELEASE_SLOT); }
+	inline bool HasNoTimetableTimes() const { return this->IsType(OT_COUNTER) || this->IsType(OT_RELEASE_SLOT) || this->IsType(OT_LABEL); }
 
 	/** Does this order have an explicit wait time set? */
 	inline bool IsWaitTimetabled() const
@@ -539,6 +563,8 @@ public:
 	 */
 	inline void SetOccupancy(uint8 occupancy) { this->occupancy = occupancy; }
 
+	bool UseOccupancyValueForAverage() const;
+
 	bool ShouldStopAtStation(StationID last_station_visited, StationID station, bool waypoint) const;
 	bool ShouldStopAtStation(const Vehicle *v, StationID station, bool waypoint) const;
 	bool CanLeaveWithCargo(bool has_cargo, CargoID cargo) const;
@@ -573,6 +599,30 @@ public:
 	{
 		return this->extra != nullptr && this->extra->dispatch_index > 0 && (!require_wait_timetabled || this->IsWaitTimetabled());
 	}
+
+	/** Get order colour */
+	inline Colours GetColour() const
+	{
+		uint8 value = this->extra != nullptr ? this->extra->colour : 0;
+		return (Colours)(value - 1);
+	}
+
+	/** Set order colour */
+	inline void SetColour(Colours colour)
+	{
+		if (colour != this->GetColour()) {
+			this->CheckExtraInfoAlloced();
+			this->extra->colour = ((uint8)colour) + 1;
+		}
+	}
+
+	inline OrderLabelSubType GetLabelSubType() const
+	{
+		return (OrderLabelSubType)GB(this->flags, 0, 8);
+	}
+
+	const char *GetLabelText() const;
+	void SetLabelText(const char *text);
 
 	void AssignOrder(const Order &other);
 	bool Equals(const Order &other) const;
@@ -764,7 +814,6 @@ private:
 	friend upstream_sl::SaveLoadTable upstream_sl::GetOrderListDescription(); ///< Saving and loading of order lists.
 	friend void Ptrs_ORDL(); ///< Saving and loading of order lists.
 
-	StationID GetBestLoadableNext(const Vehicle *v, const Order *o1, const Order *o2) const;
 	void ReindexOrderList();
 	Order *GetOrderAtFromList(int index) const;
 

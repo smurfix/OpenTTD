@@ -569,12 +569,12 @@ static uint FixVehicleInclination(Vehicle *v, Direction dir)
 		case INVALID_DIR: break;
 		default: NOT_REACHED();
 	}
-	byte entry_z = GetSlopePixelZ(entry_x, entry_y);
+	byte entry_z = GetSlopePixelZ(entry_x, entry_y, true);
 
 	/* Compute middle of the tile. */
 	int middle_x = (v->x_pos & ~TILE_UNIT_MASK) + TILE_SIZE / 2;
 	int middle_y = (v->y_pos & ~TILE_UNIT_MASK) + TILE_SIZE / 2;
-	byte middle_z = GetSlopePixelZ(middle_x, middle_y);
+	byte middle_z = GetSlopePixelZ(middle_x, middle_y, true);
 
 	/* middle_z == entry_z, no height change. */
 	if (middle_z == entry_z) return 0;
@@ -584,6 +584,25 @@ static uint FixVehicleInclination(Vehicle *v, Direction dir)
 
 	/* middle_z > entry_z, we are going upwards. */
 	return 1U << GVF_GOINGUP_BIT;
+}
+
+/**
+ * Check whether the ground vehicles are at the correct Z-coordinate. When they
+ * are not, this will cause all kinds of problems later on as the vehicle might
+ * not get onto bridges and so on.
+ */
+static void CheckGroundVehiclesAtCorrectZ()
+{
+	for (Vehicle *v : Vehicle::Iterate()) {
+		if (v->IsGroundVehicle()) {
+			/*
+			 * Either the vehicle is not actually on the given tile, i.e. it is
+			 * in the wormhole of a bridge or a tunnel, or the Z-coordinate must
+			 * be the same as when it would be recalculated right now.
+			 */
+			assert(v->tile != TileVirtXY(v->x_pos, v->y_pos) || v->z_pos == GetSlopePixelZ(v->x_pos, v->y_pos, true));
+		}
+	}
 }
 
 /**
@@ -1440,7 +1459,7 @@ bool AfterLoadGame()
 					case DIAGDIR_SW: if ((v->x_pos & 0xF) != TILE_SIZE - 1) continue; break;
 					case DIAGDIR_NW: if ((v->y_pos & 0xF) !=  0)            continue; break;
 				}
-			} else if (v->z_pos > GetSlopePixelZ(v->x_pos, v->y_pos)) {
+			} else if (v->z_pos > GetTileMaxPixelZ(TileVirtXY(v->x_pos, v->y_pos))) {
 				v->tile = GetNorthernBridgeEnd(v->tile);
 				v->UpdatePosition();
 			} else {
@@ -2385,15 +2404,15 @@ bool AfterLoadGame()
 
 		/* More companies ... */
 		for (Company *c : Company::Iterate()) {
-			if (c->bankrupt_asked == 0xFF) c->bankrupt_asked = 0xFFFF;
+			if (c->bankrupt_asked == 0xFF) c->bankrupt_asked = MAX_UVALUE(CompanyMask);
 		}
 
 		for (Engine *e : Engine::Iterate()) {
-			if (e->company_avail == 0xFF) e->company_avail = 0xFFFF;
+			if (e->company_avail == 0xFF) e->company_avail = MAX_UVALUE(CompanyMask);
 		}
 
 		for (Town *t : Town::Iterate()) {
-			if (t->have_ratings == 0xFF) t->have_ratings = 0xFFFF;
+			if (t->have_ratings == 0xFF) t->have_ratings = MAX_UVALUE(CompanyMask);
 			for (uint i = 8; i != MAX_COMPANIES; i++) t->ratings[i] = RATING_INITIAL;
 		}
 	}
@@ -2697,8 +2716,7 @@ bool AfterLoadGame()
 			if (IsTileType(t, MP_TREES)) {
 				uint density = GB(_m[t].m2, 6, 2);
 				uint ground = GB(_m[t].m2, 4, 2);
-				uint counter = GB(_m[t].m2, 0, 4);
-				_m[t].m2 = ground << 6 | density << 4 | counter;
+				_m[t].m2 = ground << 6 | density << 4;
 			}
 		}
 	}
@@ -2896,7 +2914,7 @@ bool AfterLoadGame()
 			if (!IsTunnelTile(vtile)) continue;
 
 			/* Are we actually in this tunnel? Or maybe a lower tunnel? */
-			if (GetSlopePixelZ(v->x_pos, v->y_pos) != v->z_pos) continue;
+			if (GetSlopePixelZ(v->x_pos, v->y_pos, true) != v->z_pos) continue;
 
 			/* What way are we going? */
 			const DiagDirection dir = GetTunnelBridgeDirection(vtile);
@@ -2975,6 +2993,23 @@ bool AfterLoadGame()
 		}
 	}
 
+	if (IsSavegameVersionBefore(SLV_CONSISTENT_PARTIAL_Z) && SlXvIsFeatureMissing(XSLFI_CONSISTENT_PARTIAL_Z)) {
+		/*
+		 * The logic of GetPartialPixelZ has been changed, so the resulting Zs on
+		 * the map are consistent. This requires that the Z position of some
+		 * vehicles is updated to reflect this new situation.
+		 *
+		 * This needs to be before SLV_158, because that performs asserts using
+		 * GetSlopePixelZ which internally uses GetPartialPixelZ.
+		 */
+		for (Vehicle *v : Vehicle::Iterate()) {
+			if (v->IsGroundVehicle() && TileVirtXY(v->x_pos, v->y_pos) == v->tile) {
+				/* Vehicle is on the ground, and not in a wormhole. */
+				v->z_pos = GetSlopePixelZ(v->x_pos, v->y_pos, true);
+			}
+		}
+	}
+
 	if (IsSavegameVersionBefore(SLV_158)) {
 		for (Vehicle *v : Vehicle::Iterate()) {
 			switch (v->type) {
@@ -3011,8 +3046,7 @@ bool AfterLoadGame()
 
 					if (rv->state == RVSB_IN_DEPOT || rv->state == RVSB_WORMHOLE) break;
 
-					TrackStatus ts = GetTileTrackStatus(rv->tile, TRANSPORT_ROAD, GetRoadTramType(rv->roadtype));
-					TrackBits trackbits = TrackStatusToTrackBits(ts);
+					TrackBits trackbits = TrackdirBitsToTrackBits(GetTileTrackdirBits(rv->tile, TRANSPORT_ROAD, GetRoadTramType(rv->roadtype)));
 
 					/* Only X/Y tracks can be sloped. */
 					if (trackbits != TRACK_BIT_X && trackbits != TRACK_BIT_Y) break;
@@ -3042,7 +3076,7 @@ bool AfterLoadGame()
 				/* In old versions, z_pos was 1 unit lower on bridge heads.
 				 * However, this invalid state could be converted to new savegames
 				 * by loading and saving the game in a new version. */
-				v->z_pos = GetSlopePixelZ(v->x_pos, v->y_pos);
+				v->z_pos = GetSlopePixelZ(v->x_pos, v->y_pos, true);
 				DiagDirection dir = GetTunnelBridgeDirection(v->tile);
 				if (v->type == VEH_TRAIN && !(v->vehstatus & VS_CRASHED) &&
 						v->direction != DiagDirToDir(dir)) {
@@ -3056,7 +3090,7 @@ bool AfterLoadGame()
 
 			/* If the vehicle is really above v->tile (not in a wormhole),
 			 * it should have set v->z_pos correctly. */
-			assert(v->tile != TileVirtXY(v->x_pos, v->y_pos) || v->z_pos == GetSlopePixelZ(v->x_pos, v->y_pos));
+			assert(v->tile != TileVirtXY(v->x_pos, v->y_pos) || v->z_pos == GetSlopePixelZ(v->x_pos, v->y_pos, true));
 		}
 
 		/* Fill Vehicle::cur_real_order_index */
@@ -3317,6 +3351,11 @@ bool AfterLoadGame()
 		_settings_game.locale.units_volume   = Clamp(_old_units, 1, 2);
 		_settings_game.locale.units_force    = 2;
 		_settings_game.locale.units_height   = Clamp(_old_units, 0, 2);
+	}
+
+	if (IsSavegameVersionBefore(SLV_VELOCITY_NAUTICAL)) {
+		/* Match nautical velocity with land velocity units. */
+		_settings_game.locale.units_velocity_nautical = _settings_game.locale.units_velocity;
 	}
 
 	if (IsSavegameVersionBefore(SLV_186)) {
@@ -4068,6 +4107,10 @@ bool AfterLoadGame()
 		_settings_game.vehicle.through_load_speed_limit = 15;
 	}
 
+	if (SlXvIsFeatureMissing(XSLFI_RAIL_DEPOT_SPEED_LIMIT)) {
+		_settings_game.vehicle.rail_depot_speed_limit = 61;
+	}
+
 	if (SlXvIsFeaturePresent(XSLFI_SCHEDULED_DISPATCH, 1, 2)) {
 		for (OrderList *order_list : OrderList::Iterate()) {
 			if (order_list->GetScheduledDispatchScheduleCount() == 1) {
@@ -4137,6 +4180,13 @@ bool AfterLoadGame()
 		}
 	}
 
+	if (SlXvIsFeatureMissing(XSLFI_REMAIN_NEXT_ORDER_STATION)) {
+		for (Company *c : Company::Iterate()) {
+			/* Approximately the same time as when this was feature was added and unconditionally enabled */
+			c->settings.remain_if_next_order_same_station = SlXvIsFeaturePresent(XSLFI_TRACE_RESTRICT_TUNBRIDGE);
+		}
+	}
+
 	InitializeRoadGUI();
 
 	/* This needs to be done after conversion. */
@@ -4193,6 +4243,14 @@ bool AfterLoadGame()
 	if (!_networking || _network_server) {
 		extern void AfterLoad_LinkGraphPauseControl();
 		AfterLoad_LinkGraphPauseControl();
+	}
+
+	if (SlXvIsFeatureMissing(XSLFI_CONSISTENT_PARTIAL_Z)) {
+		CheckGroundVehiclesAtCorrectZ();
+	} else {
+#ifdef _DEBUG
+		CheckGroundVehiclesAtCorrectZ();
+#endif
 	}
 
 	_game_load_cur_date_ymd = _cur_date_ymd;

@@ -764,7 +764,7 @@ STR_SMALLMAP_LEGENDA_FOREST                                     :{TINY_FONT}{BLA
 STR_SMALLMAP_LEGENDA_RAILROAD_STATION                           :{TINY_FONT}{BLACK}Järnvägsstation
 STR_SMALLMAP_LEGENDA_TRUCK_LOADING_BAY                          :{TINY_FONT}{BLACK}Lastbrygga
 STR_SMALLMAP_LEGENDA_BUS_STATION                                :{TINY_FONT}{BLACK}Busshållplats
-STR_SMALLMAP_LEGENDA_AIRPORT_HELIPORT                           :{TINY_FONT}{BLACK}Flygplats/Helikopterplats
+STR_SMALLMAP_LEGENDA_AIRPORT_HELIPORT                           :{TINY_FONT}{BLACK}Flygplats/Helikopterflygplats
 STR_SMALLMAP_LEGENDA_DOCK                                       :{TINY_FONT}{BLACK}Hamn
 STR_SMALLMAP_LEGENDA_ROUGH_LAND                                 :{TINY_FONT}{BLACK}Obearbetad mark
 STR_SMALLMAP_LEGENDA_GRASS_LAND                                 :{TINY_FONT}{BLACK}Gräsmark
@@ -1808,6 +1808,7 @@ STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT                        :När det är ak
 
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES                         :Lägsta företagsålder för aktiehandel: {STRING}
 STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT                :Ställ in den lägsta ålder från vilken ett företags aktier kan köpas och säljas av andra företag.
+###setting-zero-is-special
 
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE                         :Inkomstprocent per etapp i matarsystem: {STRING}
 STR_CONFIG_SETTING_FEEDER_PAYMENT_SHARE_HELPTEXT                :Procentandel av inkomsten som ges till de mellanliggande etapperna i matarsystem. Ger mer kontroll över inkomsterna
@@ -1953,7 +1954,7 @@ STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Ofta finns det 
 
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY                  :Hastighetsenhet: {STRING}
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_HELPTEXT         :Närhelst en hastighet visas i användargränssnittet, visa den i den valda enheten
-###length 4
+###length 5
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_IMPERIAL         :Brittisk (mph)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_METRIC           :Metrisk (km/h)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_VELOCITY_SI               :SI (m/s)
@@ -2358,7 +2359,8 @@ STR_NETWORK_CLIENT_LIST_NEW_COMPANY                             :(Nytt företag)
 STR_NETWORK_CLIENT_LIST_NEW_COMPANY_TOOLTIP                     :{BLACK}Skapa ett nytt företag och gå med i det
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_SELF_TOOLTIP                :{BLACK}Det här är du
 STR_NETWORK_CLIENT_LIST_PLAYER_ICON_HOST_TOOLTIP                :{BLACK}Det här är spelets värd
-STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} klient{P "" er} / {NUM} företag
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT                    :{BLACK}{NUM} klient{P "" er} - {NUM}{NUM} företag
+STR_NETWORK_CLIENT_LIST_CLIENT_COMPANY_COUNT_TOOLTIP            :{BLACK}Antal för närvarande anslutna klienter, antal företag och maximalt antal företag som tillåts av serveradministratören
 
 # Matches ConnectionType
 ###length 5
@@ -2644,7 +2646,7 @@ STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_STATION                 :{BLACK}Bygg jä
 STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_SIGNALS                 :{BLACK}Bygg järnvägssignaler. Ctrl växlar mellan semaforer/ljussignaler{}Dra för att bygga signaler utmed en rak sträcka räls. Ctrl bygger signal till nästa korsning{}Ctrl+klick aktiverar öppning av signalväljningsfönstret. Shift växlar mellan att bygga/visa beräknad kostnad
 STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_BRIDGE                  :{BLACK}Bygg järnvägsbro. Shift växlar mellan att bygga/visa beräknad kostnad
 STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TUNNEL                  :{BLACK}Bygg järnvägstunnel. Shift växlar mellan att bygga/visa beräknad kostnad
-STR_RAIL_TOOLBAR_TOOLTIP_TOGGLE_BUILD_REMOVE_FOR                :{BLACK}Växla mellan att bygga/ta bort järnväg, signaler, riktmärken och stationer. Håll nere Ctrl för att även ta bort räls från waypoints och stationer
+STR_RAIL_TOOLBAR_TOOLTIP_TOGGLE_BUILD_REMOVE_FOR                :{BLACK}Växla mellan att bygga/ta bort järnväg, signaler, riktmärken och stationer. Håll nere Ctrl för att även ta bort räls från riktmärken och stationer
 STR_RAIL_TOOLBAR_TOOLTIP_CONVERT_RAIL                           :{BLACK}Konvertera/Uppgradera spårtyp. Shift växlar mellan att bygga/visa beräknad kostnad
 
 STR_RAIL_NAME_RAILROAD                                          :Järnväg
@@ -3352,6 +3354,8 @@ STR_NEWGRF_ERROR_MSG_INFO                                       :{SILVER}{STRING
 STR_NEWGRF_ERROR_MSG_WARNING                                    :{RED}Varning: {SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_ERROR                                      :{RED}Fel: {SILVER}{STRING}
 STR_NEWGRF_ERROR_MSG_FATAL                                      :{RED}Fatalt: {SILVER}{STRING}
+STR_NEWGRF_ERROR_FATAL_POPUP                                    :{WHITE}NewGRF:en "{STRING}" har returnerat ett allvarligt fel:{}{STRING}
+STR_NEWGRF_ERROR_POPUP                                          :{WHITE}NewGRF:en "{STRING}" har returnerat ett fel:{}{STRING}
 STR_NEWGRF_ERROR_VERSION_NUMBER                                 :{1:STRING} kommer inte att fungera med den TTDPatchversion som rapporterades av OpenTTD
 STR_NEWGRF_ERROR_DOS_OR_WINDOWS                                 :{1:STRING} är för {2:STRING}-versionen av TTD
 STR_NEWGRF_ERROR_UNSET_SWITCH                                   :{1:STRING} är designat för att användas med {2:STRING}
@@ -4527,7 +4531,7 @@ STR_TIMETABLE_CLEAR_SPEED                                       :{BLACK}Rensa ha
 STR_TIMETABLE_CLEAR_SPEED_TOOLTIP                               :{BLACK}Ta bort hastighetsgräns för markerad order. Ctrl+klick tar bort hastighetsgränsen för alla ordrar
 
 STR_TIMETABLE_RESET_LATENESS                                    :{BLACK}Rensa räknaren för sen ankomst
-STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Nollställ räknaren för sen ankomst så att fordonet kommer i tid
+STR_TIMETABLE_RESET_LATENESS_TOOLTIP                            :{BLACK}Nollställ räknaren för sen ankomst så att fordonet kommer i tid. Ctrl+klick nollställer för hela gruppen så att det senaste fordonet kommer att vara i tid och alla andra tidiga
 
 STR_TIMETABLE_AUTOFILL                                          :{BLACK}Fyll i automatiskt
 STR_TIMETABLE_AUTOFILL_TOOLTIP                                  :{BLACK}Fyll i tidtabellen automatiskt med värden från nästa resa. Ctrl+klicka för att försöka behålla väntetiderna
@@ -4702,7 +4706,7 @@ STR_WARNING_HEIGHTMAP_SCALE_CAPTION                             :{WHITE}Skala-va
 STR_WARNING_HEIGHTMAP_SCALE_MESSAGE                             :{YELLOW}För stora storleksändringar av källkarta är inte rekomenderat. Fortsätt med generering?
 
 # Soundset messages
-STR_WARNING_FALLBACK_SOUNDSET                                   :{WHITE}Endast ett reservdata-ljudsett hittades. Om du vill ha ljud, installera ett ljudsett via nerladdnings-systemet
+STR_WARNING_FALLBACK_SOUNDSET                                   :{WHITE}Endast ett reservdata-ljudsett hittades. Om du vill ha ljud, installera ett ljudsett via nedladdningssystemet
 
 # Screenshot related messages
 STR_WARNING_SCREENSHOT_SIZE_CAPTION                             :{WHITE}Gigantisk skärmdump
@@ -5081,6 +5085,20 @@ STR_ERROR_CAN_T_STOP_SHARING_ORDER_LIST                         :{WHITE}Kan inte
 STR_ERROR_CAN_T_COPY_ORDER_LIST                                 :{WHITE}Kan inte kopiera orderlistan...
 STR_ERROR_TOO_FAR_FROM_PREVIOUS_DESTINATION                     :{WHITE}... för långt från föregående destination
 STR_ERROR_AIRCRAFT_NOT_ENOUGH_RANGE                             :{WHITE}... flygplanet har inte tillräcklig räckvidd
+
+# Extra messages which go on the third line of errors, explaining why orders failed
+STR_ERROR_NO_RAIL_STATION                                       :{WHITE}Det finns ingen järnvägsstation
+STR_ERROR_NO_BUS_STATION                                        :{WHITE}Det finns ingen busstation
+STR_ERROR_NO_TRUCK_STATION                                      :{WHITE}Det finns ingen lastbrygga
+STR_ERROR_NO_DOCK                                               :{WHITE}Det finns ingen hamn
+STR_ERROR_NO_AIRPORT                                            :{WHITE}Det finns ingen flygplats/helikopterflygplats
+STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :{WHITE}Det finns inga hållplatser med en kompatibel vägtyp
+STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :{WHITE}Det finns inga hållplatser med en kompatibel spårvagnstyp
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :{WHITE}Det finns inga hållplatser som passar för ledade vägfordon.{}Ledade vägfordon kräver genomfartshållplatser, inte lastbryggor
+STR_ERROR_AIRPORT_NO_PLANES                                     :{WHITE}Det här flygplanet kan inte landa på den här helikopterflygplatsen
+STR_ERROR_AIRPORT_NO_HELICOPTERS                                :{WHITE}Den här helikoptern kan inte landa på den här flygplatsen
+STR_ERROR_NO_RAIL_WAYPOINT                                      :{WHITE}Det finns inget riktmärke
+STR_ERROR_NO_BUOY                                               :{WHITE}Det finns ingen boj
 
 # Timetable related errors
 STR_ERROR_CAN_T_TIMETABLE_VEHICLE                               :{WHITE}Kan inte lägga till fordonet i en tidtabell...
