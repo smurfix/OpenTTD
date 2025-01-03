@@ -46,6 +46,7 @@ int _debug_yapf_level;
 int _debug_fontcache_level;
 int _debug_script_level;
 int _debug_sl_level;
+int _debug_python_level;
 int _debug_gamelog_level;
 int _debug_desync_level;
 int _debug_console_level;
@@ -71,6 +72,7 @@ static const DebugLevel _debug_levels[] = {
 	DEBUG_LEVEL(fontcache),
 	DEBUG_LEVEL(script),
 	DEBUG_LEVEL(sl),
+	DEBUG_LEVEL(python),
 	DEBUG_LEVEL(gamelog),
 	DEBUG_LEVEL(desync),
 	DEBUG_LEVEL(console),

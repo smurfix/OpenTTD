@@ -7,6 +7,11 @@
 
 /** @file openttd.cpp Functions related to starting OpenTTD. */
 
+#ifdef WITH_PYTHON
+#   include <Python.h>
+#   include "python/call_py.hpp"
+#endif
+
 #include "stdafx.h"
 
 #include "blitter/factory.hpp"
@@ -808,7 +813,15 @@ int openttd_main(std::span<char * const> arguments)
 	/* ScanNewGRFFiles now has control over the scanner. */
 	RequestNewGRFScan(scanner.release());
 
+#ifdef WITH_PYTHON
+	PyTTD::Start();
+#endif
+
 	VideoDriver::GetInstance()->MainLoop();
+
+#ifdef WITH_PYTHON
+	PyTTD::Stop();
+#endif
 
 	PostMainLoop();
 	return ret;
@@ -1391,6 +1404,14 @@ void GameLoop()
 		/* Singleplayer */
 		StateGameLoop();
 	}
+
+#ifdef WITH_PYTHON
+	/* The Python interface runs when the "normal" game loop doesn't */
+	{
+		PerformanceMeasurer script_framerate(PFE_ALLSCRIPTS);
+		PyTTD::ProcessFromPython();
+	}
+#endif
 
 	if (!_pause_mode && HasBit(_display_opt, DO_FULL_ANIMATION)) DoPaletteAnimations();
 

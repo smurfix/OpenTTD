@@ -61,6 +61,10 @@
 
 #include "table/strings.h"
 
+#ifdef WITH_PYTHON
+#include "python/call_py.hpp"
+#endif
+
 #include "safeguards.h"
 
 
