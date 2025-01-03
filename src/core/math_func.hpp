@@ -11,6 +11,9 @@
 #define MATH_FUNC_HPP
 
 #include "strong_typedef_type.hpp"
+#include <limits>
+#include <type_traits>
+#include <cstdint>
 
 #include <limits>
 #include <type_traits>

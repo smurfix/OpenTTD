@@ -10,6 +10,7 @@
 #ifndef NETWORK_TYPE_H
 #define NETWORK_TYPE_H
 
+#include "../stdafx.h"
 #include "../core/enum_type.hpp"
 #include <vector>
 #include <string>
