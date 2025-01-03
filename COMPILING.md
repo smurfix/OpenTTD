@@ -27,6 +27,13 @@ OpenTTD does not require any of the libraries to be present, but without
 liblzma you cannot open most recent savegames and without zlib you cannot
 open most older savegames or use the content downloading system.
 
+## Python
+
+For experimental Python support you need the Python development package,
+commonly called "python-dev" or "python-devel".
+
+Also, you need to install the "nanobind" module.
+
 ## Windows
 
 You need Microsoft Visual Studio 2022 or more recent.

@@ -1,0 +1,3 @@
+[submodule "src/3rdparty/nanobind"]
+	path = src/3rdparty/nanobind
+	url = git@github.com:smurfix/nanobind.git

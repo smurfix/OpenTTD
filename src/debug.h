@@ -48,6 +48,7 @@ extern int _debug_yapf_level;
 extern int _debug_fontcache_level;
 extern int _debug_script_level;
 extern int _debug_sl_level;
+extern int _debug_python_level;
 extern int _debug_gamelog_level;
 extern int _debug_desync_level;
 extern int _debug_console_level;

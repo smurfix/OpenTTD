@@ -23,6 +23,15 @@ install(TARGETS openttd
             COMPONENT Runtime
         )
 
+if (Python_FOUND)
+    install(DIRECTORY
+        src/python/openttd
+        DESTINATION ${DATA_DESTINATION_DIR}/python/
+        COMPONENT Runtime
+        FILES_MATCHING PATTERN "*.py"
+    )
+endif()
+
 if (NOT EMSCRIPTEN)
     # Emscripten embeds these files in openttd.data.
     # See CMakeLists.txt in the root.
