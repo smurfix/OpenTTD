@@ -40,6 +40,9 @@ enum class DebugLevelID : uint8_t {
 	fontcache,
 	script,
 	sl,
+#ifdef WITH_PYTHON
+	python,
+#endif
 	gamelog,
 	desync,
 	yapfdesync,

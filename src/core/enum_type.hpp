@@ -10,6 +10,8 @@
 #ifndef ENUM_TYPE_HPP
 #define ENUM_TYPE_HPP
 
+#include "stdafx.h"
+
 /** Implementation of std::to_underlying (from C++23) */
 template <typename enum_type>
 constexpr std::underlying_type_t<enum_type> to_underlying(enum_type e) { return static_cast<std::underlying_type_t<enum_type>>(e); }

@@ -29,6 +29,10 @@ add_subdirectory(timer)
 add_subdirectory(video)
 add_subdirectory(widgets)
 
+if(Python_FOUND)
+    add_subdirectory(python)
+endif()
+
 add_files(
     viewport_sprite_sorter_sse4.cpp
     CONDITION SSE_FOUND

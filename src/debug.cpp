@@ -69,6 +69,9 @@ std::array<const char *, DebugLevelCount> _debug_level_names {
 	"script",
 	"sl",
 	"gamelog",
+#ifdef WITH_PYTHON
+	"python",
+#endif
 	"desync",
 	"yapfdesync",
 	"console",

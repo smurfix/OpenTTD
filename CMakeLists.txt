@@ -4,6 +4,8 @@ if(NOT BINARY_NAME)
     set(BINARY_NAME openttd)
 endif()
 
+cmake_policy(SET CMP0079 NEW)
+
 project(${BINARY_NAME}
     VERSION 15.0
 )
@@ -120,6 +122,28 @@ find_package(LibLZMA)
 find_package(LZO)
 find_package(ZSTD 1.4)
 find_package(PNG)
+
+find_package(Python COMPONENTS Development Interpreter)
+if(Python_FOUND)
+    execute_process(
+      COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      OUTPUT_VARIABLE nanobind_ROOT
+      RESULT_VARIABLE nanobind_ERROR
+    )
+    if(nanobind_ERROR EQUAL 0)
+        find_package(nanobind CONFIG REQUIRED)
+    else()
+        message(STATUS "Could not find python-nanobind module (OPTIONAL)")
+        set(Python_FOUND 0)
+    endif()
+endif()
+if(Python_FOUND)
+    message(STATUS "Found: Python ${Python_VERSION} with nanobind")
+    add_compile_definitions(WITH_PYTHON)
+else()
+    message(STATUS "No Python/nanobind support (OPTIONAL)")
+endif()
 
 if(WIN32 OR EMSCRIPTEN)
     # Windows uses WinHttp for HTTP requests.
@@ -393,7 +417,7 @@ link_package(ZSTD TARGET ZSTD::ZSTD RECOMMENDED)
 
 if(NOT WIN32 AND NOT EMSCRIPTEN)
     link_package(CURL ENCOURAGED)
-    target_link_libraries(openttd_lib ${CMAKE_DL_LIBS})
+    target_link_libraries(${OPENTTD_LIB} ${CMAKE_DL_LIBS})
 endif()
 
 if(NOT OPTION_DEDICATED)

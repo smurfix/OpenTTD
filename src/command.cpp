@@ -43,6 +43,10 @@
 
 #include "safeguards.h"
 
+#ifdef WITH_PYTHON
+#include "python/call_py.hpp"
+#endif
+
 CommandProc CmdBuildRailroadTrack;
 CommandProc CmdRemoveRailroadTrack;
 CommandProc CmdBuildSingleRail;

@@ -7,6 +7,11 @@
 
 /** @file openttd.cpp Functions related to starting OpenTTD. */
 
+#ifdef WITH_PYTHON
+#   include <Python.h>
+#   include "python/call_py.hpp"
+#endif
+
 #include "stdafx.h"
 
 #include "blitter/factory.hpp"
@@ -1017,7 +1022,15 @@ int openttd_main(std::span<char * const> arguments)
 
 	_general_worker_pool.Start("ottd:worker", 8);
 
+#ifdef WITH_PYTHON
+	PyTTD::Start();
+#endif
+
 	VideoDriver::GetInstance()->MainLoop();
+
+#ifdef WITH_PYTHON
+	PyTTD::Stop();
+#endif
 
 	_general_worker_pool.Stop();
 
@@ -1816,6 +1829,13 @@ void GameLoop()
 		std::lock_guard<std::mutex> lock_state(_cur_palette_mutex);
 		DoPaletteAnimations();
 	}
+#ifdef WITH_PYTHON
+	/* The Python interface runs when the "normal" game loop doesn't */
+	{
+		PerformanceMeasurer script_framerate(PFE_ALLSCRIPTS);
+		PyTTD::ProcessFromPython();
+	}
+#endif
 
 	SoundDriver::GetInstance()->MainLoop();
 	MusicLoop();
