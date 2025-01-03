@@ -10,7 +10,9 @@
 #ifndef STRONG_TYPEDEF_TYPE_HPP
 #define STRONG_TYPEDEF_TYPE_HPP
 
+#include "stdafx.h"
 #include "../3rdparty/fmt/format.h"
+#include <type_traits>
 
 /** Non-templated base for #StrongType::Typedef for use with type trait queries. */
 struct StrongTypedefBase {};
