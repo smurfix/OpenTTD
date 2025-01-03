@@ -125,6 +125,28 @@ find_package(LibLZMA)
 find_package(LZO)
 find_package(PNG)
 
+find_package(Python COMPONENTS Development Interpreter)
+if(Python_FOUND)
+    execute_process(
+      COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      OUTPUT_VARIABLE nanobind_ROOT
+      RESULT_VARIABLE nanobind_ERROR
+    )
+    if(nanobind_ERROR EQUAL 0)
+        find_package(nanobind CONFIG REQUIRED)
+    else()
+        message(STATUS "Could not find python-nanobind module (OPTIONAL)")
+        set(Python_FOUND 0)
+    endif()
+endif()
+if(Python_FOUND)
+    message(STATUS "Found: Python ${Python_VERSION} with nanobind")
+    add_compile_definitions(WITH_PYTHON)
+else()
+    message(STATUS "No Python/nanobind support (OPTIONAL)")
+endif()
+
 if(WIN32 OR EMSCRIPTEN)
     # Windows uses WinHttp for HTTP requests.
     # Emscripten uses Javascript for HTTP requests.
@@ -291,6 +313,10 @@ target_link_libraries(openttd
 target_link_libraries(openttd_test PRIVATE openttd_lib)
 if(ANDROID)
     target_link_libraries(openttd_test PRIVATE log)
+endif()
+
+if(HAIKU)
+    target_link_libraries(openttd "be" "network" "midi")
 endif()
 
 include(Catch)

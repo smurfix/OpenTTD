@@ -11,6 +11,7 @@
 #define SCRIPT_CONTROLLER_HPP
 
 #include "script_types.hpp"
+#include "string_func.h"
 
 /**
  * The Controller, the class each Script should extend. It creates the Script,

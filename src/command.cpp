@@ -63,6 +63,10 @@
 
 #include "safeguards.h"
 
+#ifdef WITH_PYTHON
+#include "python/call_py.hpp"
+#endif
+
 
 int RecursiveCommandCounter::_counter = 0;
 
