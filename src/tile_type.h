@@ -11,6 +11,8 @@
 #define TILE_TYPE_H
 
 #include "core/strong_typedef_type.hpp"
+#include <sys/types.h>
+#include <cstdint>
 
 static const uint TILE_SIZE           = 16;                    ///< Tile size in world coordinates.
 static const uint TILE_UNIT_MASK      = TILE_SIZE - 1;         ///< For masking in/out the inner-tile world coordinate units.
