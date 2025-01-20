@@ -9,10 +9,6 @@
 #include "python/task.hpp"
 #include "safeguards.h"
 
-#include "nanobind/nanobind.h"
-
-namespace py = nanobind;
-
 namespace PyTTD {
 
 	void Msg::Start::Process() {
@@ -22,16 +18,4 @@ namespace PyTTD {
 		Task::Stop();
 	}
 
-	void init_ttd_msg(py::module_ &mg)
-	{
-		auto m = mg.def_submodule("msg", "Message support");
-
-		py::class_<MsgBase>(m, "_Msg", py::dynamic_attr());
-
-		py::class_<Msg::Start, MsgBase>(m, "Start", py::dynamic_attr())
-			.def(py::init<>());
-		py::class_<Msg::Stop, MsgBase>(m, "Stop", py::dynamic_attr())
-			.def(py::init<>());
-
-	}
 }

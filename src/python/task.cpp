@@ -16,6 +16,8 @@
 #include "python/queues.hpp"
 #include "python/call_py.hpp"
 #include "python/setup.hpp"
+#include "python/msg_base.hpp"
+#include "python/msg_console.hpp"
 
 #include "stdafx.h"
 #include "debug.h"
@@ -163,7 +165,7 @@ namespace PyTTD {
 		std::unique_ptr<std::thread> thr = std::make_unique<std::thread>(&Task::_PyRunner, this);
 		Task::thread = std::move(thr);
 
-		QueueToPy.send(new Msg::Start());
+		QueueToPy.send(NewMsg<Msg::Start>());
 	}
 
 	/**
@@ -202,6 +204,16 @@ namespace PyTTD {
 		}
 	}
 
+	/* static */ void Task::ConsoleToPy(int argc, const char* const argv[])
+	{
+		if(Task::current == nullptr || Task::current->stopped) {
+			IConsolePrint(CC_ERROR, "The Python task is not running.");
+			return;
+		}
+		Task::current->QueueToPy.send(NewMsg<Msg::ConsoleCmd>(argc, argv));
+
+	}
+
 	/**
 	 * Wait for the next message to Python.
 	 * @param gen Generation counter.
@@ -226,7 +238,7 @@ namespace PyTTD {
 
 	void Task::PySend(MsgPtr msg)
 	{
-		QueueToTTD.send(msg);
+		QueueToTTD.send(std::move(msg));
 	}
 
 	MsgPtr Task::PyRecv()

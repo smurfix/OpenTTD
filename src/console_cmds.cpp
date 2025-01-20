@@ -50,6 +50,10 @@
 
 #include "safeguards.h"
 
+#ifdef WITH_PYTHON
+#include "python/call_py.hpp"
+#endif
+
 /* scriptfile handling */
 static uint _script_current_depth; ///< Depth of scripts running (used to abort execution when #ConReturn is encountered).
 
@@ -1531,6 +1535,54 @@ DEF_CONSOLE_CMD(ConStopAI)
 	return true;
 }
 
+#if defined(WITH_PYTHON)
+
+
+DEF_CONSOLE_CMD(ConPython)
+{
+	if (argc == 1) {
+		IConsolePrint(CC_HELP, "Python subcommands. Usage: 'py_stop'.");
+		IConsolePrint(CC_HELP, "'py start': Start the Python task.");
+		IConsolePrint(CC_HELP, "'py stop' : Stop the Python task.");
+		IConsolePrint(CC_HELP, "'py state': Check whether the Python task is running.");
+		IConsolePrint(CC_HELP, "'py ...'  : Forward ... to Python.");
+		IConsolePrint(CC_HELP, "'py help' : Get further help from the Python task.");
+		return true;
+	}
+	--argc; ++argv;
+	if (argc == 1) {
+		if(!strcmp(argv[0],"start")) {
+			if(PyTTD::IsRunning()) {
+				IConsolePrint(CC_WARNING, "Python is already running.");
+				return true;
+			}
+
+			PyTTD::Start();
+			return true;
+		}
+		if(!strcmp(argv[0],"stop")) {
+			if(! PyTTD::IsRunning()) {
+				IConsolePrint(CC_WARNING, "Python is not running.");
+			} else {
+				PyTTD::Stop();
+			}
+			return true;
+		}
+		if(!strcmp(argv[0],"state")) {
+			if(PyTTD::IsRunning()) {
+				IConsolePrint(CC_INFO, "Python is running.");
+			} else {
+				IConsolePrint(CC_INFO, "Python is NOT running.");
+			}
+			return true;
+		}
+	}
+	PyTTD::ConsoleToPy(argc, argv);
+	return true;
+}
+
+#endif /* defined(WITH_PYTHON) */
+
 DEF_CONSOLE_CMD(ConRescanAI)
 {
 	if (argc == 0) {
@@ -2828,6 +2880,10 @@ void IConsoleStdLibRegister()
 	IConsole::AliasRegister("set_newgame",           "setting_newgame %+");
 	IConsole::AliasRegister("list_patches",          "list_settings %+");
 	IConsole::AliasRegister("developer",             "setting developer %+");
+
+#if defined(WITH_PYTHON)
+	IConsole::CmdRegister("py",                      ConPython);
+#endif /* defined(WITH_PYTHON) */
 
 	IConsole::CmdRegister("list_ai_libs",            ConListAILibs);
 	IConsole::CmdRegister("list_ai",                 ConListAI);

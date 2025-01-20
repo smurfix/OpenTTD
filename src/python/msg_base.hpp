@@ -27,12 +27,12 @@ namespace PyTTD {
 		virtual ~MsgBase() = default;
 	};
 
-	typedef MsgBase *MsgPtr;
+	typedef std::unique_ptr<MsgBase> MsgPtr;
 
 	template<class T, typename ...Args>
 	inline MsgPtr NewMsg(Args ... args)
 	{
-		return new T(args ...);
+		return std::make_unique<T>(args ...);
 	}
 
 	namespace Msg {
