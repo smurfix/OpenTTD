@@ -168,6 +168,14 @@ void ScriptInstance::Died()
 	this->engine = nullptr;
 }
 
+bool ScriptInstance::CanSuspend()
+{
+	if (this->engine == nullptr) {
+		return false;
+	}
+	return engine->CanSuspend();
+}
+
 void ScriptInstance::GameLoop()
 {
 	ScriptObject::ActiveInstance active(this);
