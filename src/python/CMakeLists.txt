@@ -1,6 +1,8 @@
 add_files(
     call_py.hpp call_py.cpp
+    msg.cpp
     msg_base.hpp msg_base.cpp
+    msg_console.hpp msg_console.cpp
     queues.hpp queues.cpp
     setup.hpp setup.cpp
     task.hpp task.cpp

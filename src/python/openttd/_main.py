@@ -110,10 +110,72 @@ class Main:
     async def _process(self, q):
         async for msg in q:
             try:
-                msg.work(self)
+                res = msg.work(self)
+                if hasattr(res,"__await__"):
+                    await res
             except Exception:
                 logger.exception("Error processing %r", msg)
 
+    async def handle_command(self, msg):
+        args = msg.args
+        try:
+            cmd = getattr(self, f"cmd_{args[0]}")
+        except AttributeError:
+            self.print(f"Command {args[0]} unknown. Try 'py help'.")
+        else:
+            try:
+                res = cmd(msg)
+                if hasattr(res,"__await__"):
+                    await res
+            except Exception as exc:
+                logger.exception("Error processing %r", msg)
+                self.print(f"Error: {exc !r}")
+
+    def cmd_help(self, msg):
+        """List commands; get details about a command"""
+        args = msg.args
+        if len(args) > 1:
+            try:
+                doc = getattr(self, f"cmd_{args[1]}").__doc__
+            except AttributeError:
+                self.print(f"Command {args[1]} unknown. Try 'py help'.")
+            else:
+                if doc is None:
+                    self.print("No help text known.")
+                else:
+                    self.print(doc)
+            return
+
+        # Just "help": print them all
+        cmds = []
+        maxlen=0
+        for k in dir(self):
+            if not k.startswith("cmd_"):
+                continue
+            v = getattr(self,k)
+            k = k[4:]
+            if v.__doc__ is None:
+                continue  # hidden
+            maxlen = max(maxlen, len(k))
+            cmds.append(k)
+
+        cmds.sort()
+        for k in cmds:
+            v = getattr(self,f"cmd_{k}")
+            s = v.__doc__.split("\n")[0]
+            self.print(f"{k :{maxlen}s}: {s}")
+
+    def print(self, s:str):
+        """Print a message oon the OpenTTD console"""
+        msg = openttd.internal.msg.ConsoleMsg(s)
+        self.send(msg)
+
+    def send(self, msg):
+        """
+        Send a message to OpenTTD
+        """
+        t = openttd.internal.task
+        t.send(msg)
 
     async def main(self):
         """
