@@ -5,6 +5,7 @@ add_files(
     msg_base.hpp msg_base.cpp
     msg_command.hpp msg_command.cpp
     msg_console.hpp msg_console.cpp
+    msg_mode.hpp msg_mode.cpp
     object.hpp object.cpp
     queues.hpp queues.cpp
     setup.hpp setup.cpp

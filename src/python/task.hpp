@@ -13,6 +13,7 @@
 #include "python/queues.hpp"
 
 #include "company_type.h"
+#include "openttd.h"
 
 #include <thread>
 #include <memory>
@@ -43,6 +44,9 @@ namespace PyTTD {
 
 	  private:
 		void _start();
+
+		GameMode game_mode = GM_BOOTSTRAP;
+		PauseMode pause_state = PM_PAUSED_ERROR;  // initial nonsense(we hope) state
 
 	  public:
 		/**

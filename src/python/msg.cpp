@@ -14,6 +14,7 @@
 
 #include "python/msg_base.hpp"
 #include "python/msg_console.hpp"
+#include "python/msg_mode.hpp"
 
 namespace py = nanobind;
 
@@ -38,6 +39,12 @@ namespace PyTTD {
 			.def_prop_ro("args", &ConsoleCmd::GetArgs);
 		py::class_<Msg::ConsoleMsg, MsgBase>(m, "ConsoleMsg", py::dynamic_attr())
 			.def(py::new_(&NewMsg<Msg::ConsoleMsg, std::string>), "text"_a);
+
+		/* msg_mode */
+		py::class_<Msg::ModeChange, MsgBase>(m, "ModeChange", py::dynamic_attr())
+			.def_prop_ro("mode", &ModeChange::GetMode);
+		py::class_<Msg::PauseState, MsgBase>(m, "PauseState", py::dynamic_attr())
+			.def_prop_ro("paused", &PauseState::GetState);
 
 	}
 }

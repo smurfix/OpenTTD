@@ -346,11 +346,13 @@ class Main:
         """Print something on the OpenTTD console"""
         if len(a) == 1 and not kw:
             msg = openttd.internal.msg.ConsoleMsg(a[0])
+            log(a[0])
         else:
             iof = StringIO()
             kw["file"] = iof
             print(*a, **kw)
             msg = openttd.internal.msg.ConsoleMsg(iof.getvalue())
+            log(iof.getvalue())
         self.send(msg)
 
     def pprint(self, *a, **kw):
@@ -359,6 +361,7 @@ class Main:
         kw["stream"] = iof
         print(*a, **kw)
         self.send(openttd.internal.msg.ConsoleMsg(iof.getvalue()))
+        log(iof.getvalue())
 
     def send(self, msg):
         """
