@@ -16,6 +16,7 @@
 enum class ScriptType {
 	AI, ///< The script is for AI scripts.
 	GS, ///< The script is for Game scripts.
+	PY, ///< Script type of the Python interpreter.
 };
 
 struct ScriptAllocator;

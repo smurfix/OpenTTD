@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 
+cmake_policy(SET CMP0163 NEW)
+
 if(NOT BINARY_NAME)
     set(BINARY_NAME openttd)
 endif()
