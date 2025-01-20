@@ -48,3 +48,4 @@ def _importer():
 
     # no-op
     ti.msg._Msg.work = lambda self,main: None
+    ti.msg.ConsoleCmd.work = lambda self,main: main.handle_command(self)
