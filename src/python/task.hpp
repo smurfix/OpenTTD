@@ -38,6 +38,11 @@ namespace PyTTD {
 		 */
 		static void ProcessFromPython();
 
+		/**
+		 * Forward console commands to Python.
+		 */
+		static void ConsoleToPy(int argc, const char* const argv[]);
+
 	  private:
 		void _start();
 
@@ -63,7 +68,7 @@ namespace PyTTD {
 		void _PyRunner();
 
 		QToPy QueueToPy;
-		LockedQ QueueToTTD;
+		QToTTD QueueToTTD;
 
 	 public:
 		/**

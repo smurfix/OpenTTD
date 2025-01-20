@@ -35,9 +35,9 @@ namespace PyTTD {
 		std::queue<MsgPtr> queue;
 
 	public:
-		void send(MsgPtr elem);
 		MsgPtr recv();
 		void flush();
+		void send(MsgPtr elem);
 	};
 
 	 /**
@@ -56,6 +56,15 @@ namespace PyTTD {
 	public:
 		uint32_t wait(uint32_t gen);
 		void send(MsgPtr elem);
+	};
+
+	 /**
+	  * Nothing special (for now)
+	  */
+	class QToTTD : public LockedQ {
+	public:
+		QToTTD() {}
+		~QToTTD() = default;
 	};
 }
 

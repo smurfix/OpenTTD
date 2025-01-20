@@ -5,16 +5,36 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PY_CALL_PY_H
-#define _PY_CALL_PY_H
+#ifndef PY_MSG_CONSOLE_H
+#define PY_MSG_CONSOLE_H
 
-namespace PyTTD {
-	void Start();
-	void Stop();
-	bool IsRunning();
+#include "python/msg_base.hpp"
 
-	void ProcessFromPython();
-	void ConsoleToPy(int argc, const char * const argv[]);
+#include <memory>
+#include <string>
+#include <vector>
+
+
+namespace PyTTD::Msg {
+	// Console commands to Python
+	class ConsoleCmd : public MsgBase {
+	public:
+		ConsoleCmd(int argc, const char* const argv[]);
+
+		const std::vector<std::string> &GetArgs() { return args; }
+	private:
+		std::vector<std::string> args;
+	};
+
+	// Message to show on the OpenTTD console
+	class ConsoleMsg : public MsgBase {
+	public:
+		ConsoleMsg(const std::string &msg);
+		void Process() override;
+
+	private:
+		std::string text;
+	};
 }
 
 #endif

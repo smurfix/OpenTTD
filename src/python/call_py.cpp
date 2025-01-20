@@ -49,4 +49,8 @@ namespace PyTTD {
 	void ProcessFromPython() {
 		Task::ProcessFromPython();
 	}
+
+	void ConsoleToPy(int argc, const char* const argv[]) {
+		Task::ConsoleToPy(argc, argv);
+	}
 }
