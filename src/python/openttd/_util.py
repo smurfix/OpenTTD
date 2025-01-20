@@ -78,9 +78,16 @@ def _importer():
 
     _ttd._storage_hook = th.storage_hook
 
-    # no-op
-    ti.msg._Msg.work = lambda self,main: None
-    ti.msg.ConsoleCmd.work = lambda self,main: main.handle_command(self)
+    # Install message handlers from _msg in msg objects
+    import openttd._msg as msg
+    for k in dir(_ttd.msg):
+        if k[0] == "_":
+            continue
+        if hasattr(msg,k):
+            getattr(_ttd.msg, k).work = getattr(msg, k)
+
+    # the default is to do complain (heh)
+    ti.msg._Msg.work = lambda self,main: main.print(f"Message not handled: {self}")
 
     # Import submodules
     for k in (

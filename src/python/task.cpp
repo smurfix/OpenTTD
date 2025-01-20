@@ -18,6 +18,7 @@
 #include "python/setup.hpp"
 #include "python/msg_base.hpp"
 #include "python/msg_console.hpp"
+#include "python/msg_mode.hpp"
 
 #include "stdafx.h"
 #include "debug.h"
@@ -197,6 +198,15 @@ namespace PyTTD {
 		if (Task::current->stopped) {
 			Task::Stop();
 			return;
+		}
+
+		if (Task::current->game_mode != _game_mode) {
+			Task::current->game_mode = _game_mode;
+			Task::current->QueueToPy.send(NewMsg<Msg::ModeChange>(_game_mode));
+		}
+		if (Task::current->pause_state != _pause_mode) {
+			Task::current->pause_state = _pause_mode;
+			Task::current->QueueToPy.send(NewMsg<Msg::PauseState>(_pause_mode));
 		}
 
 		while(true) {
