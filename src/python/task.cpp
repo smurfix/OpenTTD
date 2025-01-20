@@ -192,6 +192,13 @@ namespace PyTTD {
 	/***** Calls from OpenTTD *****/
 
 	/* static */ void Task::ProcessFromPython() {
+		if(Task::current == nullptr)
+			return;
+		if (Task::current->stopped) {
+			Task::Stop();
+			return;
+		}
+
 		while(true) {
 			if(Task::current == nullptr || Task::current->stopped)
 				return;
@@ -236,6 +243,13 @@ namespace PyTTD {
 		return counter;
 	}
 
+	/* static */ void Task::Send(MsgPtr msg)
+	{
+		if(!Task::IsRunning())
+			return;
+		Task::current->QueueToPy.send(std::move(msg));
+	}
+
 	void Task::PySend(MsgPtr msg)
 	{
 		QueueToTTD.send(std::move(msg));
@@ -244,16 +258,6 @@ namespace PyTTD {
 	MsgPtr Task::PyRecv()
 	{
 		return QueueToPy.recv();
-	}
-
-	void init_ttd_task(py::module_ &mg) {
-		auto m = mg.def_submodule("task", "Task support");
-		py::class_<Task>(m, "Task")
-			.def("stop", &Task::PyStop, "Stop the Python task")
-			.def("wait", &Task::PyWaitNewMsg, "Wait for new messages")
-			.def("send", &Task::PySend, "Send a message")
-			.def("recv", &Task::PyRecv, "Read the next message")
-			;
 	}
 }
 

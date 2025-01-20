@@ -184,8 +184,15 @@ class Main:
         TODO.
         """
         import _ttd
+        _ttd.debug(2,"Python START")
 
-        print("Python START")
+        main_storage = _ttd.object.Storage()
+        main_storage.company = openttd.company.Owner.SPECTATOR
+        main_storage.real_company = openttd.company.Owner.SPECTATOR
+        main_storage.allow_do_command = False
+        _storage.set(main_storage)
+        _main.set(self)
+
         msg_in_w,msg_in_r = anyio.create_memory_object_stream(999)
 
         async with anyio.create_task_group() as tg:

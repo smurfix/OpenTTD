@@ -29,8 +29,6 @@ namespace PyTTD {
 			Stop();
 		}
 
-		static bool IsRunning() { return current != nullptr && !current->stopped; }
-
 		/**
 		 * Process enqueued commands and messages from Python.
 		 *
@@ -56,6 +54,16 @@ namespace PyTTD {
 		 * Stop the main Python task. Called from OpenTTD when exiting the game.
 		 */
 		static void Stop();
+
+		/**
+		 * Test whether the Python task is running.
+		 */
+		static bool IsRunning() { return current != nullptr && !current->stopped; }
+
+		/**
+		 * Send a message to Python.
+		 */
+	 	static void Send(MsgPtr msg);
 
 	  private:
 		static std::unique_ptr<Task> current;

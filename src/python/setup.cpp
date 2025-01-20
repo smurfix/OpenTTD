@@ -16,7 +16,10 @@ namespace py = nanobind;
 
 namespace PyTTD {
 	extern void init_ttd_msg(py::module_ &);
-	extern void init_ttd_task(py::module_ &);
+	extern void init_ttd_enums(py::module_ &);
+	extern void init_ttd_object(py::module_ &);
+	extern void init_ttd_support(py::module_ &);
+	extern void init_ttd_modules(py::module_ &);
 
 	PyObject *init_ttd()
 	{
@@ -25,8 +28,11 @@ namespace PyTTD {
 		py::detail::init(nullptr);
 		py::module_ m = py::steal<py::module_>(py::detail::module_new("_ttd",&ttd_def));
 
-		init_ttd_task(m);
+		init_ttd_object(m);
+		init_ttd_support(m);
 		init_ttd_msg(m);
+		init_ttd_enums(m);
+		init_ttd_modules(m);
 
 		// magic incantation 2
 		return m.release().ptr();

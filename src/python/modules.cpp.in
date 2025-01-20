@@ -1,0 +1,77 @@
+/*
+ * This file is part of OpenTTD.
+ * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
+ * OpenTTD is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/* THIS FILE IS AUTO-GENERATED; PLEASE DO NOT ALTER MANUALLY */
+
+#include <nanobind/nanobind.h>
+
+#include <map>
+
+#include "debug.h"
+
+namespace py = nanobind;
+
+namespace PyTTD {
+${PYTHON_DEFS}
+}
+
+using namespace PyTTD;
+
+typedef void (*initfn)(py::module_ &);
+
+static std::map<const char *, initfn>modules;
+
+static void setup(py::module_ &m, const char *name, bool remove = false)
+{
+    auto data = modules.find(name);
+    if (data == modules.end()) {
+        Debug(python, 1, "Module '{}' not found.", name);
+        return;
+    }
+    try {
+        auto md = m.def_submodule(name, name);
+        data->second(md);
+        if (remove)
+            modules.erase(name);
+    }
+    catch (const std::exception &ex) {
+        Debug(python, 0, "Module '{}' failed to load!", name);
+        Debug(python, 0, "Failure: {}", typeid(ex).name());
+        Debug(python, 0, "Reason: {}", ex.what());
+    }
+}
+// called from PYTHON_REGISTER
+static void proc(const char *name, void (*mod)(py::module_ &))
+{
+    modules.insert({name, mod});
+}
+
+// go through all modules, return if some work was done
+static void insert()
+{
+${PYTHON_REGISTER}
+}
+
+namespace PyTTD {
+    void init_ttd_modules(py::module_ &mg) {
+        auto m = mg.def_submodule("script", "Raw script modules");
+
+        insert();
+        // These must be first.
+        setup(m, "list", true);
+        setup(m, "basestation", true);
+        setup(m, "stationlist", true);
+        setup(m, "stationlist_cargo", true);
+        setup(m, "stationlist_cargoplanned", true);
+        setup(m, "stationlist_cargowaiting", true);
+
+        // The rest is OK with getting loaded alphabetically.
+        // (We probably shouldn't depend on that.)
+        for ( auto [ k,v ] : modules )
+            setup(m, k, false);
+    }
+}

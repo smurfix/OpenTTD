@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.30)
+
+cmake_policy(SET CMP0163 NEW)
 
 if(NOT BINARY_NAME)
     set(BINARY_NAME openttd)
