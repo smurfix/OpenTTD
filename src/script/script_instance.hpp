@@ -92,7 +92,7 @@ public:
 	/**
 	 * Get the storage of this script.
 	 */
-	class ScriptStorage *GetStorage();
+	virtual class ScriptStorage *GetStorage();
 
 	/**
 	 * Get the log pointer of this script.
@@ -207,6 +207,12 @@ public:
 	 * mechanism that executes the script.
 	 */
 	void Unpause();
+
+	/**
+	 * Checks if the script can be suspended.
+	 * @return true if it can be, otherwise false.
+	 */
+	bool CanSuspend();
 
 	/**
 	 * Get the number of operations the script can execute before being suspended.
