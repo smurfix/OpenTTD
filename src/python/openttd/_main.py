@@ -184,6 +184,7 @@ class Main:
         TODO.
         """
         import _ttd
+        _ttd.debug(2,"Python START")
 
         main_storage = _ttd.object.Storage()
         main_storage.company = openttd.company.Owner.SPECTATOR
@@ -205,7 +206,7 @@ class Main:
             n = 1
             while True:
                 await anyio.sleep(n)
-                log("Python running: %d",n)
+                _ttd.debug(3, f"Python running: {n}")
                 n *= 2
 
 def run():
