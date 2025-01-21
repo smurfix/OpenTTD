@@ -70,6 +70,7 @@ class Main:
 
     def __init__(self):
         self._replies = {}
+        self._globals = {}
 
     async def _ttd_reader(self, queue, *, task_status):
         """
@@ -130,6 +131,36 @@ class Main:
             except Exception as exc:
                 logger.exception("Error processing %r", msg)
                 self.print(f"Error: {exc !r}")
+
+    def cmd_eval(self, msg):
+        """Evaluate a Python expression.
+        The modules "openttd" and "_ttd" (internal) are pre-loaded.
+
+        You can use p(X) to print the value of X
+        """
+        import _ttd
+        from io import StringIO
+        from pprint import pprint
+
+        g = self._globals
+        iof = StringIO()
+
+        g["openttd"] = openttd
+        g["_ttd"] = _ttd
+
+        g["p"] = lambda *p: print(*p, file=iof)
+        g["r"] = lambda *p: print(*(repr(x) for x in p), file=iof)
+        g["pp"] = partial(pprint, stream=iof)
+        expr = " ".join(msg.args[1:])
+        try:
+            expr = compile(expr,"py","eval")
+        except SyntaxError:
+            expr = compile(expr,"py","single")
+        res = eval(expr, g,g)
+        if iof.getvalue():
+            self.print(iof.getvalue())
+        if res is not None:
+            self.print(str(res))
 
     def cmd_help(self, msg):
         """List commands; get details about a command"""
