@@ -48,6 +48,8 @@ namespace PyTTD {
 			.def("recv", &Task::PyRecv, "Read the next message")
 			;
 
+		// intentionally not in a submodule
+		mg.def("debug", [](int level, const char *text) { Debug(python, level, "{}", text); },+ "Debug logging ('python')");
 	}
 
 	// If a call from Python to TTD generated a command,
