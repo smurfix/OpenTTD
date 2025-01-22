@@ -5,11 +5,20 @@ import re
 from pathlib import Path
 
 if len(sys.argv) != 4:
-    print(f"Usage: {sys.argv[0]} <sourcefile> <enumname> <prefix>", file=sys.stderr)
+    print(f"Usage: {sys.argv[0]} <sourcefile> <destfile> <name/prefix…,…>", file=sys.stderr)
     sys.exit(1)
-(_, SCRIPT_API_FILE,ENUM_NAME,ENUM_PREFIX) = sys.argv
+(_, source_file,dest_file,enum_names) = sys.argv
 
-source_file = Path(SCRIPT_API_FILE)
+source_file = Path(source_file)
+dest_file = Path(dest_file)
+file_name = source_file.stem
+dest = dest_file.open("w")
+
+names = {}
+for name in enum_names.split(","):
+    name,*prefix = name.split("/")
+    names[name] = prefix
+
 
 enum_name=None
 cls_name=None
@@ -31,7 +40,7 @@ fwd_re = re.compile(r'^\s*class(.*);')
 cls_re = re.compile(r'\s*class (.*) (: public|: protected|: private|:) (\S+)')
 struct_re = re.compile(r'^\s*struct (\S*)')
 enum_re = re.compile(r'^\s*enum (\S*)')
-enum_member_re = re.compile(r'^\s*(\S+),')
+enum_member_re = re.compile(r'^\s*([a-zA-Z][a-zA-Z0-9_]*)(,|\s*=|\s*$)')
 enum_err_re = re.compile(r'^\[(.*)\]')
 end_re = re.compile(r'^\s*};')
 method_re = re.compile(r'^\s*((virtual|static|const)\s+)*(\S+\s+[&*]?)?(~?\S+)\s*\(((::|[^:])*)\)')
@@ -46,12 +55,28 @@ def doxygen_check():
     if doxygen_skip is not None:
         raise SyntaxError(f"{api_file}:{num_line}: a DOXYGEN_API block was not properly closed")
 
-print(f"""
+dest.write(f"""
+
+/*
+ * This file is part of OpenTTD.
+ * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
+ * OpenTTD is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/* THIS FILE IS AUTO-GENERATED; PLEASE DO NOT ALTER MANUALLY */
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/string.h>
+
+namespace py = nanobind;
+
 #include "{source_file.name}"
 
 namespace PyTTD {{
 
-void init_ttd_enums(py::module_ &m) {{
+void init_ttd_enum_{file_name}(py::module_ &m) {{
 
 """)
 
@@ -121,7 +146,7 @@ for num_line,line in enumerate(source_file.read_text().split("\n")):
                 cls_name=m.group(1)
                 cls_super=m.group(3)
                 if cls_name in ("ScriptPriorityQueue",):
-                    print(f"/* TODO: {cls_super}::{cls_name} refers to the Squirrel VM */")
+                    dest.write(f"/* TODO: {cls_super}::{cls_name} refers to the Squirrel VM */\n")
                     cls_super = None
                     cls_name = None
                     pass
@@ -130,10 +155,10 @@ for num_line,line in enumerate(source_file.read_text().split("\n")):
                     api_cls = cls_name
                     if api_cls.startswith("Script"):
                         api_cls = api_cls[6:]
-                    print(f'void init_{api_cls.lower()}(py::module_ &m)')
-                    print('{');
-                    print(f'    auto cls_{cls_name} = py::class_<{cls_name}, {cls_super}>(m, "{api_cls}");')
-
+                    dest.write(f'''
+void init_{api_cls.lower()}(py::module_ &m) {{
+    auto cls_{cls_name} = py::class_<{cls_name}, {cls_super}>(m, "{api_cls}");
+''')
         elif cls_level == 1:
             # TODO export structs
             print(f"Struct {m.group(1)}: TODO",file=sys.stderr)
@@ -173,22 +198,24 @@ for num_line,line in enumerate(source_file.read_text().split("\n")):
     if m := enum_re.match(line):
         cls_level += 1
 
-        if m.group(1) != ENUM_NAME:
+        try:
+            prefix = names[m.group(1)]
+        except KeyError:
             continue
 
         enum_name = m.group(1)
         ename = enum_name
         if ename[-1] == "s":
             ename = ename[:-1]  # strip plural
-        print(f'    py::enum_<{enum_name}>(m, "{ename}")')
+        dest.write(f'    py::enum_<{enum_name}>(m, "{ename}")\n')
         continue
 
     # Maybe the end of the class
     if end_re.match(line):
         cls_level -= 1
         if enum_name is not None:
-            # print(f'        .export_values()')
-            print(f'        ;\n')
+            # dest.write(f'        .export_values()')
+            dest.write(f'        ;\n')
             enum_name = None
             continue
 
@@ -198,14 +225,17 @@ for num_line,line in enumerate(source_file.read_text().split("\n")):
 
         # Chop prefixes off enum constants.
         pname = name
-        if pname.startswith(ENUM_PREFIX):
-            # ERR_VEHICLE_TOO_MANY ⇒ vehicle.Error.TOO_MANY
-            pname = pname[len(ENUM_PREFIX):]
+        for pref in prefix:
+            if pname.startswith(pref):
+                # ERR_VEHICLE_TOO_MANY ⇒ vehicle.Error.TOO_MANY
+                pname = pname[len(pref):]
+                break
 
-        print(f'        .value("{pname}", {enum_name}::{name})')
+        dest.write(f'        .value("{pname}", {enum_name}::{name})\n')
         continue
 
-print("}\n} /* EOF */")
+dest.write("}\n} /* EOF */")
+dest.close();
 
 doxygen_check()
 
