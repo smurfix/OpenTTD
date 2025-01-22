@@ -27,9 +27,9 @@ namespace PyTTD {
 		py::class_<ScriptObject, SimpleCountedObject>(m, "ScriptObject");
 
 		py::class_<Storage>(m, "Storage")
-			.def(py::new_(&Storage::create))
+			.def(py::new_(&Storage::Create))
 			.def_rw("company", &Storage::company)
-			.def_rw("real_company", &Storage::root_company)
+			.def_ro("root_company", &Storage::root_company)
 			.def_rw("allow_do_command", &Storage::allow_do_command)
 			.def_ro("costs", &Storage::costs)
 			.def_ro("last_cost", &Storage::last_cost)

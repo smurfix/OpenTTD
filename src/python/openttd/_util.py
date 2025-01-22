@@ -52,6 +52,17 @@ def _set(p,v):
     _assigned.add(v)
     setattr(m,p[-1],v)
 
+def _copy(dst,src,prefix=""):
+    for k in dir(src):
+        if prefix:
+            if not k.startswith(prefix):
+                continue
+        else:
+            if k[0] == "_":
+                continue
+        if hasattr(dst,k):
+            continue
+        setattr(dst,k,getattr(src,k))
 
 def _importer():
     """Reorganize the raw _ttd modules so that they look more pythonic.
@@ -64,6 +75,7 @@ def _importer():
     ti.msg = _ttd.msg
     ti.task = _ttd.main
     ti.StopWork = StopWork
+
     _ttd._storage_hook = th.storage_hook
 
     # no-op
@@ -90,9 +102,13 @@ def _importer():
     #t.Text = _ttd._support.Text
     #t._control = _ttd._control
 
-    todo = [ k for k in dir(_ttd) if k[0] != "_" and getattr(_ttd,k) not in _assigned ]
-    if todo:
-        import sys
-        print("TODO:", *todo, file=sys.stderr)
+    t.Tile = _ttd.support.Tile_
+    t.Text = _ttd.support.Text
+    t.Money = _ttd.support.Money
+
+    t.tile.Tile = t.Tile
+
+    _copy(ti,_ttd.support,"get_")
+
     _assigned.clear()
 

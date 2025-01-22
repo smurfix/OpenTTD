@@ -239,7 +239,7 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
         if enum_name == "ErrorMessages":
             print(f'    auto enum_{enum_cls} = py::enum_<{enum_cls}::{enum_name}>(m, "_Error_{enum_cls}")')
         else:
-            print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}")')
+            print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}", py::is_flag())')
         continue
 
     # Maybe the end of the class
