@@ -115,32 +115,54 @@ add_dependencies(script_api
 #        ${CMAKE_CURRENT_BINARY_DIR}
 #)
 
-set(SCRIPT_API_FILE ${CMAKE_SOURCE_DIR}/src/command_type.h)
-set(SCRIPT_API_BINARY_FILE ${CMAKE_CURRENT_BINARY_DIR}/enum_command.cpp)
-add_custom_command(
-        OUTPUT ${SCRIPT_API_BINARY_FILE}
-        COMMAND ${CMAKE_COMMAND}
-        -DSCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/export_enum.py
-                -DSCRIPT_API_SOURCE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/export_enum.cpp.in
-                -DSCRIPT_API_BINARY_FILE=${SCRIPT_API_BINARY_FILE}
-                -DSCRIPT_API_FILE=${SCRIPT_API_FILE}
-                -DENUM_NAME=Commands
-                -DENUM_PREFIX=CMD_
-                -P ${CMAKE_SOURCE_DIR}/cmake/scripts/PythonExportEnum.cmake
-        MAIN_DEPENDENCY ${SCRIPT_API_FILE}
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/export_enum.cpp.in
-                ${CMAKE_CURRENT_SOURCE_DIR}/export_enum.py
-                ${CMAKE_SOURCE_DIR}/cmake/scripts/PythonExportEnum.cmake
+set(ENUM_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/export_enum.py)
+
+foreach(ENUM
+        "src/command_type.h;Commands/CMD_,CommandType/CMDT_,CommandPauseLevel/CMDPL_"
+        "src/openttd.h;GameMode/GM_,SwitchMode/SM_,PauseMode/PM_PAUSED_/PM_"
+        )
+    list(GET ENUM 0 HEADER_FILE)
+    list(GET ENUM 1 ENUM_NAMES)
+    get_filename_component(ENUM_NAME "${HEADER_FILE}" NAME_WE)
+
+
+    set(ENUM_SOURCE_FILE ${CMAKE_SOURCE_DIR}/${HEADER_FILE})
+    set(ENUM_DEST_FILE ${CMAKE_CURRENT_BINARY_DIR}/enum_${ENUM_NAME}.cpp)
+    add_custom_command(
+        OUTPUT ${ENUM_DEST_FILE}
+        COMMAND python3 ${ENUM_SCRIPT} ${ENUM_SOURCE_FILE} ${ENUM_DEST_FILE} ${ENUM_NAMES}
+        MAIN_DEPENDENCY ${SCRIPT_API_SOURCE_FILE}
+        DEPENDS ${ENUM_SOURCE_FILE}
+            ${ENUM_SCRIPT}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating ${SCRIPT_API_BINARY_FILE}"
-)
-set_property(SOURCE ${SCRIPT_API_BINARY_FILE} PROPERTY GENERATED ON)
+        COMMENT "Generating ${ENUM_DEST_FILE}"
+    )
+    set_property(SOURCE ${ENUM_DEST_FILE} PROPERTY GENERATED ON)
+    list(APPEND ENUM_BINARY_FILES ${ENUM_DEST_FILE})
+    list(APPEND ENUM_COLLECT_NAMES ${ENUM_NAME})
+endforeach()
+
 add_custom_target_timestamp(script_python_enums
+        DEPENDS
+        ${ENUM_BINARY_FILES}
+)
+
+set(ENUM_COLLECT_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/collect_enum.py)
+set(ENUM_BINARY_FILE ${CMAKE_CURRENT_BINARY_DIR}/export_enum.cpp)
+add_custom_command(
+  OUTPUT ${ENUM_BINARY_FILE}
+  COMMAND python3 ${ENUM_COLLECT_SCRIPT} ${ENUM_BINARY_FILE} ${ENUM_COLLECT_NAMES}
+  MAIN_DEPENDENCY ${ENUM_SOURCE_FILE}
+  DEPENDS script_python_enums
+    ${ENUM_COLLECT_SCRIPT}
+  )
+
+set_property(SOURCE ${ENUM_BINARY_FILE} PROPERTY GENERATED ON)
+add_custom_target_timestamp(script_python_enum
     DEPENDS
-    ${SCRIPT_API_BINARY_FILE}
+    ${ENUM_BINARY_FILE}
 )
 add_dependencies(script_python
-    script_python_enums
-
+    script_python_enum
 )
-target_sources(openttd_lib PRIVATE ${SCRIPT_API_BINARY_FILE})
+target_sources(openttd_lib PRIVATE ${ENUM_BINARY_FILE} ${ENUM_BINARY_FILES})
