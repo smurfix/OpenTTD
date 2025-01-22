@@ -4,9 +4,9 @@
 
 import anyio
 import openttd
-from openttd.base import BaseScript
+from openttd.base import GameScript
 
-class Script(BaseScript):
+class Script(GameScript):
     step="idle"
     async def setup(self):
         self.step="after setup"

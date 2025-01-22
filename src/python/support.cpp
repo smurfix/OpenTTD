@@ -15,6 +15,7 @@
 #include "script/script_instance.hpp"
 #include "script/api/script_text.hpp"
 #include "script/api/script_date.hpp"
+#include "script/api/script_controller.hpp"
 
 namespace PyTTD {
 	namespace py = nanobind;
@@ -22,7 +23,13 @@ namespace PyTTD {
 	void init_ttd_support(py::module_ &mg) {
 		auto m = mg.def_submodule("support", "Various supporting classes and enums");
 
-		py::enum_<Owner>(m,"Owner")
+		m.def("get_tick", &ScriptController::GetTick);
+		m.def("set_command_delay", &ScriptController::SetCommandDelay);
+		m.def("get_setting", &ScriptController::GetSetting, nanobind::arg("name"));
+		m.def("get_version", &ScriptController::GetVersion);
+		m.def("print", &ScriptController::Print);
+
+		py::enum_<Owner>(m, "Owner", py::is_flag())
 			.value("BEGIN",OWNER_BEGIN)
 			.value("INVALID",INVALID_OWNER)
 			.value("MAX_COMPANIES",MAX_COMPANIES)
@@ -35,7 +42,7 @@ namespace PyTTD {
 			// .export_values()
 			;
 
-		py::class_<TileIndex>(m, "Tile")
+		py::class_<TileIndex>(m, "Tile_")
 			.def(py::init_implicit<uint32_t>())
 			.def(py::new_([](unsigned int xy){ return TileIndex(xy);}))
 			.def(py::new_([](unsigned int x, unsigned int y){ return TileXY(x,y);}))
