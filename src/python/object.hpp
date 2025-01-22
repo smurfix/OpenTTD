@@ -39,9 +39,12 @@ namespace PyTTD {
 		Storage(Private) : ScriptStorage() {}
 
 		// Thus all objects must be contained in a shared_ptr.
-		static StoragePtr create()
+		static StoragePtr Create(Owner comp)
 		{
-			return std::make_shared<Storage>(Private());
+			auto res = std::make_shared<Storage>(Private());
+			res->root_company = comp;
+			res->company = comp;
+			return res;
 		}
 
 		virtual ~Storage() = default;

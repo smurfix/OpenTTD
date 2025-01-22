@@ -15,10 +15,13 @@ import anyio
 import traceback
 import sys
 import warnings
+import importlib
 from functools import partial
 from attrs import define,field
 from contextvars import ContextVar
 from importlib import import_module
+from io import StringIO
+from inspect import cleandoc
 
 import logging
 
@@ -67,10 +70,14 @@ class Main:
     """
     _tg: anyio.abc.TaskGroup
     _replies:dict[CmdR, anyio.Event|CmdCost]
+    _code:dict[int,BaseScript]
 
     def __init__(self):
         self._replies = {}
         self._globals = {}
+        self._code = {}
+        self._code_next = 1
+        self.logger = logger
 
     async def _ttd_reader(self, queue, *, task_status):
         """
@@ -125,21 +132,157 @@ class Main:
             self.print(f"Command {args[0]} unknown. Try 'py help'.")
         else:
             try:
-                res = cmd(msg)
+                res = cmd(args[1:])
                 if hasattr(res,"__await__"):
                     await res
             except Exception as exc:
                 logger.exception("Error processing %r", msg)
                 self.print(f"Error: {exc !r}")
 
-    def cmd_eval(self, msg):
+    async def cmd_start(self, args):
+        """Start a game script or an AI.
+
+        Arguments:
+        * ID of the company to run under. Omit if this is a game script.
+        * the module to load. It must contain a class named "Script".
+        * name=value arguments (strings)
+        * name:value arguments (numbers)
+
+        The result is the script ID.
+        """
+        self.print(repr(args))
+        try:
+            company = int(args[0])
+        except ValueError:
+            company = openttd.company.Owner.DEITY
+        else:
+            args = args[1:]
+        script = args[0]
+        kw = {}
+        for val in args[1:]:
+            try:
+                name,v = val.split(":")
+                try:
+                    v = int(v)
+                except ValueError:
+                    try:
+                        v = float(v)
+                    except ValueError:
+                        self.print(f"Usage error: name:number, not {val !r}")
+                        return
+
+            except ValueError:
+                try:
+                    name,v = val.split("=",1)
+                except ValueError:
+                    self.print(f"Usage error: params are name=text or name:number, not {val !r}")
+                    return
+            kw[name] = v
+
+        id_ = self._code_next
+        self._code_next += 1
+
+        script_obj = importlib.import_module(script).Script(id_, company, **kw)
+        try:
+            res = await self._tg.start(script_obj._run)
+        except StopAsyncIteration as stp:
+            breakpoint()
+            self.print("Stopped with",stp)
+        else:
+            self._code[id_] = script_obj
+            return res
+
+    def script_done(self, id_):
+        """
+        Callback from a script, as it ends."""
+        try:
+            scr = self._code.pop(id_)
+        except KeyError:
+            pass
+        else:
+            self.print(f"Script {id_} ({type(scr)}) ended.")
+
+
+    def cmd_stop(self, args):
+        """Stop game scripts or AIs.
+
+        Arguments:
+        * a list of script IDs to terminate
+        * or "*" to stop all of them.
+        """
+        if len(args) == 1 and args[1] == "*":
+            args = list(self._code.keys())
+        elif not args:
+            self.print("Usage: py stop *|ID…")
+            return
+        else:
+            args = (int(a) for a in args)
+        for a in args:
+            self._code[a].stop()
+
+    def cmd_info(self, args):
+        """Show script status.
+
+        Arguments:
+        * one or more script IDs to show
+        * or "*" to display a one-line summary.
+        """
+        if not self._code:
+            self.print("No scripts are active.")
+            return
+        if not args or len(args) == 1 and args[0] == "*":
+            args = self._code.keys()
+        else:
+            args = (int(a) for a in args)
+        for a in args:
+            if a in self._code:
+                self.print(f"{a}:",self._code[a].info())
+            else:
+                self.print(f"{a}: Unknown script ID.")
+
+    def cmd_state(self, args):
+        """Show script status (as suitable for restoring).
+
+        Arguments:
+        * the ID of the script to display
+        """
+        if len(args) != 1:
+            raise ValueError("Usage: py state ID")
+        self.pprint(self.code[int(args[0])].state())
+
+    def cmd_dump(self, args):
+        """Show script status (as suitable for debugging).
+
+        Arguments:
+        * the ID of the script to display
+        """
+        if len(args) != 1:
+            raise ValueError("Usage: py state ID")
+        self.pprint(self.code[int(args[0])].dump())
+
+    def cmd_reload(self, args):
+        """Reload Python module(s).
+
+        Arguments:
+        * the name(s) of the module to reload.
+        """
+        for a in args:
+            try:
+                m = sys.modules[a]
+            except KeyError:
+                self.print(f"{a}: not loaded")
+            else:
+                importlib.reload(m)
+                self.print(f"{a}: reloaded")
+
+
+    def cmd_eval(self, args):
         """Evaluate a Python expression.
         The modules "openttd" and "_ttd" (internal) are pre-loaded.
 
         You can use p(X) to print the value of X
         """
         import _ttd
-        from io import StringIO
         from pprint import pprint
 
         g = self._globals
@@ -151,7 +294,7 @@ class Main:
         g["p"] = lambda *p: print(*p, file=iof)
         g["r"] = lambda *p: print(*(repr(x) for x in p), file=iof)
         g["pp"] = partial(pprint, stream=iof)
-        expr = " ".join(msg.args[1:])
+        expr = " ".join(args)
         try:
             expr = compile(expr,"py","eval")
         except SyntaxError:
@@ -162,19 +305,22 @@ class Main:
         if res is not None:
             self.print(str(res))
 
-    def cmd_help(self, msg):
+    def cmd_help(self, args):
         """List commands; get details about a command"""
-        args = msg.args
-        if len(args) > 1:
-            try:
-                doc = getattr(self, f"cmd_{args[1]}").__doc__
-            except AttributeError:
-                self.print(f"Command {args[1]} unknown. Try 'py help'.")
-            else:
-                if doc is None:
-                    self.print("No help text known.")
+        if args:
+            for arg in args:
+                try:
+                    doc = getattr(self, f"cmd_{arg}").__doc__
+                except AttributeError:
+                    self.print(f"Command {arg} unknown. Try 'py help'.")
                 else:
-                    self.print(doc)
+                    if doc is None:
+                        self.print(f"{arg}: No help text!")
+                    else:
+                        if len(args) > 1:
+                            self.print(f"{arg}:")
+                        for s in cleandoc(doc).split("\n"):
+                            self.print(s)
             return
 
         # Just "help": print them all
@@ -196,10 +342,23 @@ class Main:
             s = v.__doc__.split("\n")[0]
             self.print(f"{k :{maxlen}s}: {s}")
 
-    def print(self, s:str):
-        """Print a message oon the OpenTTD console"""
-        msg = openttd.internal.msg.ConsoleMsg(s)
+    def print(self, *a, **kw):
+        """Print something on the OpenTTD console"""
+        if len(a) == 1 and not kw:
+            msg = openttd.internal.msg.ConsoleMsg(a[0])
+        else:
+            iof = StringIO()
+            kw["file"] = iof
+            print(*a, **kw)
+            msg = openttd.internal.msg.ConsoleMsg(iof.getvalue())
         self.send(msg)
+
+    def pprint(self, *a, **kw):
+        """Pretty-print a Python object to the OpenTTD console"""
+        iof = StringIO()
+        kw["stream"] = iof
+        print(*a, **kw)
+        self.send(openttd.internal.msg.ConsoleMsg(iof.getvalue()))
 
     def send(self, msg):
         """
@@ -217,9 +376,7 @@ class Main:
         import _ttd
         _ttd.debug(2,"Python START")
 
-        main_storage = _ttd.object.Storage()
-        main_storage.company = openttd.company.Owner.SPECTATOR
-        main_storage.real_company = openttd.company.Owner.SPECTATOR
+        main_storage = _ttd.object.Storage(openttd.company.Owner.SPECTATOR)
         main_storage.allow_do_command = False
         _storage.set(main_storage)
         _main.set(self)
@@ -250,6 +407,10 @@ def run():
         # TODO use asyncio when a script needs libraries that don't work with trio
         anyio.run(Main().main, backend="trio")
     except Exception as exc:
+        try:
+            self.send(openttd.internal.msg.ConsoleMsg(f"Python died: {exc}"))
+        except Exception:
+            pass
         traceback.print_exc()
         exc.__cause__ = None
         exc.__context__ = None

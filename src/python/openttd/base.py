@@ -17,7 +17,7 @@ import logging
 import openttd
 from openttd._main import _storage, _main
 
-__all__ = ["BaseScript","GameScript","AIScript"]
+__all__ = ["GameScript","AIScript"]
 
 
 class BaseScript:
