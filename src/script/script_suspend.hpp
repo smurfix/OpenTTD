@@ -10,10 +10,15 @@
 #ifndef SCRIPT_SUSPEND_HPP
 #define SCRIPT_SUSPEND_HPP
 
+#include "command_type.h"
+
+class ScriptInstance;
+
 /**
  * The callback function when a script suspends.
  */
-typedef void (Script_SuspendCallbackProc)(class ScriptInstance *instance);
+// typedef void (Script_SuspendCallbackProc)(class ScriptInstance *instance);
+// in command_type.h because of callback
 
 /**
  * A throw-class that is given when the script wants to suspend.

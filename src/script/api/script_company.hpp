@@ -21,13 +21,17 @@
  */
 class ScriptCompany : public ScriptObject {
 public:
-	/** The range of possible quarters to get company information of. */
+	/** The range of possible quarters to get company information of.
+	 * @api all python*
+	 */
 	enum Quarter {
 		CURRENT_QUARTER  = 0,                      ///< The current quarter.
 		EARLIEST_QUARTER = ::MAX_HISTORY_QUARTERS, ///< The earliest quarter company information is available for.
 	};
 
-	/** Different constants related to CompanyID. */
+	/** Different constants related to CompanyID.
+	 * @api all -python
+	 */
 	enum CompanyID {
 		/* Note: these values represent part of the in-game Owner enum */
 		COMPANY_FIRST     = ::COMPANY_FIRST,   ///< The first available company.

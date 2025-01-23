@@ -51,6 +51,7 @@
 #include "../water_cmd.h"
 #include "../waypoint_cmd.h"
 #include "../script/script_cmd.h"
+#include "../python/script_cmd.h"
 
 #include "../safeguards.h"
 
@@ -82,6 +83,9 @@ static constexpr auto _callback_tuple = std::make_tuple(
 	&CcBuildIndustry,
 	&CcStartStopVehicle,
 	&CcGame,
+#if 0 // def WITH_PYTHON
+	&CcPython,
+#endif
 	&CcAddVehicleNewGroup
 );
 
@@ -240,6 +244,20 @@ void NetworkSyncCommandQueue(NetworkClientSocket *cs)
 }
 
 /**
+ * Execute a single "generic" command.
+ *
+ * Don't call this unless you know what you're doing.
+ */
+void UnsafeCallCmd(const CommandPacket &cp)
+{
+	_current_company = cp.company;
+	size_t cb_index = FindCallbackIndex(cp.callback);
+	assert(cb_index < _callback_tuple_size);
+	assert(_cmd_dispatch[cp.cmd].Unpack[cb_index] != nullptr);
+	_cmd_dispatch[cp.cmd].Unpack[cb_index](cp);
+}
+
+/**
  * Execute all commands on the local command queue that ought to be executed this frame.
  */
 void NetworkExecuteLocalCommandQueue()
@@ -261,11 +279,7 @@ void NetworkExecuteLocalCommandQueue()
 		}
 
 		/* We can execute this command */
-		_current_company = cp->company;
-		size_t cb_index = FindCallbackIndex(cp->callback);
-		assert(cb_index < _callback_tuple_size);
-		assert(_cmd_dispatch[cp->cmd].Unpack[cb_index] != nullptr);
-		_cmd_dispatch[cp->cmd].Unpack[cb_index](*cp);
+		UnsafeCallCmd(*cp);
 	}
 	queue.erase(queue.begin(), cp);
 

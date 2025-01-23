@@ -63,6 +63,8 @@
 
 #ifdef WITH_PYTHON
 #include "python/call_py.hpp"
+#else
+#include "python/script_cmd.h"  // see end of this file
 #endif
 
 #include "safeguards.h"
@@ -434,3 +436,15 @@ void CommandCost::UseTextRefStack(const GRFFile *grffile, uint num_registers)
 		textref_stack[i] = _temp_store.GetValue(0x100 + i);
 	}
 }
+
+#ifndef WITH_PYTHON
+#if 0 // currently we hook into CcGame instead
+/*
+ * If compiled without Python, the network handler needs a dummy callback.
+ */
+void CcPython(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
+{
+}
+#endif
+#endif
+

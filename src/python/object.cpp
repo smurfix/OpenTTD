@@ -7,11 +7,15 @@
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/vector.h>
 
 #include <iostream>
 #include <memory>
+#include "debug.h"
 
 #include "python/object.hpp"
+#include "python/instance.hpp"
 #include "python/task.hpp"
 
 #include "script/api/script_object.hpp"
@@ -49,29 +53,11 @@ namespace PyTTD {
 			;
 
 		// intentionally not in a submodule
-		mg.def("debug", [](int level, const char *text) { Debug(python, level, "{}", text); },+ "Debug logging ('python')");
+		mg.def("debug", [](int level, const char *text) { Debug(python, level, "{}", text); }, "Debug logging ('python')");
 	}
 
-	// If a call from Python to TTD generated a command,
-	// we store it here.
-	CommandContainerPtr currentCmd = nullptr;
-
-#if 0
-	static bool saveCmd(TileIndex tile, uint32_t p1, uint32_t p2, uint64_t p3, uint cmd, const std::string &text, const struct CommandAuxiliaryBase *aux_data, Script_SuspendCallbackProc *callback) {
-		if(currentCmd)
-			throw std::domain_error("Second command");
-		currentCmd.reset(new CommandContainer());
-		currentCmd->cmd = cmd;
-		currentCmd->p1 = p1;
-		currentCmd->p2 = p2;
-		currentCmd->p3 = p3;
-		currentCmd->tile = tile;
-		currentCmd->text = text;
-		return true;
-	}
-#endif
 	// command hook
-	py::object cmd_hook(CommandContainerPtr cb)
+	py::object cmd_hook(CommandDataPtr cb)
 	{
 		static py::object cbfn;
 
@@ -79,7 +65,8 @@ namespace PyTTD {
 			py::module_ ttd = py::module_::import_("_ttd");
 			cbfn = ttd.attr("_command_hook");
 		}
-		return cbfn(cb);
+		py::object cbd = py::cast<CommandDataPtr>(std::move(cb));
+		return cbfn(cbd);
 	}
 
 	// data hook

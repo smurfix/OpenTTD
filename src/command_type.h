@@ -499,4 +499,20 @@ typedef void CommandCallback(Commands cmd, const CommandCost &result, TileIndex 
  */
 typedef void CommandCallbackData(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data);
 
+/**
+ * Hook function types to intercept command submission+return.
+ */
+class ScriptInstance;
+typedef void (Script_SuspendCallbackProc)(class ScriptInstance *instance);
+typedef void (CommandDoHookProc)(Commands, CommandDataBuffer, Script_SuspendCallbackProc*);
+typedef void (CommandDoneHookProc)(Commands cmd, const CommandCost &result, TileIndex tile);
+
+/**
+ * Commands to retrieve the current value of the hook functions.
+ *
+ * They are defined in script/api/script_object.cpp.
+ */
+CommandDoHookProc *GetDoCommandHook();
+CommandDoneHookProc *GetDoneCommandHook();
+
 #endif /* COMMAND_TYPE_H */

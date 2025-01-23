@@ -36,6 +36,7 @@ typedef bool (ScriptAsyncModeProc)();
  */
 class ScriptStorage {
 friend class ScriptObject;
+friend class ScriptInstance;
 protected:
 	ScriptModeProc *mode;             ///< The current build mode we are int.
 	class ScriptObject *mode_instance; ///< The instance belonging to the current build mode.

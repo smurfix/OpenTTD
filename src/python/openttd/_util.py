@@ -81,6 +81,7 @@ def _importer():
     ti.task = _ttd.main
     ti.StopWork = StopWork
 
+    _ttd._command_hook = th.command_hook
     _ttd._storage_hook = th.storage_hook
 
     # Install message handlers from _msg in msg objects
@@ -107,7 +108,8 @@ def _importer():
         if vl is not None:
             setattr(getattr(t,k),"list",_Sub(f"{k}.list", getattr(_ttd,kl)))
 
-    t.company.Owner = _ttd.support.Owner
+    t.company.ID = _ttd.support.CompanyID
+    ti.Owner = _ttd.support.Owner
     #t.Command=_ttd._support.Command
     #t.date.Date = _Date
     #t.date.sleep = _sleep

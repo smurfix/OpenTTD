@@ -120,7 +120,7 @@ set(ENUM_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/export_enum.py)
 
 foreach(ENUM
         "src/command_type.h;Commands/CMD_,CommandType/CMDT_,CommandPauseLevel/CMDPL_"
-        "src/openttd.h;GameMode/GM_,SwitchMode/SM_,PauseMode/PM_PAUSED_/PM_"
+        "src/openttd.h;GameMode/GM_,SwitchMode/SM_,*PauseMode/PM_PAUSED_/PM_"
         )
     list(GET ENUM 0 HEADER_FILE)
     list(GET ENUM 1 ENUM_NAMES)
@@ -132,9 +132,8 @@ foreach(ENUM
     add_custom_command(
         OUTPUT ${ENUM_DEST_FILE}
         COMMAND python3 ${ENUM_SCRIPT} ${ENUM_SOURCE_FILE} ${ENUM_DEST_FILE} ${ENUM_NAMES}
-        MAIN_DEPENDENCY ${SCRIPT_API_SOURCE_FILE}
-        DEPENDS ${ENUM_SOURCE_FILE}
-            ${ENUM_SCRIPT}
+        MAIN_DEPENDENCY ${ENUM_SOURCE_FILE}
+        DEPENDS ${ENUM_SCRIPT}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating ${ENUM_DEST_FILE}"
     )
