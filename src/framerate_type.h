@@ -59,6 +59,7 @@ enum PerformanceElement {
 	PFE_VIDEO,         ///< Speed of painting drawn video buffer.
 	PFE_SOUND,         ///< Speed of mixing audio samples
 	PFE_ALLSCRIPTS,    ///< Sum of all GS/AI scripts
+	PFE_PYTHON,        ///< Python script execution
 	PFE_GAMESCRIPT,    ///< Game script execution
 	PFE_AI0,           ///< AI execution for player slot 1
 	PFE_AI1,           ///< AI execution for player slot 2
