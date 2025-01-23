@@ -16,8 +16,13 @@ dest = dest_file.open("w")
 
 names = {}
 for name in enum_names.split(","):
+    mode = []
     name,*prefix = name.split("/")
-    names[name] = prefix
+    if name[0] == "*":
+        name = name[1:]
+        mode.append(',py::is_flag(),py::is_arithmetic()')
+
+    names[name] = (mode,*prefix)
 
 
 enum_name=None
@@ -199,7 +204,7 @@ void init_{api_cls.lower()}(py::module_ &m) {{
         cls_level += 1
 
         try:
-            prefix = names[m.group(1)]
+            modes,*prefix = names[m.group(1)]
         except KeyError:
             continue
 
@@ -207,7 +212,7 @@ void init_{api_cls.lower()}(py::module_ &m) {{
         ename = enum_name
         if ename[-1] == "s":
             ename = ename[:-1]  # strip plural
-        dest.write(f'    py::enum_<{enum_name}>(m, "{ename}")\n')
+        dest.write(f'    py::enum_<{enum_name}>(m, "{ename}" {''.join(modes)})\n')
         continue
 
     # Maybe the end of the class

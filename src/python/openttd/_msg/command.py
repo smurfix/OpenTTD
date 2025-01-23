@@ -7,16 +7,14 @@
 
 from __future__ import annotations
 
-from .command import *
+from openttd._main import CmdR
 
-def Start(self,main):
-    main.print("Python start completed.")
+def CmdResult(self,main):
+    cmdr = CmdR(cmd=self.cmd, data=self.data, company=self.company)
+    return main.handle_result(cmdr)
 
-def ConsoleCmd(self,main):
-    return main.handle_command(self)
+def CmdResult2(self,main):
+    return main.handle_result2(self)
 
-def ModeChange(self,main):
-    main.print(f"Game Mode: {self.mode}")
-
-def PauseState(self,main):
-    main.print(f"Pause state: {self.paused}")
+def CmdTrace(self,main):
+    return main.trace_command(self)

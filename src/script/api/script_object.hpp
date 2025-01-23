@@ -65,6 +65,8 @@ class ScriptObject : public SimpleCountedObject {
 friend class ScriptInstance;
 friend class ScriptController;
 friend class TestScriptController;
+friend CommandDoHookProc *GetDoCommandHook();
+friend CommandDoneHookProc *GetDoneCommandHook();
 protected:
 	/**
 	 * A class that handles the current active instance. By instantiating it at
@@ -77,6 +79,10 @@ protected:
 	public:
 		ActiveInstance(ScriptInstance *instance);
 		~ActiveInstance();
+
+		static CommandDoHookProc *GetDoCommandHook();
+		static CommandDoneHookProc *GetDoneCommandHook();
+
 	private:
 		ScriptInstance *last_active;    ///< The active instance before we go instantiated.
 		ScriptAllocatorScope alc_scope; ///< Keep the correct allocator for the script instance activated
@@ -396,6 +402,15 @@ bool ScriptObject::ScriptDoCommandHelper<Tcmd, Tret(*)(DoCommandFlag, Targs...)>
 
 	/* Only set ClientID parameters when the command does not come from the network. */
 	if constexpr ((::GetCommandFlags<Tcmd>() & CMD_CLIENT_ID) != 0) ScriptObjectInternal::SetClientIds(args, std::index_sequence_for<Targs...>{});
+
+	if (!estimate_only) {
+		auto hook = ScriptObject::ActiveInstance::GetDoCommandHook();
+		if (hook != nullptr) {
+			auto buf = EndianBufferWriter<CommandDataBuffer>::FromValue(args);
+			(*hook)(Tcmd, buf, callback);
+			return true;
+		}
+	}
 
 	/* Store the command for command callback validation. */
 	if (!estimate_only && networking) ScriptObject::SetLastCommand(EndianBufferWriter<CommandDataBuffer>::FromValue(args), Tcmd);

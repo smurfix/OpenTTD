@@ -69,6 +69,19 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 	return ScriptObject::ActiveInstance::active;
 }
 
+/* static */ CommandDoHookProc *ScriptObject::ActiveInstance::GetDoCommandHook()
+{
+	if (ScriptObject::ActiveInstance::active == nullptr)
+		return nullptr;
+	return ScriptObject::ActiveInstance::active->GetDoCommandHook();
+}
+
+/* static */ CommandDoneHookProc *ScriptObject::ActiveInstance::GetDoneCommandHook()
+{
+	if (ScriptObject::ActiveInstance::active == nullptr)
+		return nullptr;
+	return ScriptObject::ActiveInstance::active->GetDoneCommandHook();
+}
 
 /* static */ void ScriptObject::SetDoCommandDelay(uint ticks)
 {
@@ -360,4 +373,13 @@ void ScriptObject::InitializeRandomizers()
 	for (Owner owner = OWNER_BEGIN; owner < OWNER_END; owner++) {
 		ScriptObject::GetRandomizer(owner).SetSeed(random.Next());
 	}
+}
+
+CommandDoHookProc *GetDoCommandHook()
+{
+	return ScriptObject::ActiveInstance::GetDoCommandHook();
+}
+CommandDoneHookProc *GetDoneCommandHook()
+{
+	return ScriptObject::ActiveInstance::GetDoneCommandHook();
 }

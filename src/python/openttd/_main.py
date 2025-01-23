@@ -36,6 +36,8 @@ if TYPE_CHECKING:
         pass
     class CommandResult:
         pass
+    class CompanyID:
+        pass
 
 logger = logging.getLogger("OpenTTD")
 log = logger.debug
@@ -47,11 +49,13 @@ _storage = ContextVar("_storage")
 @define(hash=True,eq=True)
 class CmdR:
     cmd:Command
-    p1:int
-    p2:int
-    p3:int
-    tile:Tile
+    data:bytes
+    company:CompanyID
 
+class Obj:
+    def __init__(self, **kw):
+        for k,v in kw.items():
+            setattr(self,k,v)
 
 @define
 class VEvent:
@@ -69,7 +73,7 @@ class Main:
     The central control object.
     """
     _tg: anyio.abc.TaskGroup
-    _replies:dict[CmdR, anyio.Event|CmdCost]
+    _replies:dict[CmdR, VEvent]
     _code:dict[int,BaseScript]
 
     def __init__(self):
@@ -137,13 +141,44 @@ class Main:
                     await res
             except Exception as exc:
                 logger.exception("Error processing %r", msg)
-                self.print(f"Error: {exc !r}")
+                self.print(f"Error: {exc}")
+
+    async def handle_result(self, cmdr):
+        """
+        Callback for remote command results or whatever. Untested.
+        """
+        self.print(f"Handle: {cmdr}")
+        try:
+            evt = self._replies.pop(cmdr)
+        except KeyError:
+            self.print(f"Spurious callback: {cmdr}")
+        else:
+            print("RESULTING",evt,evt.event)
+            evt.value = cmdr.result
+            evt.event.set()
+
+    async def handle_result2(self, msg):
+        """
+        Callback for local command results
+        """
+        for k,evt in self._replies.items():
+            if k.cmd == msg.cmd and k.company == msg.company:
+                break
+        else:
+            breakpoint()
+            self.print(f"Spurious callback: {msg}")
+            return
+        evt = self._replies.pop(k)
+        evt.value = msg.result
+        evt.event.set()
+
 
     async def cmd_start(self, args):
         """Start a game script or an AI.
 
         Arguments:
         * ID of the company to run under. Omit if this is a game script.
+          The initial company is 1.
         * the module to load. It must contain a class named "Script".
         * name=value arguments (strings)
         * name:value arguments (numbers)
@@ -152,10 +187,12 @@ class Main:
         """
         self.print(repr(args))
         try:
-            company = int(args[0])
+            company = openttd.company.ID(int(args[0])-1)
         except ValueError:
-            company = openttd.company.Owner.DEITY
+            company = openttd.company.ID.DEITY
         else:
+            if openttd.company.resolve_company_id(company) < 0:
+                raise ValueError(f"Company #{args[0]} does not exist")
             args = args[1:]
         script = args[0]
         kw = {}
@@ -202,6 +239,45 @@ class Main:
         else:
             self.print(f"Script {id_} ({type(scr)}) ended.")
 
+    def send_cmd(self, cmd, buf, company=None) -> Awaitable[CommandResult]:
+        """
+        Queue a command for execution by OpenTTD.
+
+        This method is *not* a coroutine. It does however return an awaitable that
+        resolves to the command's result.
+        """
+        import _ttd
+
+        if company is None:
+            company = _storage.get().company
+
+        cmdr = CmdR(_ttd.enum.Command(cmd), buf, company)
+        if cmdr in self._replies:
+            raise ValueError(f"Command {cmd} ({buf}) is already queued")
+        evt = VEvent()
+        self._replies[cmdr] = evt
+
+        # print("TP",type(cmd),type(cmdr.data),type(company))
+        self.send(openttd.internal.msg.CmdRelay(cmd, cmdr.data, company))
+        return self._wait_cmd(cmdr,evt)
+
+    async def _wait_cmd(self, cmdr, evt):
+        try:
+            with anyio.fail_after(3):
+                await evt.event.wait()
+            return evt.value
+
+        except TimeoutError:
+            log(f"Command {cmdr}: no response")
+            return Obj(success=False)
+
+        except BaseException as exc:
+            logger.exception(f"Command {cmdr}: error")
+            raise
+
+        finally:
+            if cmdr in self._replies:
+                del self._replies[cmdr]
 
     def cmd_stop(self, args):
         """Stop game scripts or AIs.
@@ -345,15 +421,17 @@ class Main:
     def print(self, *a, **kw):
         """Print something on the OpenTTD console"""
         if len(a) == 1 and not kw:
-            msg = openttd.internal.msg.ConsoleMsg(a[0])
+            self.send(openttd.internal.msg.ConsoleMsg(a[0]))
             log(a[0])
         else:
             iof = StringIO()
             kw["file"] = iof
             print(*a, **kw)
-            msg = openttd.internal.msg.ConsoleMsg(iof.getvalue())
             log(iof.getvalue())
-        self.send(msg)
+            for s in iof.getvalue().split("\n"):
+                if s == "":
+                    continue
+                self.send(openttd.internal.msg.ConsoleMsg(s))
 
     def pprint(self, *a, **kw):
         """Pretty-print a Python object to the OpenTTD console"""
@@ -379,7 +457,7 @@ class Main:
         import _ttd
         _ttd.debug(2,"Python START")
 
-        main_storage = _ttd.object.Storage(openttd.company.Owner.SPECTATOR)
+        main_storage = _ttd.object.Storage(openttd.company.ID.SPECTATOR)
         main_storage.allow_do_command = False
         _storage.set(main_storage)
         _main.set(self)

@@ -91,7 +91,7 @@ public:
 	/**
 	 * Get the storage of this script.
 	 */
-	virtual class ScriptStorage *GetStorage();
+	class ScriptStorage *GetStorage();
 
 	/**
 	 * Get the log pointer of this script.
@@ -145,6 +145,16 @@ public:
 	 * Return a LeagueTableElementID reply for a DoCommand.
 	 */
 	static void DoCommandReturnLeagueTableElementID(ScriptInstance *instance);
+
+	/**
+	 * Get this instance's command submission override function.
+	 */
+	virtual CommandDoHookProc *GetDoCommandHook();
+
+	/**
+	 * Get this instance's command result capture function.
+	 */
+	virtual CommandDoneHookProc *GetDoneCommandHook();
 
 	/**
 	 * Get the controller attached to the instance.
@@ -301,7 +311,9 @@ protected:
 
 private:
 	class ScriptController *controller;   ///< The script main class.
+protected:
 	class ScriptStorage *storage;         ///< Some global information for each running script.
+private:
 	SQObject *instance;                   ///< Squirrel-pointer to the script main class.
 
 	bool is_started;                      ///< Is the scripts constructor executed?

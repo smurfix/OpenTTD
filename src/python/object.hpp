@@ -16,7 +16,9 @@ namespace PyTTD { void init_ttd_object(nanobind::module_ &); }
 
 #include "script/script_instance.hpp"
 #include "script/script_storage.hpp"
+#include "script/api/script_company.hpp"
 #include "video/video_driver.hpp"
+#include "network/network_internal.h"
 
 #include "python/queues.hpp"
 
@@ -25,6 +27,8 @@ namespace PyTTD {
 
 	class Storage;
 	typedef std::shared_ptr<Storage> StoragePtr;
+
+	typedef std::unique_ptr<CommandPacket, py::deleter<CommandPacket>> CommandPacketPtr;
 
 	/*
 	 * Python-compatible Storage objects are managed via a shared pointer.
@@ -39,11 +43,11 @@ namespace PyTTD {
 		Storage(Private) : ScriptStorage() {}
 
 		// Thus all objects must be contained in a shared_ptr.
-		static StoragePtr Create(Owner comp)
+		static StoragePtr Create(ScriptCompany::CompanyID comp)
 		{
 			auto res = std::make_shared<Storage>(Private());
-			res->root_company = comp;
-			res->company = comp;
+			res->root_company = (Owner)comp;
+			res->company = (Owner)comp;
 			return res;
 		}
 
@@ -51,10 +55,6 @@ namespace PyTTD {
 
 		static StoragePtr from_python();
 	};
-
-	typedef void *CommandContainerPtr;
-	extern CommandContainerPtr currentCmd;
-
 }
 
 #endif /* PY_OBJECT_H */

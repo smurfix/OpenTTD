@@ -35,53 +35,54 @@ class SObject : public ScriptObject {
 };
 
 namespace PyTTD {
-	/*
-	 * This wrapper is used for calling OpenTTD from Python.
-	 * We need it four times because (a) methods vs. functions,
-	 * (b) some return value vs. void. *Sigh*.
+	/**
+	 * This RAII wrapper takes the game lock.
 	 */
-
-	// This RAII class holds the game lock and sets the instance to Python's.
-	class Wrapper {
+	class LockGame {
 	public:
-		Wrapper();
-		virtual ~Wrapper();
+		LockGame();
+		virtual ~LockGame();
 
 		// copy/move/assign is forbidden
-		Wrapper(Wrapper const&) = delete;
-		Wrapper(Wrapper &&) = delete;
-		Wrapper& operator=(Wrapper const&) = delete;
+		LockGame(LockGame const&) = delete;
+		LockGame(LockGame &&) = delete;
+		LockGame& operator=(LockGame const&) = delete;
 
 	private:
 		VDriver *drv;
 	};
 
-	py::object cmd_hook(CommandContainerPtr cb);
+	py::object cmd_hook(CommandDataPtr cb);
 
 	void cmd_setup();
 
 	// If OpenTTD queued a command, send it to Python.
 
 #   define _WRAP1                                   \
-	CommandContainerPtr cmd = nullptr;              \
+	CommandDataPtr cmd = nullptr;                   \
 	{                                               \
 	    auto storage = Storage::from_python();      \
 		py::gil_scoped_release unlock;              \
-		PyTTD::Wrapper wrap;                        \
-		assert(! currentCmd);                       \
+		PyTTD::LockGame lock;                       \
+		assert(! instance.currentCmd);              \
 		{                                           \
 			SObject::AInstance active(&instance);   \
 			instance.SetStorage(storage);           \
 
 #   define _WRAP2                                   \
 		}                                           \
-		cmd = std::move(currentCmd);                \
+		cmd = std::move(instance.currentCmd);       \
 		instance.SetStorage(nullptr);               \
     }                                               \
 	if (cmd) {                                      \
 		return cmd_hook(std::move(cmd));            \
 	}                                               \
 
+	/**
+	 * This is the nanobind wrapper that allows us to call Python.
+	 */
+
+	// static, returns a value
 	template <typename R, typename... Args>
 	struct wrap
 	{
@@ -98,6 +99,7 @@ namespace PyTTD {
 		}
 	};
 
+	// member function, returns a value
 	template <typename R, class T, typename... Args>
 	struct wrap<R (T::*)(Args...)>
 	{
@@ -116,6 +118,7 @@ namespace PyTTD {
 		}
 	};
 
+	// static, void
 	template <typename... Args>
 	struct wrap<void, Args...>
 	{
@@ -131,6 +134,7 @@ namespace PyTTD {
 		}
 	};
 
+	// member function, void
 	template <class T, typename... Args>
 	struct wrap<void (T::*)(Args...)>
 	{

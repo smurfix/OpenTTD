@@ -5,26 +5,15 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/shared_ptr.h>
+/** @file script_cmd.h Command definitions related to scripts. */
 
-#include <iostream>
-#include <memory>
+#ifndef PY_SCRIPT_CMD_H
+#define PY_SCRIPT_CMD_H
 
-#include "python/wrap.hpp"
+#include "../command_type.h"
+#include "../tile_type.h"
 
-#include "script/api/script_object.hpp"
-#include "script/script_storage.hpp"
+CommandCallbackData PyCmdCB;
+void CcPython(Commands cmd, const CommandCost &result, TileIndex tile);
 
-namespace PyTTD {
-	LockGame::LockGame() : drv(reinterpret_cast<VDriver *>(VDriver::GetInstance())) {
-		if (drv == nullptr) [[unlikely]] {
-			throw std::domain_error("No Driver");
-		}
-		drv->GetStateMutex().lock();
-	}
-
-	LockGame::~LockGame() {
-		drv->GetStateMutex().unlock();
-	}
-}
+#endif /* PY_SCRIPT_CMD_H */

@@ -68,29 +68,42 @@ namespace PyTTD {
 		/* Don't show errors while loading savegame. They will be shown at end of loading anyway. */
 	}
 
-	/**
-	* DoCommand callback function for commands executed by Python scripts.
-	* @param cmd command as given to DoCommandPInternal.
-	* @param result The result of the command.
-	* @param data Command data as given to Command<>::Post.
-	* @param result_data Additional returned data from the command.
-	*/
-	void CcPython(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
-	{
-		Task::Send(NewMsg<Msg::CmdResult>(cmd, result, data, result_data));
-	}
+}
+using namespace PyTTD;
+/**
+ * DoCommand callback function for commands executed by Python scripts.
+ * @param cmd command as given to DoCommandPInternal.
+ * @param result The result of the command.
+ * @param data Command data as given to Command<>::Post.
+ * @param result_data Additional returned data from the command.
+ */
+void PyCmdCB(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
+{
+	Task::Send(NewMsg<Msg::CmdResult>(cmd, result, data, result_data));
+}
 
+void CcPython(Commands cmd, const CommandCost &result, TileIndex tile)
+{
+	Task::Send(NewMsg<Msg::CmdResult2>(cmd, result, tile, _current_company));
+}
+
+namespace PyTTD {
 	CommandCallbackData *Instance::GetDoCommandCallback()
 	{
-		return &CcPython;
+		return &PyCmdCB;
 	}
 
-#if 0
-	CommandExFn *Instance::GetDoCommandHook() {
-		std:: cout << "OVERRIDE!" << std::endl;
+	static void saveCmd(Commands cmd, CommandDataBuffer data) {
+		if(instance.currentCmd)
+			throw std::domain_error("Second command");
+		instance.currentCmd.reset(new CommandData());
+		instance.currentCmd->cmd = cmd;
+		instance.currentCmd->data = data;
+	}
+
+	CommandHookProc *Instance::GetDoCommandHook() {
 		return &saveCmd;
 	}
-#endif
 
 	// The empty destructor is there to tell the compiler to create the class
 	Instance::~Instance() { }

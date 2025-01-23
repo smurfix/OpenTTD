@@ -316,6 +316,14 @@ protected:
 				}
 			}
 		}
+		if (!estimate_only && !only_sending) {
+			auto hook = GetDoneCommandHook();
+			if (hook != nullptr) {
+				auto buf = EndianBufferWriter<CommandDataBuffer>::FromValue(args);
+				(*hook)(Tcmd, ExtractCommandCost(res), tile);
+				return true;
+			}
+		}
 
 		return ExtractCommandCost(res).Succeeded();
 	}

@@ -20,6 +20,9 @@ cls_in_api=False
 cls_level=0
 api_selected=None
 is_public=None
+is_sparse=False
+list_name=None
+do_events=False
 
 doxygen_skip=None
 squirrel_skip=None
@@ -31,7 +34,7 @@ fwd_re = re.compile(r'^\s*class(.*);')
 cls_re = re.compile(r'\s*class (.*) (: public|: protected|: private|:) (\S+)')
 struct_re = re.compile(r'^\s*struct (\S*)')
 enum_re = re.compile(r'^\s*enum (\S*)')
-enum_member_re = re.compile(r'^\s*(\S+),')
+enum_member_re = re.compile(r'^\s*([a-zA-Z][a-zA-Z0-9_]*)(,|\s*=|\s*$)')
 enum_err_re = re.compile(r'^\[(.*)\]')
 end_re = re.compile(r'^\s*};')
 method_re = re.compile(r'^\s*((virtual|static|const)\s+)*(\S+\s+[&*]?)?(~?\S+)\s*\(((::|[^:])*)\)')
@@ -41,6 +44,8 @@ private_re = re.compile(r'^\s*private')
 protected_re = re.compile(r'^\s*protected')
 
 upcase_re = re.compile("[A-Z0-9]+")
+
+cls_def = None
 
 def strip_var(p: str) -> str:
     """removes the last word
@@ -121,8 +126,12 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
             api_selected = False
         elif f"-python" in line:
             api_selected = False
+        elif "python*" in line:
+            api_selected = True
+            is_sparse = True
         elif f"python" in line or "game" in line:
             api_selected = True
+            is_sparse = False
         continue
 
     # Remove the old squirrel stuff
@@ -158,11 +167,32 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
                 else:
                     api_selected = None
                     api_cls = cls_name
-                    if api_cls.startswith("Script"):
+                    if len(api_cls)>12 and api_cls.startswith("ScriptEvent"):
+                        api_cls = api_cls[11:]
+                        if not do_events:
+                            do_events = True
+                            print(f'void init_script_events([[maybe_unused]] py::module_ &me)')
+                            print('{');
+                    elif api_cls.startswith("Script"):
                         api_cls = api_cls[6:]
-                    print(f'void init_{api_cls.lower()}(py::module_ &m)')
-                    print('{');
-                    print(f'    auto cls_{cls_name} = py::class_<{cls_name}, {cls_super}>(m, "{api_cls}");')
+                    if list_name is not None:
+                        if api_cls.startswith(list_name):
+                            api_cls = api_cls[len(list_name):].lstrip("_")
+                            cls_def = f'    auto cls_{cls_name} = py::class_<{cls_name}, {cls_super}>(m, "{api_cls}");'
+                            cls_level += 1
+                            continue
+                        else:
+                            print("};")
+                            list_name = None
+                    if not list_name and api_cls.endswith("List"):
+                        list_name = api_cls
+                    if do_events:
+                        print(f'{{ auto m = me.def_submodule("{api_cls}");')
+
+                    else:
+                        print(f'void init_{api_cls.lower()}([[maybe_unused]] py::module_ &m)')
+                        print('{');
+                    cls_def = f'    auto cls_{cls_name} = py::class_<{cls_name}, {cls_super}>(m, "{api_cls}");'
 
         elif cls_level == 1:
             # TODO export structs
@@ -217,7 +247,7 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
         cls_level += 1
 
         # Check if we want to publish this enum
-        if not api_selected:
+        if api_selected is None:
             api_selected = cls_in_api
         if not api_selected:
             api_selected = None
@@ -238,13 +268,16 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
             continue
         if enum_name == "ErrorMessages":
             print(f'    auto enum_{enum_cls} = py::enum_<{enum_cls}::{enum_name}>(m, "_Error_{enum_cls}")')
+        elif is_sparse:
+            print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}", py::is_flag(),py::is_arithmetic())')
         else:
-            print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}", py::is_flag())')
+            print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}")')
         continue
 
     # Maybe the end of the class
     if end_re.match(line):
         cls_level -= 1
+        is_sparse = None
         if cls_level:
             if enum_name is not None:
                 # print(f'        .export_values()')
@@ -255,7 +288,8 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
                 enum_name = None
                 continue
         if cls_name and not cls_level:
-            print("}")
+            if list_name is None:
+                print("}")
             cls_name = None
             api_cls = None
 
@@ -272,14 +306,18 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
         if enum_name == "ErrorMessages":
             if pname.startswith("ERR_"):
                 pname = pname[4:]
-        if api_cls and pname.startswith(api_cls.upper()+"_"):
-            # ERR_VEHICLE_TOO_MANY ⇒ vehicle.Error.TOO_MANY
-            pname = pname[len(api_cls)+1:]
-        else:
-            # vehicle.VehicleType::VT_RAIL ⇒ vehicle.Type.RAIL
-            upn = ''.join(x for x in enum_name if x.isupper())+"_"
-            if pname.startswith(upn):
-                pname = pname[len(upn):]
+
+        pname = pname.replace("VEHTYPE","VEHICLETYPE")
+        for cn in (api_cls, enum_name)+((enum_name[:-4] if
+                                         enum_name.endswith("Type") else ()),):
+            if cn and pname.startswith(cn.upper()+"_"):
+                # ERR_VEHICLE_TOO_MANY ⇒ vehicle.Error.TOO_MANY
+                pname = pname[len(cn)+1:]
+            else:
+                # vehicle.VehicleType::VT_RAIL ⇒ vehicle.Type.RAIL
+                upn = ''.join(x for x in cn if x.isupper())+"_"
+                if pname.startswith(upn):
+                    pname = pname[len(upn):]
 
         print(f'        .value("{pname}", {enum_cls}::{name})')
 
@@ -344,6 +382,9 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
             elif "HSQUIRRELVM" in params:
                 print(f'    /* TODO init {cls_name}.def(py::init<{params}>()); */');
             else:
+                if cls_def is not None:
+                    print(cls_def)
+                    cls_def = None
                 print(f'    cls_{cls_name}.def(py::init<{params}>());');
             continue
 
@@ -365,7 +406,15 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
             if is_static:
                 print(f'    m.def("{to_snake(name)}", wrap {{ {cls_name}::{name} }});')
             else:
+                if cls_def is not None:
+                    print(cls_def)
+                    cls_def = None
                 print(f'    cls_{cls_name}.def("{to_snake(name)}", wrap<decltype(&{cls_name}::{name})> {{& {cls_name}::{name} }});')
+
+if list_name is not None:
+    print("}")
+if do_events:
+    print("}")
 
 print("\n} /* EOF */")
 

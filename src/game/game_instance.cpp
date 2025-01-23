@@ -20,6 +20,9 @@
 #include "game_instance.hpp"
 #include "game_text.hpp"
 #include "game.hpp"
+#ifdef WITH_PYTHON
+#include "../python/call_py.hpp"
+#endif
 
 /* Convert all Game related classes to Squirrel data. */
 #include "../script/api/game/game_includes.hpp"
@@ -97,6 +100,12 @@ void GameInstance::Died()
  */
 void CcGame(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
 {
+#ifdef WITH_PYTHON
+	if (PyTTD::CheckPending(cmd, data)) {
+		PyTTD::CcPython(cmd, result, data, std::move(result_data));
+		return;
+	}
+#endif
 	if (Game::GetGameInstance() == nullptr)
 		return;
 	if (Game::GetGameInstance()->DoCommandCallback(result, data, std::move(result_data), cmd)) {
