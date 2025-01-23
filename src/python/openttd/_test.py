@@ -17,8 +17,9 @@ class Script(BaseScript):
         self.step="after setup"
         await super().setup()
 
-    def info(self):
+    def get_info(self):
         return f"Test script, in step {self.step}"
+
     async def main(self):
         self.step=1
         print(f"START Test task {openttd.internal.get_version() :08x}");

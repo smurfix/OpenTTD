@@ -77,7 +77,7 @@ class BaseScript:
         task = _main.get()
         task.pprint(*a, **kw)
 
-    def info(self) -> str:
+    def get_info(self) -> str:
         """
         Returns a one-line status of this script.
 
@@ -94,7 +94,7 @@ class BaseScript:
         """
         return []
 
-    def state(self) -> str:
+    def get_state(self) -> str:
         """
         Returns a detailed state for this script.
 
@@ -171,17 +171,43 @@ class BaseScript:
         """
         raise NotImplementedError("You need to implement a 'main' method!")
 
+    @property
+    def pause_state(self) -> PauseState:
+        return _main.pause_state
+
+    def set_pause_state(self, mode: PauseState):
+        """
+        Game paused state change notification.
+
+        You might want to override this.
+        """
+        pass
+
 
 class GameScript(BaseScript):
     """
     This class checks the company attribute and raises an error if it was
     called as an AI.
+
+    NB: Game scripts run in all modes. You might
     """
 
     async def setup(self, **kw):
         if self.company != openttd.company.ID.DEITY:
             raise RuntimeError("This is a game script. It doesn't work as an AI.")
         await super().setup(*kw)
+
+    @property
+    def game_mode(self) -> GameMode:
+        return _main.game_mode
+
+    def set_game_mode(self, mode: GameMode):
+        """
+        Game mode change notification.
+
+        You might want to override this.
+        """
+        pass
 
 class AIScript(BaseScript):
     """
