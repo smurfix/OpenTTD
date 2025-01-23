@@ -45,6 +45,8 @@
 
 #ifdef WITH_PYTHON
 #include "python/call_py.hpp"
+#else
+#include "python/script_cmd.h"  // see end of this file
 #endif
 
 CommandProc CmdBuildRailroadTrack;
@@ -1472,3 +1474,12 @@ const char *BaseCommandContainer::DeserialiseBaseCommandContainer(Deserialisatio
 	}
 	return nullptr;
 }
+
+#ifndef WITH_PYTHON
+/*
+ * If compiled without Python, the network handler needs a dummy callback.
+ */
+void CcPython(const CommandCost&, TileIndex, uint32_t p1, uint32_t p2, uint64_t p3, uint32_t cmd)
+{
+}
+#endif

@@ -812,3 +812,8 @@ void ScriptInstance::ReleaseSQObject(HSQOBJECT *obj)
 {
 	if (!this->in_shutdown) this->engine->ReleaseObject(obj);
 }
+
+CommandHookProc *ScriptInstance::GetDoCommandHook() {
+	return nullptr;
+}
+

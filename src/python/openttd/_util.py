@@ -11,6 +11,8 @@ This submodule is used to re-organize the raw _ttd import.
 
 from __future__ import annotations
 
+import _ttd
+
 _assigned = set()
 
 class StopWork(RuntimeError):
@@ -64,18 +66,45 @@ def _copy(dst,src,prefix=""):
             continue
         setattr(dst,k,getattr(src,k))
 
+def _cd_repr(self: CommandData):
+    res = [_ttd.enum.Command(self.cmd).name]
+    if self.tile:
+        res.append(f"@{_ttd.support.Tile_(self.tile)}")
+    if self.text:
+        res.append(self.text)
+
+    return f"CmdData({' '.join(res)})"
+
+def _cd_eq(s: CommandData, o: CommandData):
+    if s.cmd != o.cmd: return False
+    if s.tile != o.tile: return False
+    if s.p1 != o.p1: return False
+    if s.p2 != o.p2: return False
+    if s.p3 != o.p3: return False
+    # if s.text != o.text: return False
+    return True
+
+def _cd_hash(s: CommandData):
+    return (s.cmd.value<<40) | (int(s.tile)<<25) | (s.p1<<20) | (s.p2 <<15) | s.p3
+
+
 def _importer():
     """Reorganize the raw _ttd modules so that they look more pythonic.
     """
     import openttd as t
     import openttd._hook as th
-    import _ttd
+
+    _ttd.support.CommandData.__repr__ = _cd_repr
+    _ttd.support.CommandData.__hash__ = _cd_hash
+    _ttd.support.CommandData.__eq__ = _cd_eq
 
     t.internal = ti = _Sub("internal")
     ti.msg = _ttd.msg
     ti.task = _ttd.main
     ti.StopWork = StopWork
+    ti.CommandData = _ttd.support.CommandData
 
+    _ttd._command_hook = th.command_hook
     _ttd._storage_hook = th.storage_hook
 
     # Install message handlers from _msg in msg objects
@@ -102,7 +131,8 @@ def _importer():
         if vl is not None:
             setattr(getattr(t,k),"list",_Sub(f"{k}.list", getattr(_ttd,kl)))
 
-    t.company.Owner = _ttd.support.Owner
+    t.company.ID = _ttd.support.CompanyID
+    ti.Owner = _ttd.support.Owner
     #t.Command=_ttd._support.Command
     #t.date.Date = _Date
     #t.date.sleep = _sleep

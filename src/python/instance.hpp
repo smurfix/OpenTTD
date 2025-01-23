@@ -10,15 +10,34 @@
 #ifndef PY_INSTANCE_HPP
 #define PY_INSTANCE_HPP
 
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/unique_ptr.h>
+
 #include "game/game_info.hpp"
 #include "script/script_instance.hpp"
 #include "python/object.hpp"
 
+namespace py = nanobind;
+
 namespace PyTTD {
 	/** Runtime information to link the Python task to the current state. */
-	class Instance : public ScriptInstance {
+	struct CommandData {
+		Commands cmd;
+		TileIndex tile;
+		uint32_t p1;
+		uint32_t p2;
+		uint64_t p3;
+		std::string text;
+		CommandAuxiliaryPtr aux_data;
+
+		CommandData() : text(""), aux_data(nullptr) {}
+	};
+	typedef std::unique_ptr<CommandData, py::deleter<CommandData>> CommandDataPtr;
+
+
+	class NB_IMPORT Instance : public ScriptInstance {
 	public:
-		Instance() : ScriptInstance("Python") {}
+		Instance() : ScriptInstance("Python", ScriptType::PY) {}
 		virtual ~Instance();
 
 		/**
@@ -33,16 +52,20 @@ namespace PyTTD {
 
 		inline void SetStorage(StoragePtr p) { this->py_storage = p; }
 
+		/**
+		 * If a call from Python to TTD generated a command, we store it here.
+		 */
+		CommandDataPtr currentCmd;
+
 	private:
 		void RegisterAPI() override;
 		void Died() override;
 
 		Storage *GetStorage() override;
 
-		CommandCallbackData *GetDoCommandCallback() override;
-		// CommandExFn *GetDoCommandHook() override;
+		CommandCallback *GetDoCommandCallback() override;
+		CommandHookProc *GetDoCommandHook() override;
 
-	private:
 		StoragePtr py_storage;
 	};
 

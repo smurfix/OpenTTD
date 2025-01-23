@@ -65,7 +65,7 @@ foreach(SCRIPT_API_FILE IN LISTS SCRIPT_API_FILES)
             COMMENT "Generating python/${SCRIPT_API_FILE_NAME}.cpp"
     )
     set_property(SOURCE ${SCRIPT_API_BINARY_FILE} PROPERTY GENERATED ON)
-    target_sources(openttd_lib PRIVATE ${SCRIPT_API_BINARY_FILE})
+    target_sources(${OPENTTD_LIB} PRIVATE ${SCRIPT_API_BINARY_FILE})
     list(APPEND SCRIPT_PYTHON_BINARY_FILES ${SCRIPT_API_BINARY_FILE})
 endforeach()
 
@@ -79,7 +79,7 @@ add_dependencies(script_python
 
 set(INCLUDES_BINARY_FILE "${CMAKE_CURRENT_BINARY_DIR}/python_includes.cpp")
 set_property(SOURCE ${INCLUDES_BINARY_FILE} PROPERTY GENERATED ON)
-target_sources(openttd_lib PRIVATE ${INCLUDES_BINARY_FILE})
+target_sources(${OPENTTD_LIB} PRIVATE ${INCLUDES_BINARY_FILE})
 set(API_FILES "${CMAKE_CURRENT_BINARY_DIR}/python.files")
 file(GENERATE OUTPUT ${API_FILES} CONTENT "${SCRIPT_PYTHON_BINARY_FILES}")
 add_custom_command_timestamp(OUTPUT ${INCLUDES_BINARY_FILE}
@@ -114,8 +114,8 @@ add_dependencies(script_api
 set(ENUM_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/export_enum.py)
 
 foreach(ENUM
-        "src/command_type.h;Commands/CMD_,CommandType/CMDT_,CommandPauseLevel/CMDPL_"
-        "src/openttd.h;GameMode/GM_,SwitchMode/SM_,PauseMode/PM_PAUSED_/PM_"
+        "src/command_type.h;*Commands/CMD_,*FlaggedCommands/CMD_,CommandType/CMDT_,CommandPauseLevel/CMDPL_"
+        "src/openttd.h;GameMode/GM_,SwitchMode/SM_,*PauseMode/PM_PAUSED_/PM_"
         )
     list(GET ENUM 0 HEADER_FILE)
     list(GET ENUM 1 ENUM_NAMES)
@@ -127,9 +127,8 @@ foreach(ENUM
     add_custom_command(
         OUTPUT ${ENUM_DEST_FILE}
         COMMAND python3 ${ENUM_SCRIPT} ${ENUM_SOURCE_FILE} ${ENUM_DEST_FILE} ${ENUM_NAMES}
-        MAIN_DEPENDENCY ${SCRIPT_API_SOURCE_FILE}
-        DEPENDS ${ENUM_SOURCE_FILE}
-            ${ENUM_SCRIPT}
+        MAIN_DEPENDENCY ${ENUM_SOURCE_FILE}
+        DEPENDS ${ENUM_SCRIPT}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating ${ENUM_DEST_FILE}"
     )
@@ -161,4 +160,4 @@ add_custom_target_timestamp(script_python_enum
 add_dependencies(script_python
     script_python_enum
 )
-target_sources(openttd_lib PRIVATE ${ENUM_BINARY_FILE} ${ENUM_BINARY_FILES})
+target_sources(${OPENTTD_LIB} PRIVATE ${ENUM_BINARY_FILE} ${ENUM_BINARY_FILES})

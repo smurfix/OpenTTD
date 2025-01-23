@@ -14,6 +14,7 @@
 #include "../../rail_type.h"
 #include "../../core/random_func.hpp"
 
+#include "command_type.h"
 #include "script_types.hpp"
 #include "script_log_types.hpp"
 #include "../script_suspend.hpp"
@@ -75,6 +76,9 @@ protected:
 	public:
 		ActiveInstance(ScriptInstance *instance);
 		~ActiveInstance();
+
+		static CommandHookProc *GetDoCommandHook();
+
 	private:
 		ScriptInstance *last_active;    ///< The active instance before we go instantiated.
 		ScriptAllocatorScope alc_scope; ///< Keep the correct allocator for the script instance activated

@@ -770,6 +770,11 @@ private:
 };
 
 /**
+ * The hook function to intercept command submission by scripts.
+ */
+typedef bool (CommandHookProc)(TileIndex tile, uint32_t p1, uint32_t p2, uint64_t p3, uint cmd, const std::string &text, const CommandAuxiliaryPtr aux_data);
+
+/**
  * Struct representation of a command call (excluding callback)
  */
 struct BaseCommandContainer {

@@ -145,6 +145,11 @@ public:
 	static void DoCommandReturnLeagueTableElementID(ScriptInstance *instance);
 
 	/**
+	 * Get this instance's command submission override function.
+	 */
+	virtual CommandHookProc *GetDoCommandHook();
+
+	/**
 	 * Get the controller attached to the instance.
 	 */
 	class ScriptController *GetController() { return controller; }

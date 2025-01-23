@@ -72,6 +72,10 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 	return ScriptObject::ActiveInstance::active;
 }
 
+/* static */ CommandHookProc *ScriptObject::ActiveInstance::GetDoCommandHook()
+{
+	return ScriptObject::ActiveInstance::active->GetDoCommandHook();
+}
 
 /* static */ void ScriptObject::SetDoCommandDelay(uint ticks)
 {
@@ -343,6 +347,13 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 
 /* static */ bool ScriptObject::DoCommandEx(TileIndex tile, uint32_t p1, uint32_t p2, uint64_t p3, uint cmd, const char *text, const CommandAuxiliaryBase *aux_data, Script_SuspendCallbackProc *callback)
 {
+	auto hook = ScriptObject::GetActiveInstance()->GetDoCommandHook();
+	if (hook != nullptr) {
+		CommandAuxiliaryPtr aux_ptr;
+		aux_ptr.reset(const_cast<CommandAuxiliaryBase *>(aux_data));
+		return (*hook)(tile, p1, p2, p3, cmd, text, std::move(aux_ptr));
+	}
+
 	if (!ScriptObject::CanSuspend()) {
 		throw Script_FatalError("You are not allowed to execute any DoCommand (even indirect) in your constructor, Save(), Load(), and any valuator.");
 	}

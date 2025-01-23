@@ -31,7 +31,7 @@ class BaseScript:
 
     Pre-defined attributes:
         * log: a `logging.Logger` instance you can use.
-        * company: your company ID, or `openttd.Owner.DEITY` for game scripts.
+        * company: your company ID, or `openttd.company.ID.DEITY` for game scripts.
         * taskgroup: an `anyio.abc.TaskGroup` you can use to run subtasks
 
 
@@ -179,7 +179,7 @@ class GameScript(BaseScript):
     """
 
     async def setup(self, **kw):
-        if self.company != openttd.company.Owner.DEITY:
+        if self.company != openttd.company.ID.DEITY:
             raise RuntimeError("This is a game script. It doesn't work as an AI.")
         await super().setup(*kw)
 
@@ -189,7 +189,7 @@ class AIScript(BaseScript):
     called as a game script.
     """
     async def setup(self, **kw):
-        if self.company == openttd.company.Owner.DEITY:
+        if self.company == openttd.company.ID.DEITY:
             raise RuntimeError("This is an AI script. It doesn't work as a game script.")
         await super().setup(*kw)
 

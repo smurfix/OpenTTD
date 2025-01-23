@@ -7,11 +7,15 @@
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/vector.h>
 
 #include <iostream>
 #include <memory>
+#include "debug.h"
 
 #include "python/object.hpp"
+#include "python/instance.hpp"
 #include "python/task.hpp"
 
 #include "script/api/script_object.hpp"
@@ -32,14 +36,22 @@ namespace PyTTD {
 			.def_ro("root_company", &Storage::root_company)
 			.def_rw("allow_do_command", &Storage::allow_do_command)
 			.def_ro("costs", &Storage::costs)
-			.def_ro("last_cost", &Storage::last_cost)
+			.def_ro("last_result", &Storage::last_result)
 			.def_ro("last_error", &Storage::last_error)
-			.def_ro("last_command_res", &Storage::last_command_res)
-			.def_ro("last_data", &Storage::last_data)
 			.def_ro("last_cmd", &Storage::last_cmd)
-			.def_ro("last_cmd_ret", &Storage::last_cmd_ret)
+			.def_ro("last_p1", &Storage::last_p1)
+			.def_ro("last_p2", &Storage::last_p2)
+			.def_ro("last_p3", &Storage::last_p3)
+			.def_ro("last_tile", &Storage::last_tile)
+			.def_ro("last_cmd_res", &Storage::last_command_res)
 			.def_ro("road_type", &Storage::road_type)
 			.def_ro("rail_type", &Storage::rail_type)
+			.def_ro("new_vehicle_id", &Storage::new_vehicle_id)
+			.def_ro("new_sign_id", &Storage::new_sign_id)
+			.def_ro("new_group_id", &Storage::new_group_id)
+			.def_ro("new_goal_id", &Storage::new_goal_id)
+			.def_ro("new_story_page_id", &Storage::new_story_page_id)
+			.def_ro("new_story_page_element_id", &Storage::new_story_page_element_id)
 			;
 		py::class_<Task>(m, "Task")
 			.def("stop", &Task::PyStop, "Stop the Python task")
@@ -49,29 +61,11 @@ namespace PyTTD {
 			;
 
 		// intentionally not in a submodule
-		mg.def("debug", [](int level, const char *text) { Debug(python, level, "{}", text); },+ "Debug logging ('python')");
+		mg.def("debug", [](int level, const char *text) { Debug(python, level, "{}", text); }, "Debug logging ('python')");
 	}
 
-	// If a call from Python to TTD generated a command,
-	// we store it here.
-	CommandContainerPtr currentCmd = nullptr;
-
-#if 0
-	static bool saveCmd(TileIndex tile, uint32_t p1, uint32_t p2, uint64_t p3, uint cmd, const std::string &text, const struct CommandAuxiliaryBase *aux_data, Script_SuspendCallbackProc *callback) {
-		if(currentCmd)
-			throw std::domain_error("Second command");
-		currentCmd.reset(new CommandContainer());
-		currentCmd->cmd = cmd;
-		currentCmd->p1 = p1;
-		currentCmd->p2 = p2;
-		currentCmd->p3 = p3;
-		currentCmd->tile = tile;
-		currentCmd->text = text;
-		return true;
-	}
-#endif
 	// command hook
-	py::object cmd_hook(CommandContainerPtr cb)
+	py::object cmd_hook(CommandDataPtr cb)
 	{
 		static py::object cbfn;
 
@@ -79,7 +73,8 @@ namespace PyTTD {
 			py::module_ ttd = py::module_::import_("_ttd");
 			cbfn = ttd.attr("_command_hook");
 		}
-		return cbfn(cb);
+		py::object cbd = py::cast<CommandDataPtr>(std::move(cb));
+		return cbfn(cbd);
 	}
 
 	// data hook

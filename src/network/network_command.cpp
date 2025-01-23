@@ -16,6 +16,7 @@
 #include "../company_func.h"
 #include "../error_func.h"
 #include "../settings_type.h"
+#include "../python/script_cmd.h"
 
 #include "../safeguards.h"
 
@@ -59,6 +60,7 @@ static CommandCallback * const _callback_table[] = {
 	/* 0x23 */ CcSwapSchDispatchSchedules,
 	/* 0x24 */ CcCreateTraceRestrictSlot,
 	/* 0x25 */ CcCreateTraceRestrictCounter,
+	/* 0x26 */ CcPython,
 };
 
 /** Local queue of packets waiting for handling. */
@@ -136,6 +138,21 @@ void NetworkSyncCommandQueue(NetworkClientSocket *cs)
 }
 
 /**
+ * Execute a single "generic" command.
+ *
+ * Don't call this unless you know what you're doing.
+ */
+void UnsafeCallCmd(CommandPacket &cp)
+{
+	extern ClientID _cmd_client_id;
+
+	_current_company = cp.company;
+	_cmd_client_id = cp.client_id;
+	cp.cmd |= CMD_NETWORK_COMMAND;
+	DoCommandP(cp, cp.my_cmd);
+}
+
+/**
  * Execute all commands on the local command queue that ought to be executed this frame.
  */
 void NetworkExecuteLocalCommandQueue()
@@ -159,10 +176,7 @@ void NetworkExecuteLocalCommandQueue()
 		}
 
 		/* We can execute this command */
-		_current_company = cp->company;
-		_cmd_client_id = cp->client_id;
-		cp->cmd |= CMD_NETWORK_COMMAND;
-		DoCommandP(*cp, cp->my_cmd);
+		UnsafeCallCmd(*cp);
 
 		record_sync_event = true;
 	}

@@ -10,10 +10,11 @@
 #include "instance.hpp"
 
 #include "error.h"
+#include "command_type.h"
+#include "company_func.h"
 
 #include "script/squirrel_class.hpp"
 #include "script/script_storage.hpp"
-#include "script/script_cmd.h"
 #include "script/script_gui.h"
 
 #include "game/game_text.hpp"
@@ -68,29 +69,49 @@ namespace PyTTD {
 		/* Don't show errors while loading savegame. They will be shown at end of loading anyway. */
 	}
 
-	/**
-	* DoCommand callback function for commands executed by Python scripts.
-	* @param cmd command as given to DoCommandPInternal.
-	* @param result The result of the command.
-	* @param data Command data as given to Command<>::Post.
-	* @param result_data Additional returned data from the command.
-	*/
-	void CcPython(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
+}
+using namespace PyTTD;
+/**
+ * DoCommand callback function for commands executed by Python scripts.
+ * @param cmd command as given to DoCommandPInternal.
+ * @param result The result of the command.
+ * @param data Command data as given to Command<>::Post.
+ * @param result_data Additional returned data from the command.
+ */
+void PyCmdCB(const CommandCost &result, TileIndex tile, uint32_t p1,uint32_t p2, uint64_t p3, uint32_t cmd)
+{
+	Task::Send(NewMsg<Msg::CmdResult>(result, tile,p1,p2,p3,(Commands)cmd));
+}
+
+void CcPython(const CommandCost &result, TileIndex tile, uint32_t p1, uint32_t p2, uint64_t p3, uint32_t cmd)
+{
+	Task::Send(NewMsg<Msg::CmdResult2>(result, tile, p1, p2, p3, (Commands)cmd, _current_company));
+}
+
+namespace PyTTD {
+	CommandCallback *Instance::GetDoCommandCallback()
 	{
-		Task::Send(NewMsg<Msg::CmdResult>(cmd, result, data, result_data));
+		return &PyCmdCB;
 	}
 
-	CommandCallbackData *Instance::GetDoCommandCallback()
-	{
-		return &CcPython;
+	static bool saveCmd(TileIndex tile, uint32_t p1, uint32_t p2, uint64_t p3, uint cmd, const std::string &text, const CommandAuxiliaryPtr aux_data) {
+		if(instance.currentCmd)
+			throw std::domain_error("Second command");
+		instance.currentCmd.reset(new CommandData());
+		instance.currentCmd->cmd = (Commands)cmd;
+		instance.currentCmd->tile = tile;
+		instance.currentCmd->p1 = p1;
+		instance.currentCmd->p2 = p2;
+		instance.currentCmd->p3 = p3;
+		instance.currentCmd->text = text;
+		instance.currentCmd->aux_data.reset(const_cast<CommandAuxiliaryBase*>(&*aux_data));
+
+		return true;
 	}
 
-#if 0
-	CommandExFn *Instance::GetDoCommandHook() {
-		std:: cout << "OVERRIDE!" << std::endl;
+	CommandHookProc *Instance::GetDoCommandHook() {
 		return &saveCmd;
 	}
-#endif
 
 	// The empty destructor is there to tell the compiler to create the class
 	Instance::~Instance() { }

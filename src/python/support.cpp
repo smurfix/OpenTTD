@@ -9,6 +9,7 @@
 #include <nanobind/stl/string.h>
 
 #include "python/object.hpp"
+#include "python/instance.hpp"
 #include "python/task.hpp"
 
 #include "script/api/script_object.hpp"
@@ -16,9 +17,15 @@
 #include "script/api/script_text.hpp"
 #include "script/api/script_date.hpp"
 #include "script/api/script_controller.hpp"
+#include "script/api/script_company.hpp"
 
 namespace PyTTD {
 	namespace py = nanobind;
+
+	struct TileIndex_ {
+		inline TileIndex_(uint32_t value) : value(value) {};
+		uint32_t value;
+	};
 
 	void init_ttd_support(py::module_ &mg) {
 		auto m = mg.def_submodule("support", "Various supporting classes and enums");
@@ -29,11 +36,11 @@ namespace PyTTD {
 		m.def("get_version", &ScriptController::GetVersion);
 		m.def("print", &ScriptController::Print);
 
-		py::enum_<Owner>(m, "Owner", py::is_flag())
+		py::enum_<Owner>(m, "Owner", py::is_flag(), py::is_arithmetic())
 			.value("BEGIN",OWNER_BEGIN)
-			.value("INVALID",INVALID_OWNER)
 			.value("MAX_COMPANIES",MAX_COMPANIES)
 			.value("NEW",COMPANY_NEW_COMPANY)
+			.value("INVALID",INVALID_OWNER)
 			.value("SPECTATOR",COMPANY_SPECTATOR)
 			.value("NONE",OWNER_NONE)
 			.value("WATER",OWNER_WATER)
@@ -42,13 +49,24 @@ namespace PyTTD {
 			// .export_values()
 			;
 
-		py::class_<TileIndex>(m, "Tile_")
+		py::enum_<ScriptCompany::CompanyID>(m, "CompanyID", py::is_flag(), py::is_arithmetic())
+			.value("FIRST", ScriptCompany::COMPANY_FIRST)
+			.value("LAST", ScriptCompany::COMPANY_LAST)
+			.value("INVALID", ScriptCompany::COMPANY_INVALID)
+			.value("SELF", ScriptCompany::COMPANY_SELF)
+			.value("SPECTATOR", ScriptCompany::COMPANY_SPECTATOR)
+			.value("DEITY",(ScriptCompany::CompanyID)OWNER_DEITY)
+			;
+
+		py::class_<TileIndex_>(m, "Tile_")
 			.def(py::init_implicit<uint32_t>())
-			.def(py::new_([](unsigned int xy){ return TileIndex(xy);}))
-			.def(py::new_([](unsigned int x, unsigned int y){ return TileXY(x,y);}))
-			.def("__int__", [](const TileIndex &t){ return t.value; })
-			.def("__repr__", [](const TileIndex &t){ return fmt::format("Tile({})", t.value);})
-			.def("__str__", [](const TileIndex &t){ return fmt::format("Tile({},{})", TileX(t), TileY(t));})
+			.def(py::new_([](unsigned int xy){ return TileIndex_{TileIndex(xy)};}))
+			.def(py::new_([](unsigned int x, unsigned int y){ return TileIndex_{TileXY(x,y)};}))
+			.def("__int__", [](const TileIndex_ &t){ return t.value; })
+			.def("__hash__", [](const TileIndex_ &t){ return t.value; })
+			.def("__eq__", [](const TileIndex_ &t, const TileIndex_ &o){ return t.value == o.value; })
+			.def("__repr__", [](const TileIndex_ &t){ return fmt::format("Tile({})", t.value);})
+			.def("__str__", [](const TileIndex_ &t){ return fmt::format("Tile({},{})", TileX(t.value), TileY(t.value));})
 			;
 
 		m.attr("INVALID_TILE") = INVALID_TILE;
@@ -69,6 +87,35 @@ namespace PyTTD {
 		py::enum_<ScriptDate::Date>(m, "Date", py::is_arithmetic())
 			.value("INVALID", ScriptDate::Date::DATE_INVALID)
 			// .export_values()
+			;
+
+		py::class_<CommandCost>(m, "CommandCost")
+			.def_prop_ro("cost", &CommandCost::GetCost)
+			.def_prop_ro("message", &CommandCost::GetErrorMessage)
+			.def_prop_ro("expense_type", &CommandCost::GetExpensesType)
+			.def_prop_ro("success", &CommandCost::Succeeded)
+			.def_prop_ro("extra_message", &CommandCost::GetExtraErrorMessage)
+			.def("__bool__", &CommandCost::Succeeded)
+			;
+
+		py::class_<CommandData>(m, "CommandData", py::dynamic_attr())
+			.def(py::new_([](Commands cmd, TileIndex tile, uint32_t p1, uint32_t p2, uint64_t p3) {
+				auto res = new CommandData();
+				res->cmd = cmd;
+				res->tile = tile;
+				res->p1 = p1;
+				res->p2 = p2;
+				res->p3 = p3;
+				return res;
+			}))
+			.def_prop_ro("cmd", [](CommandData &x){ return (Commands)(CMD_ID_MASK & (uint32_t)x.cmd); })
+			.def_prop_ro("flags", [](CommandData &x){ return (FlaggedCommands)(CMD_FLAGS_MASK & (uint32_t)x.cmd); })
+			.def_prop_ro("tile", [](CommandData &x){ return TileIndex_{x.tile};})
+			.def_ro("p1", &CommandData::p1)
+			.def_ro("p2", &CommandData::p2)
+			.def_ro("p3", &CommandData::p3)
+			.def_ro("text", &CommandData::text)
+			.def_ro("aux_data", &CommandData::aux_data)
 			;
 
 		py::class_<Text>(m, "_Text");

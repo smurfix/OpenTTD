@@ -137,4 +137,6 @@ std::string NormalizeConnectionString(const std::string &connection_string, uint
 
 void ClientNetworkEmergencySave();
 
+void UnsafeCallCmd(CommandPacket &cp);
+
 #endif /* NETWORK_INTERNAL_H */

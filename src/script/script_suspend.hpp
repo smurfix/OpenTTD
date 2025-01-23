@@ -10,6 +10,8 @@
 #ifndef SCRIPT_SUSPEND_HPP
 #define SCRIPT_SUSPEND_HPP
 
+class ScriptInstance;
+
 /**
  * The callback function when a script suspends.
  */
