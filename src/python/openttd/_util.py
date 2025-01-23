@@ -132,7 +132,11 @@ def _importer():
             setattr(getattr(t,k),"list",_Sub(f"{k}.list", getattr(_ttd,kl)))
 
     t.company.ID = _ttd.support.CompanyID
+    ti.debug = _ttd.debug
     ti.Owner = _ttd.support.Owner
+    ti.Command = _ttd.enum.Command
+    ti.GameMode = _ttd.enum.GameMode
+    ti.PauseState = _ttd.enum.PauseMode
     #t.Command=_ttd._support.Command
     #t.date.Date = _Date
     #t.date.sleep = _sleep

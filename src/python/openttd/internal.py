@@ -7,16 +7,39 @@
 
 from __future__ import annotations
 
-from openttd._main import CmdR
+from typing import TYPE_CHECKING
+if not TYPE_CHECKING:
+    raise ImportError("This module is only used for typing stubs!")
 
-__all__ = ["CmdResult", "CmdResult2", "CmdTrace"]
+from enum import IntEnum as _i, IntFlag as _f
 
-def CmdResult(self,main):
-    cmdr = CmdR(cmd=self.cmd, data=self.data, company=self.company)
-    return main.handle_result(cmdr)
+import openttd as _t
 
-def CmdResult2(self,main):
-    return main.handle_result2(self)
+class _Obj:
+    def __init__(self, **kw):
+        for k,v in kw.items():
+            setattr(self,k,v)
 
-def CmdTrace(self,main):
-    return main.trace_command(self)
+    def _(self, name):
+        def set(obj):
+            setattr(self,name,obj)
+            return obj
+        return _at
+
+
+_t.company = _Obj()
+ID=_company_ID)
+
+class _Owner(_f):
+    DEITY=42
+
+
+class Owner(_Owner):
+    pass
+
+@_t.company._("ID")
+class _company_id(_Owner):
+    pass
+_t.company = _Obj(ID=_company_ID)
+
+

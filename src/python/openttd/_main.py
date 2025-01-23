@@ -23,6 +23,8 @@ from importlib import import_module
 from io import StringIO
 from inspect import cleandoc
 
+from .util import maybe_async
+
 import logging
 
 
@@ -37,6 +39,10 @@ if TYPE_CHECKING:
     class CommandResult:
         pass
     class CompanyID:
+        pass
+    class GameMode:
+        pass
+    class PauseState:
         pass
 
 logger = logging.getLogger("OpenTTD")
@@ -74,6 +80,8 @@ class Main:
     _tg: anyio.abc.TaskGroup
     _replies:dict[CmdR, VEvent]
     _code:dict[int,BaseScript]
+    _game_mode:GameMode = None
+    _pause_state:PauseState = None
 
     def __init__(self):
         self._replies = {}
@@ -121,9 +129,7 @@ class Main:
     async def _process(self, q):
         async for msg in q:
             try:
-                res = msg.work(self)
-                if hasattr(res,"__await__"):
-                    await res
+                res = await maybe_async(msg.work, self)
             except Exception:
                 logger.exception("Error processing %r", msg)
 
@@ -135,9 +141,7 @@ class Main:
             self.print(f"Command {args[0]} unknown. Try 'py help'.")
         else:
             try:
-                res = cmd(args[1:])
-                if hasattr(res,"__await__"):
-                    await res
+                res = await maybe_async(cmd, args[1:])
             except Exception as exc:
                 logger.exception("Error processing %r", msg)
                 self.print(f"Error: {exc}")
@@ -190,9 +194,14 @@ class Main:
             company = openttd.company.ID(int(args[0])-1)
         except ValueError:
             company = openttd.company.ID.DEITY
+            if self._game_mode is None:
+                raise RuntimeError("Oops: the game mode has not been set yet.")
         else:
             if openttd.company.resolve_company_id(company) < 0:
-                raise ValueError(f"Company #{args[0]} does not exist")
+                raise ValueError(f"Company #{args[0]} does not exist.")
+            if self._game_mode != openttd.internal.GameMode.NORMAL:
+                raise RuntimeError("Sorry, but AIs only run when playing.")
+
             args = args[1:]
         script = args[0]
         kw = {}
@@ -246,8 +255,6 @@ class Main:
         This method is *not* a coroutine. It does however return an awaitable that
         resolves to the command's result.
         """
-        import _ttd
-
         if company is None:
             company = _storage.get().company
 
@@ -278,6 +285,33 @@ class Main:
         finally:
             if cmdr in self._replies:
                 del self._replies[cmdr]
+
+    @property
+    def game_mode(self):
+        return self._game_mode
+
+    @property
+    def pause_state(self):
+        return self._pause_state
+
+    async def set_game_mode(self, mode:GameMode):
+        self._game_mode = mode
+
+        if mode != openttd.internal.GameMode.NORMAL:
+            for v in list(self._code.values()):
+                async with anyio.create_task_group() as tg:
+                    if v.company != openttd.company.ID.DEITY:
+                        v.stop();
+                    else:
+                        tg.start_soon(maybe_async, v.set_game_mode, mode)
+
+    async def set_pause_state(self, mode:GameMode):
+        self._pause_state = mode
+
+        if mode != openttd.internal.GameMode.NORMAL:
+            async with anyio.create_task_group() as tg:
+                for v in list(self._code.values()):
+                    tg.start_soon(maybe_async, v.set_pause_state, mode)
 
     def cmd_stop(self, args):
         """Stop game scripts or AIs.
@@ -354,18 +388,16 @@ class Main:
 
     def cmd_eval(self, args):
         """Evaluate a Python expression.
-        The modules "openttd" and "_ttd" (internal) are pre-loaded.
+        The module "openttd" is pre-loaded.
 
         You can use p(X) to print the value of X
         """
-        import _ttd
         from pprint import pprint
 
         g = self._globals
         iof = StringIO()
 
         g["openttd"] = openttd
-        g["_ttd"] = _ttd
 
         g["p"] = lambda *p: print(*p, file=iof)
         g["r"] = lambda *p: print(*(repr(x) for x in p), file=iof)
@@ -454,8 +486,8 @@ class Main:
 
         TODO.
         """
-        import _ttd
-        _ttd.debug(2,"Python START")
+        import _ttd  # to access Storage; intentionally not in openttd
+        openttd.internal.debug(2,"Python START")
 
         main_storage = _ttd.object.Storage(openttd.company.ID.SPECTATOR)
         main_storage.allow_do_command = False
@@ -475,7 +507,7 @@ class Main:
             n = 1
             while True:
                 await anyio.sleep(n)
-                _ttd.debug(3, f"Python running: {n}")
+                openttd.internal.debug(3, f"Python running: {n}")
                 n *= 2
 
 def run():
