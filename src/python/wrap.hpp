@@ -15,12 +15,13 @@
 #include "script/script_instance.hpp"
 #include "script/script_storage.hpp"
 #include "video/video_driver.hpp"
+#include "framerate_type.h"
 
 #include "python/instance.hpp"
 #include "python/object.hpp"
 
 class VDriver : public VideoDriver {
-    public:
+	public:
 		inline std::recursive_mutex &GetStateMutex() { return game_state_mutex; }
 };
 
@@ -61,9 +62,10 @@ namespace PyTTD {
 #   define _WRAP1                                   \
 	CommandDataPtr cmd = nullptr;                   \
 	{                                               \
-	    auto storage = Storage::from_python();      \
+		auto storage = Storage::from_python();      \
 		py::gil_scoped_release unlock;              \
 		PyTTD::LockGame lock;                       \
+		PerformanceMeasurer framerate(PFE_PYTHON);  \
 		assert(! instance.currentCmd);              \
 		{                                           \
 			SObject::AInstance active(&instance);   \
@@ -73,7 +75,7 @@ namespace PyTTD {
 		}                                           \
 		cmd = std::move(instance.currentCmd);       \
 		instance.SetStorage(nullptr);               \
-    }                                               \
+	}                                               \
 	if (cmd) {                                      \
 		return cmd_hook(std::move(cmd));            \
 	}                                               \
