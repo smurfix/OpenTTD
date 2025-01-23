@@ -3260,6 +3260,7 @@ STR_FRAMERATE_DRAWING_VIEWPORTS                                 :{BLACK}  World 
 STR_FRAMERATE_VIDEO                                             :{BLACK}Video output:
 STR_FRAMERATE_SOUND                                             :{BLACK}Sound mixing:
 STR_FRAMERATE_ALLSCRIPTS                                        :{BLACK}  GS/AI total:
+STR_FRAMERATE_PYTHON                                            :{BLACK}   Python:
 STR_FRAMERATE_GAMESCRIPT                                        :{BLACK}   Game script:
 STR_FRAMERATE_AI                                                :{BLACK}   AI {NUM} {RAW_STRING}
 
@@ -3277,6 +3278,7 @@ STR_FRAMETIME_CAPTION_DRAWING_VIEWPORTS                         :World viewport 
 STR_FRAMETIME_CAPTION_VIDEO                                     :Video output
 STR_FRAMETIME_CAPTION_SOUND                                     :Sound mixing
 STR_FRAMETIME_CAPTION_ALLSCRIPTS                                :GS/AI scripts total
+STR_FRAMETIME_CAPTION_PYTHON                                    :Python interface
 STR_FRAMETIME_CAPTION_GAMESCRIPT                                :Game script
 STR_FRAMETIME_CAPTION_AI                                        :AI {NUM} {RAW_STRING}
 

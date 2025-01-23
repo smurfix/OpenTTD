@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "debug.h"
 #include "fileio_func.h"
+#include "framerate_type.h"
 #include "console_func.h"
 #include "network/network_internal.h"
 #include "core/backup_type.hpp"
@@ -193,12 +194,17 @@ namespace PyTTD {
 	/***** Calls from OpenTTD *****/
 
 	/* static */ void Task::ProcessFromPython() {
-		if(Task::current == nullptr)
+		if(Task::current == nullptr) {
+			PerformanceMeasurer::SetInactive(PFE_PYTHON);
 			return;
+		}
 		if (Task::current->stopped) {
+			PerformanceMeasurer::SetInactive(PFE_PYTHON);
 			Task::Stop();
 			return;
 		}
+
+		PerformanceMeasurer framerate(PFE_PYTHON);
 
 		if (Task::current->game_mode != _game_mode) {
 			Task::current->game_mode = _game_mode;

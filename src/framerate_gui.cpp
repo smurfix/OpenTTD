@@ -203,6 +203,7 @@ namespace {
 		PerformanceData(60.0),                  // PFE_VIDEO
 		PerformanceData(1000.0 * 8192 / 44100), // PFE_SOUND
 		PerformanceData(1),                     // PFE_ALLSCRIPTS
+		PerformanceData(1),                     // PFE_PYTHON
 		PerformanceData(1),                     // PFE_GAMESCRIPT
 		PerformanceData(1),                     // PFE_AI0 ...
 		PerformanceData(1),
@@ -253,7 +254,7 @@ PerformanceMeasurer::~PerformanceMeasurer()
 {
 	if (this->elem == PFE_ALLSCRIPTS) {
 		/* Hack to not record scripts total when no scripts are active */
-		bool any_active = _pf_data[PFE_GAMESCRIPT].num_valid > 0;
+		bool any_active = _pf_data[PFE_GAMESCRIPT].num_valid > 0 || _pf_data[PFE_PYTHON].num_valid > 0;
 		for (uint e = PFE_AI0; e < PFE_MAX; e++) any_active |= _pf_data[e].num_valid > 0;
 		if (!any_active) {
 			PerformanceMeasurer::SetInactive(PFE_ALLSCRIPTS);
@@ -343,6 +344,7 @@ static const PerformanceElement DISPLAY_ORDER_PFE[PFE_MAX] = {
 	PFE_GL_AIRCRAFT,
 	PFE_GL_LANDSCAPE,
 	PFE_ALLSCRIPTS,
+	PFE_PYTHON,
 	PFE_GAMESCRIPT,
 	PFE_AI0,
 	PFE_AI1,
@@ -1056,6 +1058,7 @@ void ConPrintFramerate()
 		"Video output",
 		"Sound mixing",
 		"AI/GS scripts total",
+		"Python interface",
 		"Game script",
 	};
 	std::string ai_name_buf;
