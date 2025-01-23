@@ -77,6 +77,9 @@ protected:
 	public:
 		ActiveInstance(ScriptInstance *instance);
 		~ActiveInstance();
+
+		static CommandHookProc *GetDoCommandHook();
+
 	private:
 		ScriptInstance *last_active;    ///< The active instance before we go instantiated.
 		ScriptAllocatorScope alc_scope; ///< Keep the correct allocator for the script instance activated
@@ -396,6 +399,15 @@ bool ScriptObject::ScriptDoCommandHelper<Tcmd, Tret(*)(DoCommandFlag, Targs...)>
 
 	/* Only set ClientID parameters when the command does not come from the network. */
 	if constexpr ((::GetCommandFlags<Tcmd>() & CMD_CLIENT_ID) != 0) ScriptObjectInternal::SetClientIds(args, std::index_sequence_for<Targs...>{});
+
+	if (!estimate_only) {
+		auto hook = ScriptObject::ActiveInstance::GetDoCommandHook();
+		if (hook != nullptr) {
+			auto buf = EndianBufferWriter<CommandDataBuffer>::FromValue(args);
+			(*hook)(Tcmd, buf);
+			return true;
+		}
+	}
 
 	/* Store the command for command callback validation. */
 	if (!estimate_only && networking) ScriptObject::SetLastCommand(EndianBufferWriter<CommandDataBuffer>::FromValue(args), Tcmd);

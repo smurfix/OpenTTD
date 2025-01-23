@@ -69,6 +69,10 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 	return ScriptObject::ActiveInstance::active;
 }
 
+/* static */ CommandHookProc *ScriptObject::ActiveInstance::GetDoCommandHook()
+{
+	return ScriptObject::ActiveInstance::active->GetDoCommandHook();
+}
 
 /* static */ void ScriptObject::SetDoCommandDelay(uint ticks)
 {

@@ -32,6 +32,7 @@ namespace PyTTD::Msg {
 		ConsoleMsg(const std::string &msg);
 		void Process() override;
 
+		const std::string &GetText() { return text; }
 	private:
 		std::string text;
 	};

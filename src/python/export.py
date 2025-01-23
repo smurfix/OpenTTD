@@ -20,6 +20,7 @@ cls_in_api=False
 cls_level=0
 api_selected=None
 is_public=None
+is_sparse=False
 
 doxygen_skip=None
 squirrel_skip=None
@@ -31,7 +32,7 @@ fwd_re = re.compile(r'^\s*class(.*);')
 cls_re = re.compile(r'\s*class (.*) (: public|: protected|: private|:) (\S+)')
 struct_re = re.compile(r'^\s*struct (\S*)')
 enum_re = re.compile(r'^\s*enum (\S*)')
-enum_member_re = re.compile(r'^\s*(\S+),')
+enum_member_re = re.compile(r'^\s*([a-zA-Z][a-zA-Z0-9_]*)(,|\s*=|\s*$)')
 enum_err_re = re.compile(r'^\[(.*)\]')
 end_re = re.compile(r'^\s*};')
 method_re = re.compile(r'^\s*((virtual|static|const)\s+)*(\S+\s+[&*]?)?(~?\S+)\s*\(((::|[^:])*)\)')
@@ -121,8 +122,12 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
             api_selected = False
         elif f"-python" in line:
             api_selected = False
+        elif "python*" in line:
+            api_selected = True
+            is_sparse = True
         elif f"python" in line or "game" in line:
             api_selected = True
+            is_sparse = False
         continue
 
     # Remove the old squirrel stuff
@@ -217,7 +222,7 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
         cls_level += 1
 
         # Check if we want to publish this enum
-        if not api_selected:
+        if api_selected is None:
             api_selected = cls_in_api
         if not api_selected:
             api_selected = None
@@ -238,13 +243,16 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
             continue
         if enum_name == "ErrorMessages":
             print(f'    auto enum_{enum_cls} = py::enum_<{enum_cls}::{enum_name}>(m, "_Error_{enum_cls}")')
+        elif is_sparse:
+            print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}", py::is_flag(),py::is_arithmetic())')
         else:
-            print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}", py::is_flag())')
+            print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}")')
         continue
 
     # Maybe the end of the class
     if end_re.match(line):
         cls_level -= 1
+        is_sparse = None
         if cls_level:
             if enum_name is not None:
                 # print(f'        .export_values()')

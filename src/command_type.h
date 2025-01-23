@@ -470,6 +470,11 @@ template <Commands Tcmd> struct CommandTraits;
 typedef std::vector<uint8_t> CommandDataBuffer;
 
 /**
+ * The hook function to intercept command submission by scripts.
+ */
+typedef void (CommandHookProc)(Commands, CommandDataBuffer);
+
+/**
  * Define a callback function for the client, after the command is finished.
  *
  * Functions of this type are called after the command is finished. The parameters
