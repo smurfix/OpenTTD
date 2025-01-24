@@ -3623,6 +3623,9 @@ STR_NEWGRF_SCAN_MESSAGE                                         :{BLACK}NewGRFs 
 STR_NEWGRF_SCAN_STATUS                                          :{BLACK}{NUM} NewGRF{P "" s} von geschätzten {NUM} NewGRF{P "" s} eingelesen
 STR_NEWGRF_SCAN_ARCHIVES                                        :Archivdateien werden eingelesen
 
+# Python script list window
+STR_PY_SCRIPT_LIST_CAPTION                                      :{WHITE}Python-Scripte - {COMMA} Script{P "" e}
+
 # Sign list window
 STR_SIGN_LIST_CAPTION                                           :{WHITE}Schilderliste ({COMMA} Schild{P "" er})
 STR_SIGN_LIST_MATCH_CASE                                        :{BLACK}Groß-/Kleinschreibung beachten

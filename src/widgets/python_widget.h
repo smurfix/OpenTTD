@@ -5,35 +5,16 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PY_CALL_PY_H
-#define _PY_CALL_PY_H
+/** @file sign_widget.h Types related to the sign widgets. */
 
-#include <vector>
-#include <string>
-#include "company_type.h"
+#ifndef WIDGETS_PYTHON_WIDGET_H
+#define WIDGETS_PYTHON_WIDGET_H
 
-namespace PyTTD {
+/** Widgets of the #SignListWindow class. */
+enum PyScriptListWidgets : WidgetID {
+	WID_PYL_CAPTION,               ///< Caption of the window.
+	WID_PYL_LIST,                  ///< List of signs.
+	WID_PYL_SCROLLBAR,             ///< Scrollbar of list.
+};
 
-	struct Script {
-		unsigned int id;
-		CompanyID company;
-		std::string class_;
-		std::string info;
-
-		static std::vector<unsigned int> GetIndices();
-		static Script *GetIfValid(unsigned int id);
-	};
-
-	void Start();
-	void Stop();
-	bool IsRunning();
-
-	void ProcessFromPython();
-	void ConsoleToPy(int argc, const char * const argv[]);
-
-	/* TODO */
-	int StartScript(std::string name, std::string params);
-	bool StopScript(unsigned int id);
-}
-
-#endif
+#endif /* WIDGETS_PYTHON_WIDGET_H */

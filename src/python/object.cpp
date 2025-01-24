@@ -8,6 +8,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
 #include <iostream>
@@ -17,6 +18,7 @@
 #include "python/object.hpp"
 #include "python/instance.hpp"
 #include "python/task.hpp"
+#include "python/call_py.hpp"
 
 #include "script/api/script_object.hpp"
 #include "script/script_storage.hpp"
@@ -29,6 +31,13 @@ namespace PyTTD {
 
 		py::class_<SimpleCountedObject>(m, "SimpleCountedObject");
 		py::class_<ScriptObject, SimpleCountedObject>(m, "ScriptObject");
+
+		py::class_<Script>(m, "Script")
+			.def_rw("id", &Script::id)
+			.def_rw("cls", &Script::class_)
+			.def_rw("info", &Script::info)
+			.def_rw("company", &Script::company)
+			;
 
 		py::class_<Storage>(m, "Storage")
 			.def(py::new_(&Storage::Create))

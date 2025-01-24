@@ -47,6 +47,10 @@
 
 #include "strings_internal.h"
 
+#ifdef WITH_PYTHON
+#include "python/call_py.hpp"
+#endif
+
 #include "safeguards.h"
 
 std::string _config_language_file;                ///< The file (name) stored in the configuration.
@@ -1729,7 +1733,16 @@ static void FormatString(StringBuilder &builder, const char *str_arg, StringPara
 					}
 					break;
 				}
+#ifdef WITH_PYTHON
+				case SCC_PYSCRIPT_NAME: { // {PYSCRIPT}
+					const PyTTD::Script *sc = PyTTD::Script::GetIfValid(args.GetNextParameter<unsigned int>());
+					if (sc == nullptr) break;
 
+					auto tmp_params = MakeParameters(sc->class_);
+					GetStringWithArgs(builder, STR_JUST_RAW_STRING, tmp_params);
+					break;
+				}
+#endif
 				case SCC_STATION_FEATURES: { // {STATIONFEATURES}
 					StationGetSpecialString(builder, args.GetNextParameter<StationFacility>());
 					break;

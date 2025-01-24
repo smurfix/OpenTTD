@@ -5,35 +5,17 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PY_CALL_PY_H
-#define _PY_CALL_PY_H
+/** @file script_cmd.h Command definitions related to scripts. */
 
-#include <vector>
-#include <string>
-#include "company_type.h"
+#ifndef PY_SCRIPT_FUNCS_H
+#define PY_SCRIPT_FUNCS_H
 
-namespace PyTTD {
+#include "../command_type.h"
+#include "../tile_type.h"
 
-	struct Script {
-		unsigned int id;
-		CompanyID company;
-		std::string class_;
-		std::string info;
+struct Window;
 
-		static std::vector<unsigned int> GetIndices();
-		static Script *GetIfValid(unsigned int id);
-	};
+/* python_gui.cpp */
+Window *ShowPythonScriptList();
 
-	void Start();
-	void Stop();
-	bool IsRunning();
-
-	void ProcessFromPython();
-	void ConsoleToPy(int argc, const char * const argv[]);
-
-	/* TODO */
-	int StartScript(std::string name, std::string params);
-	bool StopScript(unsigned int id);
-}
-
-#endif
+#endif /* PY_SCRIPT_FUNCS_H */

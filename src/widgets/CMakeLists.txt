@@ -61,3 +61,8 @@ add_files(
     viewport_widget.h
     waypoint_widget.h
 )
+if(Python_FOUND)
+    add_files(
+        python_widget.h
+    )
+endif()

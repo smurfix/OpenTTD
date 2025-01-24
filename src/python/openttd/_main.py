@@ -29,6 +29,7 @@ import logging
 
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Callable
 
@@ -43,6 +44,8 @@ if TYPE_CHECKING:
     class GameMode:
         pass
     class PauseState:
+        pass
+    class Script:
         pass
 
 logger = logging.getLogger("OpenTTD")
@@ -103,6 +106,28 @@ class Main:
         self._code = {}
         self._code_next = 1
         self.logger = logger
+
+    def get_free_index(self):
+        id_ = self._code_next
+        self._code_next += 1
+        return id_
+
+    def get_script_indices(self) -> list[Script]:
+        """
+        Called from OpenTTD to get a list of vald script IDs.
+        """
+        return list(self._code.keys())
+
+    def get_script_info(self, id_:int, data:Script) -> bool:
+        """
+        Called from OpenTTD to get information about a script.
+        """
+        code = self._code[id_]
+        data.id = id_
+        data.cls = type(code).__name__
+        data.info = code.get_info()
+        data.company = code.company
+        return True
 
     async def _ttd_reader(self, queue, *, task_status):
         """
@@ -238,8 +263,7 @@ class Main:
                     return
             kw[name] = v
 
-        id_ = self._code_next
-        self._code_next += 1
+        id_ = self.get_free_index()
 
         script_obj = importlib.import_module(script).Script(id_, company, **kw)
         try:

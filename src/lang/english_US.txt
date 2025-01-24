@@ -534,6 +534,7 @@ STR_ABOUT_MENU_TOGGLE_CONSOLE                                   :Toggle console
 STR_ABOUT_MENU_AI_DEBUG                                         :AI/Game script debug
 STR_ABOUT_MENU_SCREENSHOT                                       :Screenshot
 STR_ABOUT_MENU_SHOW_FRAMERATE                                   :Show frame rate
+STR_ABOUT_MENU_PYTHON_SCRIPTLIST                                     :Python scripts
 STR_ABOUT_MENU_ABOUT_OPENTTD                                    :About 'OpenTTD'
 STR_ABOUT_MENU_SPRITE_ALIGNER                                   :Sprite aligner
 STR_ABOUT_MENU_TOGGLE_BOUNDING_BOXES                            :Toggle bounding boxes

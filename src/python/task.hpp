@@ -69,6 +69,16 @@ namespace PyTTD {
 		 */
 	 	static void Send(MsgPtr msg);
 
+		/**
+		 * Retrieve the IDs of currently-)running scripts.
+		 */
+		static std::vector<unsigned int> GetScriptIndices();
+
+		/**
+		 * Retrieve information about a script.
+		 */
+		static bool GetScriptInfo(unsigned int id, struct Script &data);
+
 	  private:
 		static std::unique_ptr<Task> current;
 

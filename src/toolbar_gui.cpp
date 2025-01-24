@@ -61,6 +61,10 @@
 #include "timer/timer_game_calendar.h"
 #include "help_gui.h"
 
+#ifdef WITH_PYTHON
+#include "python/script_funcs.h"
+#endif
+
 #include "widgets/toolbar_widget.h"
 
 #include "network/network.h"
@@ -1046,12 +1050,18 @@ static CallBackFunction ToolbarHelpClick(Window *w)
 	if (_settings_client.gui.newgrf_developer_tools) {
 		PopupMainToolbarMenu(w, _game_mode == GM_EDITOR ? (WidgetID)WID_TE_HELP : (WidgetID)WID_TN_HELP, {STR_ABOUT_MENU_LAND_BLOCK_INFO,
 				STR_ABOUT_MENU_HELP, STR_NULL, STR_ABOUT_MENU_TOGGLE_CONSOLE, STR_ABOUT_MENU_AI_DEBUG,
+#ifdef WITH_PYTHON
+				STR_ABOUT_MENU_PYTHON_SCRIPTLIST,
+#endif
 				STR_ABOUT_MENU_SCREENSHOT, STR_ABOUT_MENU_SHOW_FRAMERATE, STR_ABOUT_MENU_ABOUT_OPENTTD,
 				STR_ABOUT_MENU_SPRITE_ALIGNER, STR_ABOUT_MENU_TOGGLE_BOUNDING_BOXES, STR_ABOUT_MENU_TOGGLE_DIRTY_BLOCKS,
 				STR_ABOUT_MENU_TOGGLE_WIDGET_OUTLINES});
 	} else {
 		PopupMainToolbarMenu(w, _game_mode == GM_EDITOR ? (WidgetID)WID_TE_HELP : (WidgetID)WID_TN_HELP, {STR_ABOUT_MENU_LAND_BLOCK_INFO,
 				STR_ABOUT_MENU_HELP, STR_NULL, STR_ABOUT_MENU_TOGGLE_CONSOLE, STR_ABOUT_MENU_AI_DEBUG,
+#ifdef WITH_PYTHON
+				STR_ABOUT_MENU_PYTHON_SCRIPTLIST,
+#endif
 				STR_ABOUT_MENU_SCREENSHOT, STR_ABOUT_MENU_SHOW_FRAMERATE, STR_ABOUT_MENU_ABOUT_OPENTTD});
 	}
 	return CBF_NONE;
@@ -1133,18 +1143,25 @@ void SetStartingYear(TimerGameCalendar::Year year)
  */
 static CallBackFunction MenuClickHelp(int index)
 {
+#ifndef WITH_PYTHON
+	if (index >= 4)
+		index += 1;
+#endif
 	switch (index) {
 		case  0: return PlaceLandBlockInfo();
 		case  1: ShowHelpWindow();                 break;
 		case  2: IConsoleSwitch();                 break;
 		case  3: ShowScriptDebugWindow(INVALID_COMPANY, _ctrl_pressed); break;
-		case  4: ShowScreenshotWindow();           break;
-		case  5: ShowFramerateWindow();            break;
-		case  6: ShowAboutWindow();                break;
-		case  7: ShowSpriteAlignerWindow();        break;
-		case  8: ToggleBoundingBoxes();            break;
-		case  9: ToggleDirtyBlocks();              break;
-		case 10: ToggleWidgetOutlines();           break;
+#ifdef WITH_PYTHON
+		case  4: ShowPythonScriptList();           break;
+#endif
+		case  5: ShowScreenshotWindow();           break;
+		case  6: ShowFramerateWindow();            break;
+		case  7: ShowAboutWindow();                break;
+		case  8: ShowSpriteAlignerWindow();        break;
+		case  9: ToggleBoundingBoxes();            break;
+		case 10: ToggleDirtyBlocks();              break;
+		case 11: ToggleWidgetOutlines();           break;
 	}
 	return CBF_NONE;
 }
