@@ -78,7 +78,7 @@ def _importer():
 
     t.internal = ti = _Sub("internal")
     ti.msg = _ttd.msg
-    ti.task = _ttd.main
+    ti.task = _ttd._task
     ti.StopWork = StopWork
 
     _ttd._command_hook = th.command_hook
