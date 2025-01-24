@@ -44,6 +44,25 @@ namespace PyTTD {
 	}
 
 	/**
+	 * Retrieve the IDs of currently-)running scripts.
+	 */
+	std::vector<unsigned int> Script::GetIndices() {
+		return Task::GetScriptIndices();
+	}
+
+	/**
+	 * Retrieve information about a script.
+	 *
+	 * Caution: the data is returned via a static buffer and thus
+	 * needs to be copied out before the next call to this function.
+	 */
+	Script *Script::GetIfValid(unsigned int id)
+	{
+		static Script res;
+		return Task::GetScriptInfo(id, res) ? &res : nullptr;
+	}
+
+	/**
 	 * Process the message queue from Python
 	 */
 	void ProcessFromPython() {

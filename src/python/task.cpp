@@ -11,6 +11,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/unique_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include "python/task.hpp"
 #include "python/queues.hpp"
@@ -194,6 +195,44 @@ namespace PyTTD {
 	}
 
 	/***** Calls from OpenTTD *****/
+
+// XXX this should probably be a template.
+#define LOCK(if_dead)                       \
+	if(!Task::IsRunning())                  \
+		return (if_dead);                   \
+                                            \
+	nanobind::gil_scoped_acquire _acquire;  \
+                                            \
+	if(!Task::IsRunning())                  \
+		return (if_dead);                   \
+
+	/* static */ std::vector<unsigned int> Task::GetScriptIndices() {
+		LOCK(std::vector<unsigned int>())
+		try {
+			nanobind::module_ ttd = nanobind::module_::import_("_ttd");
+			py::object main = ttd.attr("_main");
+			return py::cast<std::vector<unsigned int>>(main.attr("get_script_indices")());
+		}
+		catch (const std::exception &ex) {
+			std::cerr << typeid(ex).name() << std::endl;
+			std::cerr << "  what(): " << ex.what() << std::endl;
+		}
+		return std::vector<unsigned int>();
+	}
+
+	/* static */ bool Task::GetScriptInfo(unsigned int id, struct Script &data) {
+		LOCK(false)
+		try {
+			nanobind::module_ ttd = nanobind::module_::import_("_ttd");
+			py::object main = ttd.attr("_main");
+			return py::cast<bool>(main.attr("get_script_info")(id, &data));
+		}
+		catch (const std::exception &ex) {
+			std::cerr << typeid(ex).name() << std::endl;
+			std::cerr << "  what(): " << ex.what() << std::endl;
+		}
+		return false;
+	}
 
 	/* static */ void Task::ProcessFromPython() {
 		if(Task::current == nullptr) {

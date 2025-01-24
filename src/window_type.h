@@ -278,6 +278,12 @@ enum WindowClass {
 	WC_SIGN_LIST,
 
 	/**
+	 * Python script list; %Window numbers:
+	 *   - 0 = #PyScriptListWidgets
+	 */
+	WC_PYSCRIPT_LIST,
+
+	/**
 	 * Scripts list; %Window numbers:
 	 *   - 0 = #ScriptListWidgets
 	 */
