@@ -23,7 +23,7 @@ from typing import Awaitable as _Avaitable, Never as _Never
 
 
 def Start(self,main) -> None:
-    main.print("Python start completed.")
+    main.debug(2,"Python start completed.")
 
 def ConsoleCmd(self,main) -> None:
     return main.handle_command(self)

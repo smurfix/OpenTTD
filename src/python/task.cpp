@@ -95,6 +95,8 @@ namespace PyTTD {
 				Debug(python, 4, "Setting task var");
 				ttd.attr("main") = this;
 
+				ttd.attr("debug_level") = _debug_python_level;
+
 				Debug(python, 4, "Loading openttd._main");
 				nanobind::module_ ottd = nanobind::module_::import_("openttd._main");
 				ottd.attr("run")();
