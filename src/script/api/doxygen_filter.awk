@@ -21,6 +21,7 @@ BEGIN {
 	RS = "\r|\n"
 	apis = tolower(api)
 	if (apis == "gs") apis = "game"
+	if (apis == "py") apis = "python"
 }
 
 {
