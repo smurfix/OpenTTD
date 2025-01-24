@@ -74,6 +74,19 @@ class VEvent:
     event: anyio.Event = field(factory=anyio.Event)
 
 
+def _print(fn, a, kw):
+    """Directly emit to the OpenTTD debug output"""
+    if len(a) == 1 and not kw:
+        fn(a[0])
+    else:
+        iof = StringIO()
+        kw["file"] = iof
+        print(*a, **kw)
+        for s in iof.getvalue().split("\n"):
+            if s == "":
+                continue
+            fn(s)
+
 class Main:
     """
     The central control object.
@@ -452,18 +465,11 @@ class Main:
 
     def print(self, *a, **kw):
         """Print something on the OpenTTD console"""
-        if len(a) == 1 and not kw:
-            self.send(openttd.internal.msg.ConsoleMsg(a[0]))
-            log(a[0])
-        else:
-            iof = StringIO()
-            kw["file"] = iof
-            print(*a, **kw)
-            log(iof.getvalue())
-            for s in iof.getvalue().split("\n"):
-                if s == "":
-                    continue
-                self.send(openttd.internal.msg.ConsoleMsg(s))
+        def pr(s):
+            self.send(openttd.internal.msg.ConsoleMsg(s))
+            log(s)
+
+        _print(pr, a, kw)
 
     def pprint(self, *a, **kw):
         """Pretty-print a Python object to the OpenTTD console"""
@@ -479,6 +485,9 @@ class Main:
         """
         t = openttd.internal.task
         t.send(msg)
+
+    def debug(self, level:int, *a, **kw):
+        _print(lambda s: openttd.internal.debug(level,s), a,kw)
 
     async def main(self):
         """
@@ -512,10 +521,13 @@ class Main:
 
 def run():
     # protect against locale changes
+    import _ttd
     sys.stdout.reconfigure(encoding='utf-8', errors="replace")
     sys.stderr.reconfigure(encoding='utf-8', errors="replace")
 
-    logging.basicConfig(level=logging.DEBUG)
+    v = _ttd.debug_level
+    logging.basicConfig(level=logging.ERROR if v==0 else logging.WARNING if
+                        v==1 else logging.INFO if v==2 else logging.DEBUG)
     try:
         # TODO use asyncio when a script needs libraries that don't work with trio
         anyio.run(Main().main, backend="trio")
