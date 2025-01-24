@@ -93,7 +93,7 @@ namespace PyTTD {
 				Debug(python, 4, "Importing _ttd module");
 				nanobind::module_ ttd = nanobind::module_::import_("_ttd");
 				Debug(python, 4, "Setting task var");
-				ttd.attr("main") = this;
+				ttd.attr("_task") = this;
 
 				ttd.attr("debug_level") = _debug_python_level;
 

@@ -502,6 +502,7 @@ class Main:
         main_storage.allow_do_command = False
         _storage.set(main_storage)
         _main.set(self)
+        _ttd._main = self
 
         msg_in_w,msg_in_r = anyio.create_memory_object_stream(999)
 
