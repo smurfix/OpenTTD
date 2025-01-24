@@ -153,11 +153,9 @@ else()
     configure_file("${CMAKE_SOURCE_DIR}/Doxyfile.in"
             "${CPACK_BINARY_DIR}/Doxyfile")
 
-    message(STATUS "Generating Doxyfile_AI")
-    configure_file("${CMAKE_SOURCE_DIR}/src/script/api/Doxyfile_AI.in"
-            "${CPACK_BINARY_DIR}/Doxyfile_AI")
-
-    message(STATUS "Generating Doxyfile_GS")
-    configure_file("${CMAKE_SOURCE_DIR}/src/script/api/Doxyfile_GS.in"
-            "${CPACK_BINARY_DIR}/Doxyfile_GS")
+    foreach(API "AI" "GS" "PY")
+        message(STATUS "Generating Doxyfile_${API}")
+        configure_file("${CMAKE_SOURCE_DIR}/src/script/api/Doxyfile_${API}.in"
+            "${CPACK_BINARY_DIR}/Doxyfile_${API}")
+    endforeach()
 endif()

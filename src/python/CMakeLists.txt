@@ -38,6 +38,24 @@ nanobind_compile_options(openttd_lib)
 nanobind_link_options(openttd)
 nanobind_link_options(openttd_test)
 
+# Documentation
+
+if(DOXYGEN_EXECUTABLE)
+    add_custom_target(docs_python
+        ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile_PY
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating documentation for ${APILC} API"
+    )
+    add_dependencies(docs_python
+        find_version
+        script_window
+    )
+    add_dependencies(docs
+        docs_python
+    )
+endif()
+
 # The code below auto-generates bindings for scripting
 
 file(GLOB SCRIPT_API_FILES "${CMAKE_SOURCE_DIR}/src/script/api/script_*.hpp")
