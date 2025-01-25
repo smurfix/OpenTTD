@@ -6,7 +6,7 @@
 #
 
 """
-Fake a _ttd module,
+Fake a _ttd module for testing
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ class DirDiff(enum.Enum):
     LL=6
     L=7
 
-class Tile:
+class Tile_:
     def __init__(self,x:int|tuple[int,int], y:int|None=None):
         self.x,self.y = x if y is None else x,y
     @property
@@ -51,9 +51,10 @@ def _importer():
     _ttd.enum.DirDiff=DirDiff
 
     _ttd.support=_Sub("support")
-    _ttd.support.Tile=Tile
+    _ttd.support.Tile_=Tile_
 
     from ._support import tile
     openttd.tile = tile
 
-
+    from ._util import _import2
+    _import2()

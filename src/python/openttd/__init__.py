@@ -11,8 +11,15 @@ High-Level OpenTTD support.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 
-__all__ = ["run"]
+if TYPE_CHECKING:
+	def test_stop() -> None:
+		pass
+
+__all__ = ["run", "test_stop"]
+
+# test_stop is defined in .base and emplaced here by .util
 
 try:
 	import _ttd

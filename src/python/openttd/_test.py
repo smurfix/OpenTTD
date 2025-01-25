@@ -30,7 +30,7 @@ class Script(BaseScript):
         self.step=3
         pos = openttd.Tile(30,30)
         self.step=4
-        ti = openttd.tile.get_closest_town(pos)
+        ti = pos.closest_town
         self.step=5
         tname = openttd.town.get_name(ti)
         self.step=6
@@ -40,7 +40,7 @@ class Script(BaseScript):
         self.step=8
 
         self.print("SEND")
-        res2 = await openttd.sign.build_sign(pos, openttd.Text(f"Close to {tname}"))
+        res2 = await openttd.sign.build_sign(pos._, openttd.Text(f"Close to {tname}"))
         self.print("YES!" if res2.success else "no", res2)
 
         self.step=90
