@@ -13,12 +13,31 @@ from __future__ import annotations
 
 import anyio
 import logging
+from functools import partial
+from contextvars import ContextVar
+from concurrent.futures import CancelledError
 
 import openttd
 from openttd._main import _storage, _main
 
 __all__ = ["GameScript","AIScript"]
 
+# Set to a cancel-test procedure.
+_STOP = ContextVar("_STOP", default=None)
+
+def test_stop():
+    stop = _STOP.get()
+    stop()
+
+class _HLT:
+    res=None
+    halt=False
+    def __init__(self):
+        self.evt=anyio.Event()
+
+    def STOP(self):
+        if self.halt:
+            raise CancelledError
 
 class BaseScript:
     """
@@ -63,14 +82,49 @@ class BaseScript:
         """Returns the company this script runs as."""
         return self.__company
 
-    def print(self, *a, **kw):
+    # TODO typing
+    async def subthread(self, proc:Callable, *a, **kw) -> Awaitable[Any]:
+        """
+        Start a thread, and wait for the result.
+
+        The thread can read OpenTTD data. It runs synchronously;
+        sending commands is NOT YET supported.
+
+        Your procedure *MUST* periodically call 'openttd.test_stop().'
+        This call will raise an exception if your thread should exit.
+        *DO NOT* ignore that exception.
+        """
+
+        hlt = _HLT()
+
+        def _call2(hlt,proc,a,k):
+            _STOP.set(hlt.STOP)
+            return proc(*a,**kw)
+
+        async def _call(hlt,proc,a,kw):
+            try:
+                hlt.res = await anyio.to_thread.run_sync(_call2,hlt,proc,a,kw, abandon_on_cancel=True)
+            except* CancelledError:
+                pass
+            hlt.evt.set()
+
+        async with anyio.create_task_group() as tg:
+            try:
+                tg.start_soon(_call,hlt,proc,a,kw)
+                await hlt.evt.wait()
+                return hlt.res
+            except BaseException:
+                hlt.stop=True
+                raise
+
+    def print(self, *a, **kw) -> None:
         """
         like Python's, but goes to the OpenTTD console.
         """
         task = _main.get()
         task.print(f"{self.__id}:", *a, **kw)
 
-    def pprint(self, *a, **kw):
+    def pprint(self, *a, **kw) -> None:
         """
         pretty-print an object.
         """
@@ -104,10 +158,14 @@ class BaseScript:
         """
         return {}
 
+    def test_stop(self):
+        return self.taskgroup.cancel_scope.cancelled()
+
     async def _run(self, *, task_status):
         import _ttd
         self.__storage = st = _ttd.object.Storage(self.__company)
         _storage.set(st)
+        _STOP.set(self.test_stop)
         task = _main.get()
 
         async with anyio.create_task_group() as self.taskgroup:

@@ -43,8 +43,26 @@ class Script(BaseScript):
         res2 = await openttd.sign.build_sign(pos, openttd.Text(f"Close to {tname}"))
         self.print("YES!" if res2.success else "no", res2)
 
-        self.step=97
-        await anyio.sleep(30)
+        self.step=90
+        def ts(n):
+            import time
+            self.step=95
+            for _ in range(n):
+                time.sleep(1)
+                openttd.test_stop()
+            self.step=96
+            return 42
+        async def pling():
+            self.print("Pling")
+            await anyio.sleep(5)
+            self.print("Plang")
+            await anyio.sleep(5)
+            self.print("Plong")
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(pling)
+            res = await self.subthread(ts,30)
+        if res != 42 or self.step != 96:
+            raise RuntimeError("ERROR")
         self.step=98
         self.print("Test task ends.")
         self.step=99
