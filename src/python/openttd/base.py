@@ -24,6 +24,7 @@ __all__ = ["GameScript","AIScript"]
 
 # Set to a cancel-test procedure.
 _STOP = ContextVar("_STOP", default=None)
+_estimating = _main._estimating
 
 def test_stop():
     stop = _STOP.get()
@@ -87,18 +88,19 @@ class BaseScript:
         """
         Start a thread, and wait for the result.
 
-        The thread can read OpenTTD data. It runs synchronously;
-        sending commands is NOT YET supported.
+        The thread can read OpenTTD data. It runs synchronously.
+        Test mode is enabled.
 
-        Your procedure *MUST* periodically call 'openttd.test_stop().'
-        This call will raise an exception if your thread should exit.
-        *DO NOT* ignore that exception.
+        Your procedure *MUST* periodically call 'test_stop()'.
+        This call will raise a `CancelledError` exception if your thread
+        should exit. *DO NOT* ignore it.
         """
 
         hlt = _HLT()
 
         def _call2(hlt,proc,a,k):
             _STOP.set(hlt.STOP)
+            _estimating.set(True)
             return proc(*a,**kw)
 
         async def _call(hlt,proc,a,kw):
@@ -116,6 +118,19 @@ class BaseScript:
             except BaseException:
                 hlt.stop=True
                 raise
+
+    @contextmanager
+    def test_mode(self):
+        """
+        Switch the script engine to test mode.
+        Script commands will do no real work and return immediately.
+        """
+        try:
+            token = _estimating.set(True)
+            yield
+        finally:
+            _estimating.reset(token)
+
 
     def print(self, *a, **kw) -> None:
         """

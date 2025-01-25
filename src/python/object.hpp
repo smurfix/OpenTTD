@@ -30,17 +30,21 @@ namespace PyTTD {
 
 	typedef std::unique_ptr<CommandPacket, py::deleter<CommandPacket>> CommandPacketPtr;
 
+	ScriptModeProc maybe_estimating;
+
 	/*
 	 * Python-compatible Storage objects are managed via a shared pointer.
 	 */
 	class Storage : public ScriptStorage, std::enable_shared_from_this<Storage> {
 		struct Private { explicit Private() = default; };
 
-	friend void PyTTD::init_ttd_object(nanobind::module_&);
+		friend void PyTTD::init_ttd_object(nanobind::module_&);
 	public:
 		// This constructor, despite (necessarily) being public,
 		// is only usable by class methods.
-		Storage(Private) : ScriptStorage() {}
+		Storage(Private) : ScriptStorage() {
+			ScriptObject::SetDoCommandMode(&maybe_estimating, this);
+		}
 
 		// Thus all objects must be contained in a shared_ptr.
 		static StoragePtr Create(ScriptCompany::CompanyID comp)
