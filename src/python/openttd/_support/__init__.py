@@ -6,23 +6,8 @@
 #
 
 """
-High-Level OpenTTD support.
+This module contails submodules for enhanced classes.
 """
 
 from __future__ import annotations
 
-
-__all__ = ["run"]
-
-try:
-	import _ttd
-except ImportError:
-	from ._stub import _importer
-	_importer()
-else:
-	from ._util import _importer
-	_importer(_ttd)
-	del _ttd
-del _importer
-
-from ._main import run

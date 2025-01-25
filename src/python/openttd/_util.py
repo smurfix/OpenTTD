@@ -64,7 +64,7 @@ def _copy(dst,src,prefix=""):
             continue
         setattr(dst,k,getattr(src,k))
 
-def _importer():
+def _importer(_ttd):
     """Reorganize the raw _ttd modules so that they look more pythonic.
     """
     # First things first.
@@ -74,7 +74,6 @@ def _importer():
 
     import openttd as t
     import openttd._hook as th
-    import _ttd
 
     t.internal = ti = _Sub("internal")
     ti.msg = _ttd.msg
@@ -120,11 +119,15 @@ def _importer():
     #t.Text = _ttd._support.Text
     #t._control = _ttd._control
 
-    t.Tile = _ttd.support.Tile_
+
     t.Text = _ttd.support.Text
     t.Money = _ttd.support.Money
 
-    t.tile.Tile = t.Tile
+    t.tile.Tile = _ttd.support.Tile_
+
+    from ._support import Tile
+
+    t.Tile = t.Tile
 
     _copy(ti,_ttd.support,"get_")
 
