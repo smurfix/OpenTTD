@@ -18,11 +18,18 @@ names = {}
 for name in enum_names.split(","):
     mode = []
     name,*prefix = name.split("/")
+    name,*skips = name.split("-")
+    skips = set((
+        "INVALID_"+k[2:] if k.startswith("I:") else
+        k) for k in skips)
+    if "B:E" in skips:
+        skips.add("BEGIN")
+        skips.add("END")
     if name[0] == "*":
         name = name[1:]
         mode.append(',py::is_flag(),py::is_arithmetic()')
 
-    names[name] = (mode,*prefix)
+    names[name] = (mode,skips,*prefix)
 
 
 enum_name=None
@@ -204,7 +211,7 @@ void init_{api_cls.lower()}(py::module_ &m) {{
         cls_level += 1
 
         try:
-            modes,*prefix = names[m.group(1)]
+            modes,skips,*prefix = names[m.group(1)]
         except KeyError:
             continue
 
@@ -235,11 +242,13 @@ void init_{api_cls.lower()}(py::module_ &m) {{
                 # ERR_VEHICLE_TOO_MANY ⇒ vehicle.Error.TOO_MANY
                 pname = pname[len(pref):]
                 break
+        if pname in skips:
+            continue
 
         dest.write(f'        .value("{pname}", {enum_name}::{name})\n')
         continue
 
-dest.write("}\n} /* EOF */")
+dest.write("}\n} /* EOF */\n")
 dest.close();
 
 doxygen_check()
