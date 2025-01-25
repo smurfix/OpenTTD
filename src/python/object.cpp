@@ -90,4 +90,18 @@ namespace PyTTD {
 		return py::cast<StoragePtr>(cbfn());
 	}
 
+	// Test for running in Estimate-Only mode
+	bool maybe_estimating() {
+		nanobind::gil_scoped_acquire _acquire;
+		try {
+			nanobind::module_ ttd = nanobind::module_::import_("_ttd");
+			py::object est = ttd.attr("_estimating").attr("get")();
+			return ! py::cast<bool>(est);
+		}
+		catch (const std::exception &ex) {
+			std::cerr << typeid(ex).name() << std::endl;
+			std::cerr << "  what(): " << ex.what() << std::endl;
+			return false;
+		}
+	}
 }

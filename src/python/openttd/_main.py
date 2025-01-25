@@ -53,6 +53,7 @@ log = logger.debug
 
 _main = ContextVar("_main")
 _storage = ContextVar("_storage")
+_estimating = ContextVar("_estimating", default=True)
 
 
 @define(hash=True,eq=True)
@@ -532,6 +533,8 @@ class Main:
 
         async with anyio.create_task_group() as tg:
             self._tg = tg
+            _estimating.set(False)
+
             await tg.start(self._ttd_reader, msg_in_w)
             tg.start_soon(self._process, msg_in_r)
 
@@ -549,6 +552,8 @@ def run():
     import _ttd
     sys.stdout.reconfigure(encoding='utf-8', errors="replace")
     sys.stderr.reconfigure(encoding='utf-8', errors="replace")
+
+    _ttd._estimating = _estimating
 
     v = _ttd.debug_level
     logging.basicConfig(level=logging.ERROR if v==0 else logging.WARNING if
