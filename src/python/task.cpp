@@ -33,10 +33,36 @@
 #include <memory>
 #include <thread>
 #include <iostream>
+#include <sstream>
 #include <format>
+#include <vector>
 
 
 namespace py = nanobind;
+
+// helper to split a string
+std::vector<std::string> split (const std::string &s, char delim) {
+    std::vector<std::string> result;
+    std::stringstream ss (s);
+    std::string item;
+
+    while (getline (ss, item, delim)) {
+		if (item.size())
+			result.push_back (item);
+    }
+
+    return result;
+}
+
+#ifdef DELIM
+#undef DELIM
+#endif
+
+#ifdef MS_WINDOWS
+static const char DELIM = ';';
+#else
+static const char DELIM = ':';
+#endif
 
 namespace PyTTD {
 	std::unique_ptr<Task> Task::current = nullptr;
@@ -82,6 +108,13 @@ namespace PyTTD {
 				py::list m_ = sys_.attr("path").attr("insert");
 
 				int i = 0;
+				char *env = getenv("TTDPYTHONPATH");
+				if (env != nullptr && *env) {
+					for (auto s : split(env, DELIM)) {
+						m_(i,s);
+						i += 1;
+					}
+				}
 				for (auto sp : _searchpaths) {
 					std::string sps = sp;
 					sps += PATHSEP;
