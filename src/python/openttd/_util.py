@@ -37,6 +37,7 @@ class _Sub:
         return self.__name
 
 def _set(p,v):
+    # submodule assigner. currently unused
     m = t
     p = p.split(".")
     vp = []
@@ -53,6 +54,7 @@ def _set(p,v):
     setattr(m,p[-1],v)
 
 def _copy(dst,src,prefix=""):
+    # attribute copier
     for k in dir(src):
         if prefix:
             if not k.startswith(prefix):
@@ -65,7 +67,8 @@ def _copy(dst,src,prefix=""):
         setattr(dst,k,getattr(src,k))
 
 def _importer(_ttd):
-    """Reorganize the raw _ttd modules so that they look more pythonic.
+    """
+    Reorganize the raw _ttd modules so that they look more pythonic.
     """
     # First things first.
     import sys
@@ -119,7 +122,6 @@ def _importer(_ttd):
     #t.Text = _ttd._support.Text
     #t._control = _ttd._control
 
-
     t.Text = _ttd.support.Text
     t.Money = _ttd.support.Money
 
@@ -127,9 +129,16 @@ def _importer(_ttd):
 
     from ._support import Tile
 
-    t.Tile = t.Tile
+    t.Tile = Tile
 
     _copy(ti,_ttd.support,"get_")
 
     _assigned.clear()
+    _import2()
+
+def _import2():
+    "Adjustments that are also don in stub mode"
+    from .base import test_stop
+    import openttd as t
+    t.test_stop = test_stop
 
