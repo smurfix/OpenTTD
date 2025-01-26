@@ -24,8 +24,8 @@ namespace PyTTD {
 		static Script *GetIfValid(unsigned int id);
 	};
 
-	void Start();
-	void Stop();
+	void Start(const std::string &main = "");
+	void Stop(); // tell Python to stop
 	bool IsRunning();
 
 	void ProcessFromPython();

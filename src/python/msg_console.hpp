@@ -26,6 +26,27 @@ namespace PyTTD::Msg {
 		std::vector<std::string> args;
 	};
 
+	// Script runner
+	class ConsoleRun : public MsgBase {
+	public:
+		ConsoleRun(const std::string &msg);
+
+		const std::string &GetMsg() { return msg; }
+	private:
+		const std::string &msg;
+	};
+
+	// Script runner ends
+	class ConsoleRunEnd : public MsgBase {
+	public:
+		ConsoleRunEnd(const std::string &msg = "");
+		void Process() override;
+
+		const std::string &GetMsg() { return msg; }
+	private:
+		std::string msg;
+	};
+
 	// Message to show on the OpenTTD console
 	class ConsoleMsg : public MsgBase {
 	public:

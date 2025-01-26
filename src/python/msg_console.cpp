@@ -9,6 +9,10 @@
 #include "python/task.hpp"
 #include "console_func.h"
 #include "console_type.h"
+#include "openttd.h"
+
+#include <iostream>
+
 #include "safeguards.h"
 
 namespace PyTTD::Msg {
@@ -20,8 +24,20 @@ namespace PyTTD::Msg {
 		}
 	}
 
-	ConsoleMsg::ConsoleMsg(const std::string &msg) {
-		this->text = msg;
+	ConsoleRun::ConsoleRun(const std::string &msg) : msg(msg) { }
+
+	ConsoleRunEnd::ConsoleRunEnd(const std::string &msg) : msg(msg) { }
+
+	ConsoleMsg::ConsoleMsg(const std::string &msg) : text(msg) { }
+
+	void ConsoleRunEnd::Process() {
+		if (this->msg.size()) {
+			std::cerr << "Python: died: " << this->msg << std::endl;
+			_exit_code = 2;
+		} else {
+			_exit_code = 0;
+		}
+		_exit_game = true;
 	}
 
 	void ConsoleMsg::Process() {

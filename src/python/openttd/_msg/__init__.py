@@ -28,6 +28,9 @@ def Start(self,main) -> None:
 def ConsoleCmd(self,main) -> None:
     return main.handle_command(self)
 
+def ConsoleRun(self,main) -> None:
+    return main.handle_run(self)
+
 def ModeChange(self,main) -> _Awaitable:
     return main.set_game_mode(self.mode)
 

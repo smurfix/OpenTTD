@@ -18,7 +18,7 @@ from contextvars import ContextVar
 from concurrent.futures import CancelledError
 
 import openttd
-from openttd._main import _storage, _main
+from openttd._main import _storage, _main, VEvent
 
 __all__ = ["GameScript","AIScript"]
 
@@ -178,6 +178,7 @@ class BaseScript:
 
     async def _run(self, *, task_status):
         import _ttd
+        evt = VEvent()
         self.__storage = st = _ttd.object.Storage(self.__company)
         _storage.set(st)
         _STOP.set(self.test_stop)
@@ -191,24 +192,24 @@ class BaseScript:
             if not self.__setup_called:
                 raise RuntimeError("You forgot to `await super().setup()`.")
 
+            evt.res = res
             task_status.started(res)
-            if res is None:
-                self.print("Script started.")
-            else:
-                self.print(f"Script started: {res}")
             try:
-                await self.main()
+                evt.res = await self.main()
             except Exception as exc:
                 self.log.exception("Script Error")
                 self.print(f"DEAD: {exc}")
+                evt.res = exc
             except BaseException as exc:
                 self.print(f"DEAD: {exc}")
+                evt.res = exc
                 raise
             else:
                 self.print("Script terminated.")
             finally:
                 self.stop()
                 task.script_done(self.__id)
+                evt.evt.set()
 
     def stop(self):
         """

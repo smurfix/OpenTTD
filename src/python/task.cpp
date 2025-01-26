@@ -177,20 +177,20 @@ namespace PyTTD {
 	/**
 	 * Start the Python subsystem.
 	 */
-	/* static */ void Task::Start()
+	/* static */ void Task::Start(const std::string &main)
 	{
 		if (current) {
 			Debug(python, 1, "Python thread already running");
 			return;
 		}
 
-		Task::current = std::unique_ptr<Task>(new Task());
+		Task::current = std::unique_ptr<Task>(new Task(main));
 	}
 
 	/**
 	 * This starts the Python thread. Called from the constructor.
 	 */
-	void Task::_start()
+	void Task::_start(const std::string &main)
 	{
 		if (thread || !stopped) {
 			Debug(python, 1, "Python thread already running");
@@ -203,7 +203,13 @@ namespace PyTTD {
 		std::unique_ptr<std::thread> thr = std::make_unique<std::thread>(&Task::_PyRunner, this);
 		Task::thread = std::move(thr);
 
+		QueueToPy.send(NewMsg<Msg::ModeChange>(_game_mode));
 		QueueToPy.send(NewMsg<Msg::Start>());
+		game_mode = _game_mode;
+
+		if(main.size()) {
+			QueueToPy.send(NewMsg<Msg::ConsoleRun>(main));
+		}
 	}
 
 	/**

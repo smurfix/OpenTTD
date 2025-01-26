@@ -18,7 +18,7 @@ namespace PyTTD {
 	/**
 	 * Start the Python subsystem
 	 */
-	void Start() {
+	void Start(const std::string &main) {
 		if (Task::IsRunning()) {
 #ifdef NDEBUG
 			return;
@@ -26,11 +26,11 @@ namespace PyTTD {
 			throw(std::logic_error("Python task is running"));
 #endif
 		}
-		Task::Start();
+		Task::Start(main);
 	}
 
 	/**
-	 * Stop the Python subsystem
+	 * Stop the Python subsystem.
 	 */
 	void Stop() {
 		Task::Stop();
