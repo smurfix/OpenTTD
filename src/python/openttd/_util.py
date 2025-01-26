@@ -11,6 +11,8 @@ This submodule is used to re-organize the raw _ttd import.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 _assigned = set()
 
 class StopWork(RuntimeError):
@@ -35,6 +37,45 @@ class _Sub:
         return f'‹{self.__name}›'
     def __str__(self):
         return self.__name
+
+class _WrappedList(Sequence):
+    def __init__(self, data):
+        self._data = data
+        self._cache = []
+        self._len = self._data.count()
+
+    def _fill(self, i:int=None):
+        while len(self._cache) < self._len and (i is None or i >= len(self._cache)):
+            if self._cache:
+                nx = self._data.next()
+            else:
+                nx = self._data.begin()
+            self._cache.append(nx)
+
+    def __getitem__(self, i):
+        if i < 0:
+            i = self._len + i
+        if self._len <= i:
+            self._fill(i)
+        return self._cache[i]
+
+    def __len__(self):
+        return self._len
+
+    def __iter__(self):
+        self._fill()
+        return iter(self._cache)
+
+    def get_value(self, k):
+        "Retrieve the value associated with an item, *not* an index!"
+        return self._data.get_value(k)
+
+class _ListWrap:
+    def __init__(self, cls):
+        self.cls = cls
+    def __call__(self, *a, **kw):
+        return _WrappedList(self.cls(*a, **kw))
+
 
 def _set(p,v):
     # submodule assigner. currently unused
@@ -85,6 +126,7 @@ def _importer(_ttd):
 
     _ttd._command_hook = th.command_hook
     _ttd._storage_hook = th.storage_hook
+    _ttd.list = _Sub("_ttd.list")
 
     # Install message handlers from _msg in msg objects
     import openttd._msg as msg
@@ -98,17 +140,44 @@ def _importer(_ttd):
     ti.msg._Msg.work = lambda self,main: main.print(f"Message not handled: {self}")
 
     # Import submodules
-    for k in (
+    subs = set((
             "accounting admin airport base bridge cargo client company "
             "date depot engine error event game goal group industry inflation infrastructure "
             "list log map marine newgrf news order rail road sign station "
             "storypage subsidy tile town tunnel vehicle viewport waypoint window"
-            ).split():
+            ).split())
+    for k in subs:
         setattr(t,k,_Sub(k, getattr(_ttd.script,k,None)))
-        kl=k+"list"
-        vl = getattr(_ttd,kl,None)
-        if vl is not None:
-            setattr(getattr(t,k),"list",_Sub(f"{k}.list", getattr(_ttd,kl)))
+
+    def kproc(name, src):
+        tt = getattr(_ttd.script, name, None)
+        tx = getattr(t, name, None)
+        if tt is None:
+            tt = _Sub(f"_ttd.script.{name}")
+            setattr(_ttd.list,name,tt)
+        if tx is None:
+            tx = _Sub(f"openttd.{name}")
+            setattr(t,name,tt)
+        for k in dir(src):
+            if k[0] == "_":
+                continue
+            v = getattr(src,k)
+            k_orig = k
+            if k.lower().startswith(name):
+                k = k[len(name):]
+            if k.lower().startswith("list"):
+                v = _ListWrap(v)
+            if hasattr(tx,k):
+                print("SKIP",name,k_orig)
+            else:
+                setattr(tx,k,v)
+
+    # Now wrap all list generators (and hope that there are no collisions)
+    for k in dir(_ttd.script):
+        if k.endswith("list"):
+            kproc(k[:-4], getattr(_ttd.script,k))
+        elif (pos := k.find("list_")) > 0:
+            kproc(k[:pos], getattr(_ttd.script,k))
 
     t.company.ID = _ttd.support.CompanyID
     ti.debug = _ttd.debug
@@ -141,4 +210,7 @@ def _import2():
     from .base import test_stop
     import openttd as t
     t.test_stop = test_stop
+
+    t.tile.Transport = t.tile.TransportType
+    del t.tile.TransportType
 
