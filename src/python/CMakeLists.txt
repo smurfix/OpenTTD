@@ -2,6 +2,7 @@ add_files(
     call_py.hpp call_py.cpp
     gui.cpp
     instance.hpp instance.cpp
+    mode.hpp mode.cpp
     msg.cpp
     msg_base.hpp msg_base.cpp
     msg_command.hpp msg_command.cpp

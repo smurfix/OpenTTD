@@ -16,16 +16,15 @@
 #include "script/script_storage.hpp"
 #include "video/video_driver.hpp"
 #include "framerate_type.h"
+#include "core/backup_type.hpp"
 
 #include "python/instance.hpp"
 #include "python/object.hpp"
+#include "python/mode.hpp"
 
-class VDriver : public VideoDriver {
-	public:
-		inline std::mutex &GetStateMutex() { return game_state_mutex; }
-};
-
-// workaround for those "protected" subclasses
+// workarounds for "protected" objects in the core game.
+// TODO: add appropriate "friend" declarations instead.
+//
 class SObject : public ScriptObject {
 	public:
 	class AInstance : public ActiveInstance {
@@ -33,11 +32,26 @@ class SObject : public ScriptObject {
 			AInstance(ScriptInstance *instance) : ActiveInstance(instance) {}
 			~AInstance() {};
 	};
+	inline static void SetDoCommandMode(ScriptModeProc *proc, ScriptObject *instance) {
+		ScriptObject::SetDoCommandMode(proc, instance);
+	}
+};
+
+class VDriver : public VideoDriver {
+	public:
+		inline std::mutex &GetStateMutex() { return game_state_mutex; }
 };
 
 namespace PyTTD {
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
 	/**
-	 * This RAII wrapper takes the game lock.
+	 * This RAII wrapper takes the game lock and sets everything up for
+	 * interfacing with Python.
+	 *
+	 * It can of course be simplified for API calls that don't read
+	 * complex data structures or don't send commands.
 	 */
 	class LockGame {
 	public:
@@ -50,35 +64,67 @@ namespace PyTTD {
 		LockGame& operator=(LockGame const&) = delete;
 
 	private:
+		class StorageSetter {
+		public:
+			StorageSetter(Instance &instance, StoragePtr storage) : storage(storage),instance(instance) { instance.SetStorage(storage); }
+			~StorageSetter() { instance.SetStorage(nullptr); }
+		private:
+			StoragePtr storage;
+			Instance &instance;
+		};
+
+		// The code setting this up is in 'wrap.cpp'.
+		//
+		// Python holds a Storage object. Fetch that.
+		StoragePtr storage;
+
+		// Release the GIL.
+		py::gil_scoped_release unlock;
+
+		// Pointer to the Driver, necessary for accessing the game lock.
 		VDriver *drv;
+
+		// Holds the game lock.
+		std::lock_guard<std::mutex> lock;
+
+		// Now that we have the lock, we affect performance, so measure.
+		PerformanceMeasurer framerate;
+
+		// Adapter to set the active script instance to Python's.
+		SObject::AInstance active;
+
+		// Adapter to set the instance's storage.
+		StorageSetter storage_set;
+
+		// Get the script mode (exec/test) from the current Python context.
+		ScriptPyMode mode;
+
+		// Set (and restore) the current company
+		Backup<CompanyID> cur_company;
+		// ... and now we can safely access the script API; after that, the
+		// object destructors undo everything in the correct order.
+		//
+		// If the script generated a command, the command hook in our
+		// instance will store that in 'instance.currentCmd'. When we're
+		// back in Python context, our 'cmd_hook' function queues it for
+		// processing by the "real" game loop.
 	};
 
 	py::object cmd_hook(CommandDataPtr cb);
 
 	void cmd_setup();
 
-	// If OpenTTD queued a command, send it to Python.
+#define _WRAP1                                 \
+	CommandDataPtr cmd = nullptr;              \
+	{                                          \
+		LockGame lock;                         \
 
-#   define _WRAP1                                   \
-	CommandDataPtr cmd = nullptr;                   \
-	{                                               \
-		auto storage = Storage::from_python();      \
-		py::gil_scoped_release unlock;              \
-		PyTTD::LockGame lock;                       \
-		PerformanceMeasurer framerate(PFE_PYTHON);  \
-		assert(! instance.currentCmd);              \
-		{                                           \
-			SObject::AInstance active(&instance);   \
-			instance.SetStorage(storage);           \
-
-#   define _WRAP2                                   \
-		}                                           \
-		cmd = std::move(instance.currentCmd);       \
-		instance.SetStorage(nullptr);               \
-	}                                               \
-	if (cmd) {                                      \
-		return cmd_hook(std::move(cmd));            \
-	}                                               \
+#define _WRAP2                                 \
+		cmd = std::move(instance.currentCmd);  \
+	}                                          \
+	if (cmd) {                                 \
+		return cmd_hook(std::move(cmd));       \
+	}                                          \
 
 	/**
 	 * This is the nanobind wrapper that allows us to call Python.
@@ -153,6 +199,7 @@ namespace PyTTD {
 			return py::none();
 		}
 	};
+#pragma GCC diagnostic pop
 
 }
 

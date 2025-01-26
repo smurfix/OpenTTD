@@ -30,8 +30,6 @@ namespace PyTTD {
 
 	typedef std::unique_ptr<CommandPacket, py::deleter<CommandPacket>> CommandPacketPtr;
 
-	ScriptModeProc maybe_estimating;
-
 	/*
 	 * Python-compatible Storage objects are managed via a shared pointer.
 	 */
@@ -42,9 +40,7 @@ namespace PyTTD {
 	public:
 		// This constructor, despite (necessarily) being public,
 		// is only usable by class methods.
-		Storage(Private) : ScriptStorage() {
-			ScriptObject::SetDoCommandMode(&maybe_estimating, this);
-		}
+		Storage(Private) : ScriptStorage() { }
 
 		// Thus all objects must be contained in a shared_ptr.
 		static StoragePtr Create(ScriptCompany::CompanyID comp)

@@ -17,14 +17,36 @@
 #include "script/script_storage.hpp"
 
 namespace PyTTD {
-	LockGame::LockGame() : drv(reinterpret_cast<VDriver *>(VDriver::GetInstance())) {
-		if (drv == nullptr) [[unlikely]] {
-			throw std::domain_error("No Driver");
-		}
-		drv->GetStateMutex().lock();
+	LockGame::LockGame()
+		: storage(Storage::from_python())
+		, unlock()
+		, drv(reinterpret_cast<VDriver *>(VDriver::GetInstance()))
+		, lock(drv->GetStateMutex())
+		, framerate(PFE_PYTHON)
+		, active(&instance)
+		, storage_set(instance,storage)
+		, mode()
+		, cur_company(_current_company)
+	{
+		cur_company.Change(instance.py_storage->company);
 	}
 
-	LockGame::~LockGame() {
-		drv->GetStateMutex().unlock();
+	LockGame::~LockGame()
+	{
+		cur_company.Restore();
 	}
+
+	// command hook
+	py::object cmd_hook(CommandDataPtr cb)
+	{
+		static py::object cbfn;
+
+		if(! cbfn) {
+			py::module_ ttd = py::module_::import_("_ttd");
+			cbfn = ttd.attr("_command_hook");
+		}
+		py::object cbd = py::cast<CommandDataPtr>(std::move(cb));
+		return cbfn(cbd);
+	}
+
 }
