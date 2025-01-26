@@ -192,24 +192,24 @@ class BaseScript:
             if not self.__setup_called:
                 raise RuntimeError("You forgot to `await super().setup()`.")
 
-            evt.res = res
-            task_status.started(res)
+            evt.value = res
+            task_status.started(evt)
             try:
-                evt.res = await self.main()
+                evt.value = await self.main()
             except Exception as exc:
                 self.log.exception("Script Error")
                 self.print(f"DEAD: {exc}")
-                evt.res = exc
+                evt.value = exc
             except BaseException as exc:
                 self.print(f"DEAD: {exc}")
-                evt.res = exc
+                evt.value = exc
                 raise
             else:
                 self.print("Script terminated.")
             finally:
                 self.stop()
                 task.script_done(self.__id)
-                evt.evt.set()
+                evt.event.set()
 
     def stop(self):
         """

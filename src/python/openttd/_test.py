@@ -71,8 +71,14 @@ class Script(BaseScript):
 
 async def run(main):
     """Called when openttd is started with '-Y openttd._test'"""
-    res = await main.cmd_start("openttd._test")
-    await res.wait()
-    if
+    res = await main.do_start("openttd._test")
+    await res.event.wait()
+    if isinstance(res.value,Exception):
+        raise res.value
+    elif isinstance(res.value,BaseException):
+        print(repr(res.value), file=sys.stderr)
+        raise SystemExit(2)
+    else:
+        return "OK"
 
 

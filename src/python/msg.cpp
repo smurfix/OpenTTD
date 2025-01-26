@@ -46,6 +46,14 @@ namespace PyTTD {
 			.def_prop_ro("text", &ConsoleMsg::GetText)
 			;
 
+		/* msg_console */
+		py::class_<Msg::CommandRun, MsgBase>(m, "CommandRun", py::dynamic_attr())
+			.def_prop_ro("msg", &CommandRun::GetMsg);
+		py::class_<Msg::CommandRunEnd, MsgBase>(m, "CommandRunEnd", py::dynamic_attr())
+			.def(py::new_(&NewMsg<Msg::CommandRunEnd, std::string>), "res"_a)
+			.def_prop_ro("msg", &CommandRunEnd::GetMsg)
+			;
+
 		/* msg_mode */
 		py::class_<Msg::ModeChange, MsgBase>(m, "ModeChange", py::dynamic_attr())
 			.def_prop_ro("mode", &ModeChange::GetMode);

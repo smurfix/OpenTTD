@@ -24,15 +24,19 @@ namespace PyTTD::Msg {
 		}
 	}
 
-	ConsoleRun::ConsoleRun(const std::string &msg) : msg(msg) { }
-
-	ConsoleRunEnd::ConsoleRunEnd(const std::string &msg) : msg(msg) { }
-
 	ConsoleMsg::ConsoleMsg(const std::string &msg) : text(msg) { }
 
-	void ConsoleRunEnd::Process() {
+	void ConsoleMsg::Process() {
+		IConsolePrint(CC_DEFAULT, this->text);
+	}
+
+	CommandRun::CommandRun(const std::string &msg) : msg(msg) { }
+
+	CommandRunEnd::CommandRunEnd(const std::string &msg) : msg(msg) { }
+
+	void CommandRunEnd::Process() {
 		if (this->msg.size()) {
-			std::cerr << "Python: died: " << this->msg << std::endl;
+			std::cerr << "Python: Job died: " << this->msg << std::endl;
 			_exit_code = 2;
 		} else {
 			_exit_code = 0;
@@ -40,7 +44,4 @@ namespace PyTTD::Msg {
 		_exit_game = true;
 	}
 
-	void ConsoleMsg::Process() {
-		IConsolePrint(CC_DEFAULT, this->text);
-	}
 }
