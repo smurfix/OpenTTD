@@ -7,6 +7,7 @@
 import anyio
 import openttd
 from openttd.base import BaseScript
+from openttd._main import VEvent
 
 class Script(BaseScript):
     step="idle"
@@ -66,5 +67,12 @@ class Script(BaseScript):
         self.step=98
         self.print("Test task ends.")
         self.step=99
+
+
+async def run(main):
+    """Called when openttd is started with '-Y openttd._test'"""
+    res = await main.cmd_start("openttd._test")
+    await res.wait()
+    if
 
 

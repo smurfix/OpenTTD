@@ -105,6 +105,7 @@ extern void OSOpenBrowser(const std::string &url);
 extern void ShowOSErrorBox(const char *buf, bool system);
 extern std::string _config_file;
 
+int _exit_code = 0;
 bool _save_config = false;
 bool _request_newgrf_scan = false;
 NewGRFScanCallback *_request_newgrf_scan_callback = nullptr;
@@ -183,6 +184,9 @@ static void ShowHelp()
 		"  -c config_file      = Use 'config_file' instead of 'openttd.cfg'\n"
 		"  -x                  = Never save configuration changes to disk\n"
 		"  -X                  = Don't use global folders to search for files\n"
+#ifdef WITH_PYTHON
+		"  -Y python_module    = Run this Python module (as in 'py start ...')\n"
+#endif
 		"  -q savegame         = Write some information about the savegame and exit\n"
 		"  -Q                  = Don't scan for/load NewGRF files on startup\n"
 		"  -QQ                 = Disable NewGRF scanning/loading entirely\n"
@@ -488,7 +492,7 @@ static std::vector<OptionData> CreateOptions()
 {
 	std::vector<OptionData> options;
 	/* Options that require a parameter. */
-	for (char c : "GIMSbcmnpqrstv") options.push_back({ .type = ODF_HAS_VALUE, .id = c, .shortname = c });
+	for (char c : "GIMSYbcmnpqrstv") options.push_back({ .type = ODF_HAS_VALUE, .id = c, .shortname = c });
 #if !defined(_WIN32)
 	options.push_back({ .type = ODF_HAS_VALUE, .id = 'f', .shortname = 'f' });
 #endif
@@ -518,6 +522,9 @@ int openttd_main(std::span<char * const> arguments)
 	std::string graphics_set;
 	std::string sounds_set;
 	std::string music_set;
+#ifdef WITH_PYTHON
+	std::string py_main;
+#endif
 	Dimension resolution = {0, 0};
 	std::unique_ptr<AfterNewGRFScan> scanner = std::make_unique<AfterNewGRFScan>();
 	bool dedicated = false;
@@ -531,11 +538,13 @@ int openttd_main(std::span<char * const> arguments)
 
 	auto options = CreateOptions();
 	GetOptData mgo(arguments.subspan(1), options);
-	int ret = 0;
 
 	int i;
 	while ((i = mgo.GetOpt()) != -1) {
 		switch (i) {
+#ifdef WITH_PYTHON
+		case 'Y': py_main = mgo.opt; break;
+#endif
 		case 'I': graphics_set = mgo.opt; break;
 		case 'S': sounds_set = mgo.opt; break;
 		case 'M': music_set = mgo.opt; break;
@@ -613,8 +622,7 @@ int openttd_main(std::span<char * const> arguments)
 		case 'q': {
 			DeterminePaths(arguments[0], only_local_path);
 			if (StrEmpty(mgo.opt)) {
-				ret = 1;
-				return ret;
+				return 1;
 			}
 
 			std::string extension = FS2OTTD(std::filesystem::path(OTTD2FS(mgo.opt)).extension());
@@ -629,11 +637,11 @@ int openttd_main(std::span<char * const> arguments)
 					SetDParamStr(0, _load_check_data.error_msg);
 					fmt::print(stderr, "{}\n", GetString(_load_check_data.error));
 				}
-				return ret;
+				return _exit_code;
 			}
 
 			WriteSavegameInfo(title);
-			return ret;
+			return _exit_code;
 		}
 		case 'Q': {
 			extern int _skip_all_newgrf_scanning;
@@ -663,7 +671,7 @@ int openttd_main(std::span<char * const> arguments)
 		BaseSounds::FindSets();
 		BaseMusic::FindSets();
 		ShowHelp();
-		return ret;
+		return _exit_code;
 	}
 
 	DeterminePaths(arguments[0], only_local_path);
@@ -769,7 +777,7 @@ int openttd_main(std::span<char * const> arguments)
 
 	if (!HandleBootstrap()) {
 		ShutdownGame();
-		return ret;
+		return _exit_code;
 	}
 
 	VideoDriver::GetInstance()->ClaimMousePointer();
@@ -814,7 +822,7 @@ int openttd_main(std::span<char * const> arguments)
 	RequestNewGRFScan(scanner.release());
 
 #ifdef WITH_PYTHON
-	PyTTD::Start();
+	PyTTD::Start(py_main);
 #endif
 
 	VideoDriver::GetInstance()->MainLoop();
@@ -824,7 +832,7 @@ int openttd_main(std::span<char * const> arguments)
 #endif
 
 	PostMainLoop();
-	return ret;
+	return _exit_code;
 }
 
 void HandleExitGameRequest()

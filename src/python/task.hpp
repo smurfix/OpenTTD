@@ -21,9 +21,9 @@
 namespace PyTTD {
 	class Task {
 	  public:
-		Task() : stopped(true), QueueToPy(), QueueToTTD()
+		Task(const std::string &main) : stopped(true), QueueToPy(), QueueToTTD()
 		{
-			_start();
+			_start(main);
 		}
 
 		~Task() {
@@ -43,7 +43,7 @@ namespace PyTTD {
 		static void ConsoleToPy(int argc, const char* const argv[]);
 
 	  private:
-		void _start();
+		void _start(const std::string &);
 
 		GameMode game_mode = GM_BOOTSTRAP;
 		PauseMode pause_state = PM_PAUSED_ERROR;  // initial nonsense(we hope) state
@@ -52,10 +52,10 @@ namespace PyTTD {
 		/**
 		 * Start the main Python task.
 		 */
-		static void Start();
+		static void Start(const std::string &);
 
 		/**
-		 * Stop the main Python task. Called from OpenTTD when exiting the game.
+		 * Tell the main Python task to stop (and wait for it to do so).
 		 */
 		static void Stop();
 

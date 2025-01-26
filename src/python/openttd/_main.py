@@ -173,6 +173,30 @@ class Main:
             except Exception:
                 logger.exception("Error processing %r", msg)
 
+    async def handle_run(self, msg):
+        # initial command line argument. Module or script file.
+        try:
+            try:
+                # Try as a module.
+                script_obj = importlib.import_module(msg.msg)
+            except ImportError:
+                # Try as a file.
+                sf = anyio.Path(msg.msg)
+                sfd = await sf.read_text()
+                expr = compile(sfd,"__load__","exec")
+
+                g = dict()
+                g["openttd"] = openttd
+                g["main"] = self
+                eval(expr, g,g)
+            else:
+                await script_obj.run(self)
+        except BaseException as ex:
+            self.send(openttd.internal.msg.CmdRunEnd(ex))
+        else:
+            self.send(openttd.internal.msg.CmdRunEnd())
+
+
     async def handle_command(self, msg):
         args = msg.args
         try:
@@ -216,7 +240,7 @@ class Main:
         evt.event.set()
 
 
-    async def cmd_start(self, args):
+    async def cmd_start(self, args, **kw) -> VEvent:
         """Start a game script or an AI.
 
         Arguments:
@@ -227,6 +251,10 @@ class Main:
         * name:value arguments (numbers)
 
         The result is the script ID.
+
+        This command returns a VEvent structure which can be used to
+        capture the script's execution state. This is mainly useful for
+        automated testing.
         """
         self.print(repr(args))
         try:
@@ -243,7 +271,6 @@ class Main:
 
             args = args[1:]
         script = args[0]
-        kw = {}
         for val in args[1:]:
             try:
                 name,v = val.split(":")
@@ -436,6 +463,7 @@ class Main:
         iof = StringIO()
 
         g["openttd"] = openttd
+        g["main"] = self
 
         g["p"] = lambda *p: print(*p, file=iof)
         g["r"] = lambda *p: print(*(repr(x) for x in p), file=iof)

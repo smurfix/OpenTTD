@@ -62,6 +62,7 @@ extern GameMode _game_mode;
 extern SwitchMode _switch_mode;
 extern GameSessionStats _game_session_stats;
 extern std::atomic<bool> _exit_game;
+extern int _exit_code;
 extern bool _save_config;
 
 /** Modes of pausing we've got */
