@@ -148,7 +148,10 @@ class Main:
                     if isinstance(msg, openttd.internal.msg.Stop):
                         return
 
-                    anyio.from_thread.run(queue.send,msg)
+                    async def qs(queue,msg):
+                        await queue.send(msg)
+
+                    anyio.from_thread.run(qs,queue,msg)
                 gen = t.wait(gen)
 
 
@@ -167,11 +170,14 @@ class Main:
                 openttd.internal.task.stop()  # assuming there was an exception
 
     async def _process(self, q):
-        async for msg in q:
+        async def hdl(msg):
             try:
                 res = await maybe_async(msg.work, self)
             except Exception:
                 logger.exception("Error processing %r", msg)
+
+        async for msg in q:
+            res = self._tg.start_soon(hdl,msg)
 
     async def handle_run(self, msg):
         # initial command line argument. Module or script file.
@@ -192,9 +198,9 @@ class Main:
             else:
                 await script_obj.run(self)
         except BaseException as ex:
-            self.send(openttd.internal.msg.CmdRunEnd(ex))
+            self.send(openttd.internal.msg.CommandRunEnd(repr(ex)))
         else:
-            self.send(openttd.internal.msg.CmdRunEnd())
+            self.send(openttd.internal.msg.CommandRunEnd(""))
 
 
     async def handle_command(self, msg):
@@ -240,7 +246,7 @@ class Main:
         evt.event.set()
 
 
-    async def cmd_start(self, args, **kw) -> VEvent:
+    async def cmd_start(self, args) -> VEvent:
         """Start a game script or an AI.
 
         Arguments:
@@ -270,6 +276,19 @@ class Main:
                 raise RuntimeError("Sorry, but AIs only run when playing.")
 
             args = args[1:]
+
+        return await self.do_start(*args, company=company)
+
+    async def do_start(self, *args, company=None, **kw):
+        """
+        Start a script, return a VEvent to hold its result (if any).
+
+        @company: the company to run uner, or DEITY for game scripts.
+
+        """
+        if company is None:
+            company = openttd.company.ID.DEITY
+
         script = args[0]
         for val in args[1:]:
             try:
@@ -549,6 +568,7 @@ class Main:
         TODO.
         """
         import _ttd  # to access Storage; intentionally not in openttd
+
         openttd.internal.debug(2,"Python START")
 
         main_storage = _ttd.object.Storage(openttd.company.ID.SPECTATOR)

@@ -208,7 +208,7 @@ namespace PyTTD {
 		game_mode = _game_mode;
 
 		if(main.size()) {
-			QueueToPy.send(NewMsg<Msg::ConsoleRun>(main));
+			QueueToPy.send(NewMsg<Msg::CommandRun>(main));
 		}
 	}
 
