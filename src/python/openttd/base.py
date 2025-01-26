@@ -15,16 +15,16 @@ import anyio
 import logging
 from functools import partial
 from contextvars import ContextVar
+from contextlib import contextmanager
 from concurrent.futures import CancelledError
 
 import openttd
-from openttd._main import _storage, _main, VEvent
+from openttd._main import _storage, _main, _estimating, VEvent
 
 __all__ = ["GameScript","AIScript"]
 
 # Set to a cancel-test procedure.
 _STOP = ContextVar("_STOP", default=None)
-_estimating = _main._estimating
 
 def test_stop():
     stop = _STOP.get()

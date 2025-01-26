@@ -65,19 +65,6 @@ namespace PyTTD {
 		mg.def("debug", [](int level, const char *text) { Debug(python, level, "{}", text); }, "Debug logging ('python')");
 	}
 
-	// command hook
-	py::object cmd_hook(CommandDataPtr cb)
-	{
-		static py::object cbfn;
-
-		if(! cbfn) {
-			py::module_ ttd = py::module_::import_("_ttd");
-			cbfn = ttd.attr("_command_hook");
-		}
-		py::object cbd = py::cast<CommandDataPtr>(std::move(cb));
-		return cbfn(cbd);
-	}
-
 	// data hook
 	StoragePtr Storage::from_python()
 	{
@@ -88,20 +75,5 @@ namespace PyTTD {
 			cbfn = ttd.attr("_storage_hook");
 		}
 		return py::cast<StoragePtr>(cbfn());
-	}
-
-	// Test for running in Estimate-Only mode
-	bool maybe_estimating() {
-		nanobind::gil_scoped_acquire _acquire;
-		try {
-			nanobind::module_ ttd = nanobind::module_::import_("_ttd");
-			py::object est = ttd.attr("_estimating").attr("get")();
-			return ! py::cast<bool>(est);
-		}
-		catch (const std::exception &ex) {
-			std::cerr << typeid(ex).name() << std::endl;
-			std::cerr << "  what(): " << ex.what() << std::endl;
-			return false;
-		}
 	}
 }
