@@ -167,7 +167,7 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
                 else:
                     api_selected = None
                     api_cls = cls_name
-                    if len(api_cls)>12 and api_cls.startswith("ScriptEvent"):
+                    if len(api_cls)>12 and api_cls.startswith("ScriptEvent") and api_cls[11:] != "Controller":
                         api_cls = api_cls[11:]
                         if not do_events:
                             do_events = True
@@ -320,6 +320,8 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
                 if pname.startswith(upn):
                     pname = pname[len(upn):]
 
+        if pname[0].isdigit():
+            pname = f"D_{pname}"
         print(f'        .value("{pname}", {enum_cls}::{name})')
 
         # Check if this a special error enum

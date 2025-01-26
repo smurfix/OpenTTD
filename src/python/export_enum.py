@@ -245,6 +245,8 @@ void init_{api_cls.lower()}(py::module_ &m) {{
         if pname in skips:
             continue
 
+        if pname[0].isdigit():
+            pname = f"D_{pname}"
         dest.write(f'        .value("{pname}", {enum_name}::{name})\n')
         continue
 
