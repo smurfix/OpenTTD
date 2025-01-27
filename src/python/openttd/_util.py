@@ -55,7 +55,7 @@ class _WrappedList(Sequence):
     def __getitem__(self, i):
         if i < 0:
             i = self._len + i
-        if self._len <= i:
+        if len(self._cache) <= i:
             self._fill(i)
         return self._cache[i]
 
@@ -196,9 +196,11 @@ def _importer(_ttd):
 
     t.tile.Tile = _ttd.support.Tile_
 
-    from ._support import Tile
-
-    t.Tile = Tile
+    from . import _support  as _s
+    t.Tile = _s.Tile
+    t.tile.Turn = _s.Turn
+    t.tile.Dir = _s.Dir
+    t.tile.TileDir = _s.TileDir
 
     _copy(ti,_ttd.support,"get_")
 
@@ -208,8 +210,11 @@ def _importer(_ttd):
 def _import2():
     "Adjustments that are also don in stub mode"
     from .base import test_stop
+    from ._main import test_mode, estimating
     import openttd as t
     t.test_stop = test_stop
+    t.test_mode = test_mode
+    t.estimating = estimating
 
     t.tile.Transport = t.tile.TransportType
     del t.tile.TransportType
