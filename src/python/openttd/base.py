@@ -15,20 +15,21 @@ import anyio
 import logging
 from functools import partial
 from contextvars import ContextVar
-from contextlib import contextmanager
 from concurrent.futures import CancelledError
 
 import openttd
-from openttd._main import _storage, _main, _estimating, VEvent
+from openttd._main import _storage, _main, estimating, VEvent, test_mode
 
 __all__ = ["GameScript","AIScript"]
 
 # Set to a cancel-test procedure.
-_STOP = ContextVar("_STOP", default=None)
+def _err():
+    raise CancelledError
+
+_STOP = ContextVar("_STOP", default=_err)
 
 def test_stop():
-    stop = _STOP.get()
-    stop()
+    _STOP.get()()
 
 class _HLT:
     res=None
@@ -66,6 +67,7 @@ class BaseScript:
     __company: Company
     __kw: dict[str,int|float|str]
     __state: Any
+    __stopped: bool = False
 
     def __init__(self, id, company, state=None, /, **kw):
         self.__id = id
@@ -77,6 +79,9 @@ class BaseScript:
 
         if self._run.__func__ is not BaseScript._run:
             raise RuntimeError("Don't even think of overriding '_run'!")
+
+    test_stop = staticmethod(test_stop)
+    test_mode = staticmethod(test_mode)
 
     @property
     def company(self):
@@ -100,7 +105,7 @@ class BaseScript:
 
         def _call2(hlt,proc,a,k):
             _STOP.set(hlt.STOP)
-            _estimating.set(True)
+            estimating.set(True)
             return proc(*a,**kw)
 
         async def _call(hlt,proc,a,kw):
@@ -118,19 +123,6 @@ class BaseScript:
             except BaseException:
                 hlt.stop=True
                 raise
-
-    @contextmanager
-    def test_mode(self):
-        """
-        Switch the script engine to test mode.
-        Script commands will do no real work and return immediately.
-        """
-        try:
-            token = _estimating.set(True)
-            yield
-        finally:
-            _estimating.reset(token)
-
 
     def print(self, *a, **kw) -> None:
         """
@@ -173,15 +165,22 @@ class BaseScript:
         """
         return {}
 
-    def test_stop(self):
-        return self.taskgroup.cancel_scope.cancelled()
+    def _test_stop(self) -> bool:
+        """
+        Returns True if this script should stop.
+
+        You should never call this. In async context, stopping is
+        accomplished by getting cancelled. A subthread redirects _STOP to
+        checking its HLT instead.
+        """
+        raise RuntimeError("You're async context. Run sync things in a thread!")
 
     async def _run(self, *, task_status):
         import _ttd
         evt = VEvent()
         self.__storage = st = _ttd.object.Storage(self.__company)
         _storage.set(st)
-        _STOP.set(self.test_stop)
+        _STOP.set(self._test_stop)
         task = _main.get()
 
         async with anyio.create_task_group() as self.taskgroup:
@@ -217,6 +216,7 @@ class BaseScript:
 
         You may self-call this method.
         """
+        self.__stopped = True
         self.taskgroup.cancel_scope.cancel()
 
     async def setup(self):

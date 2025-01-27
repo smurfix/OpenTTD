@@ -19,6 +19,7 @@ import importlib
 from functools import partial
 from attrs import define,field
 from contextvars import ContextVar
+from contextlib import contextmanager
 from importlib import import_module
 from io import StringIO
 from inspect import cleandoc
@@ -165,10 +166,7 @@ class Main:
                     if isinstance(msg, openttd.internal.msg.Stop):
                         return
 
-                    async def qs(queue,msg):
-                        await queue.send(msg)
-
-                    anyio.from_thread.run(qs,queue,msg)
+                    anyio.from_thread.run(queue.send,msg)
                 gen = t.wait(gen)
 
 
@@ -631,7 +629,7 @@ class Main:
 
         async with anyio.create_task_group() as tg:
             self._tg = tg
-            _estimating.set(False)
+            estimating.set(False)
 
             await tg.start(self._ttd_reader, msg_in_w)
             tg.start_soon(self._process, msg_in_r)
@@ -651,7 +649,7 @@ def run():
     sys.stdout.reconfigure(encoding='utf-8', errors="replace")
     sys.stderr.reconfigure(encoding='utf-8', errors="replace")
 
-    _ttd._estimating = _estimating
+    _ttd.estimating = estimating
 
     v = _ttd.debug_level
     logging.basicConfig(level=logging.ERROR if v==0 else logging.WARNING if

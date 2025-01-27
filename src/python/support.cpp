@@ -55,8 +55,18 @@ namespace PyTTD {
 
 		py::class_<TileIndex>(m, "Tile_")
 			.def(py::init_implicit<uint32_t>())
-			.def(py::new_([](unsigned int xy){ return TileIndex(xy);}))
-			.def(py::new_([](unsigned int x, unsigned int y){ return TileXY(x,y);}))
+			.def(py::new_([](unsigned int xy){
+					if (xy>=Map::Size())
+						throw std::domain_error("Coord out of bounds");
+					return TileIndex(xy);
+				}))
+			.def(py::new_([](unsigned int x, unsigned int y){
+					if (x>Map::SizeX())
+						throw std::domain_error("X coord out of bounds");
+					if (y>Map::SizeY())
+						throw std::domain_error("Y coord out of bounds");
+					return TileXY(x,y);
+				}))
 			.def("__int__", [](const TileIndex &t){ return t.value; })
 			.def("__hash__", [](const TileIndex &t){ return t.value; })
 			.def("__repr__", [](const TileIndex &t){ return fmt::format("Tile({})", t.value);})
@@ -65,6 +75,7 @@ namespace PyTTD {
 			.def_prop_ro("x", [](const TileIndex &t){ return TileX(t);})
 			.def_prop_ro("y", [](const TileIndex &t){ return TileY(t);})
 			.def_ro("value", &TileIndex::value)
+			.def_ro("xy", &TileIndex::value)
 			;
 
 		m.attr("INVALID_TILE") = INVALID_TILE;

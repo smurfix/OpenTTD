@@ -26,7 +26,7 @@ bool ScriptPyMode::ModeProc()
 	nanobind::gil_scoped_acquire _acquire;
 	try {
 		nanobind::module_ ttd = nanobind::module_::import_("_ttd");
-		py::object est = ttd.attr("_estimating").attr("get")();
+		py::object est = ttd.attr("estimating").attr("get")();
 		bool res = ! py::cast<bool>(est);
 		return res;
 	}
