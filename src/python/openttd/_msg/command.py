@@ -9,14 +9,13 @@ from __future__ import annotations
 
 from openttd._main import CmdR
 
-__all__ = ["CmdResult", "CmdResult2", "CmdTrace"]
+__all__ = ["CmdResult", "CmdResult3", "CmdTrace"]
 
 def CmdResult(self,main):
-    cmdr = CmdR(cmd=self.cmd, data=self.data, company=self.company)
-    return main.handle_result(cmdr)
+    return main.handle_result(self)
 
-def CmdResult2(self,main):
-    return main.handle_result2(self)
+def CmdResult3(self,main):
+    return main.handle_result3(self)
 
 def CmdTrace(self,main):
     return main.trace_command(self)

@@ -7,11 +7,19 @@
 
 #include <Python.h>
 
+#include "command_type.h"
+#include "framerate_type.h"
 #include "python/call_py.hpp"
 #include "python/queues.hpp"
 #include "python/task.hpp"
 
+#include "nanobind/nanobind.h"
+#include "nanobind/stl/vector.h"
+
 #include <exception>
+#include <iostream>
+
+namespace py = nanobind;
 
 namespace PyTTD {
 
@@ -72,4 +80,23 @@ namespace PyTTD {
 	void ConsoleToPy(int argc, const char* const argv[]) {
 		Task::ConsoleToPy(argc, argv);
 	}
+
+	bool CheckPending(Commands cmd, const CommandDataBuffer &data)
+	{
+		PerformanceMeasurer framerate(PFE_PYTHON);
+		nanobind::gil_scoped_acquire _acquire;
+		py::bytes buf{data.data(),data.size()};
+		try {
+			nanobind::module_ ttd = nanobind::module_::import_("_ttd");
+			py::object main = ttd.attr("_main");
+			return py::cast<bool>(main.attr("check_pending")(cmd, buf));
+		} catch (const std::exception &ex) {
+			std::cerr << typeid(ex).name() << std::endl;
+			std::cerr << "  what(): " << ex.what() << std::endl;
+
+			return false;
+		}
+		return false;
+	}
+
 }

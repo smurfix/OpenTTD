@@ -98,7 +98,8 @@ namespace PyTTD {
 
 		py::class_<CommandData>(m, "CommandData")
 			.def_ro("cmd", &CommandData::cmd)
-			.def_prop_ro("data", [](CommandData &x){ return py::bytes(x.data.data(),x.data.size());});
+			.def_prop_ro("data", [](CommandData &x){ return py::bytes(x.data.data(),x.data.size());})
+			.def_prop_ro("callback", [](CommandData &x){return (intptr_t)(x.callback);})
 			;
 
 		py::class_<Text>(m, "_Text");

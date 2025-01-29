@@ -26,6 +26,7 @@
 #include "fileio_func.h"
 #include "framerate_type.h"
 #include "console_func.h"
+#include "command_type.h"
 #include "network/network_internal.h"
 #include "core/backup_type.hpp"
 

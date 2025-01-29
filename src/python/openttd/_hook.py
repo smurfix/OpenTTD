@@ -23,6 +23,5 @@ def storage_hook():
 
 def command_hook(cmdr: CommandData):
     main = _main.get()
-
-    return main.send_cmd(cmdr.cmd, cmdr.data)
+    return main._send_cmd(cmdr.cmd, cmdr.data, cmdr.callback)
 

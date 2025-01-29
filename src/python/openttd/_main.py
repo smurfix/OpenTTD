@@ -23,7 +23,7 @@ from importlib import import_module
 from io import StringIO
 from inspect import cleandoc
 
-from .util import maybe_async
+from .util import maybe_async,maybe_async_threaded
 
 import logging
 
@@ -53,14 +53,30 @@ log = logger.debug
 
 _main = ContextVar("_main")
 _storage = ContextVar("_storage")
-_estimating = ContextVar("_estimating", default=True)
+estimating = ContextVar("estimating", default=True)
+_async = ContextVar("_async", default=True)
+
+
+@contextmanager
+def test_mode():
+    """
+    Switch the script engine to test mode.
+    Script commands will do no real work and return immediately.
+    """
+    try:
+        token = estimating.set(True)
+        yield
+    finally:
+        estimating.reset(token)
 
 
 @define(hash=True,eq=True)
 class CmdR:
     cmd:Command
     data:bytes
-    company:CompanyID
+    company:CompanyID=field(eq=False,hash=False)
+    callback: int=field(eq=False,hash=False)
+    storage:Storage=field(factory=_storage.get,eq=False,hash=False)
 
 class Obj:
     def __init__(self, **kw):
@@ -107,6 +123,7 @@ class Main:
         self._code = {}
         self._code_next = 1
         self.logger = logger
+        self._pause_change = anyio.Event()
 
     def get_free_index(self):
         id_ = self._code_next
@@ -216,35 +233,59 @@ class Main:
                 logger.exception("Error processing %r", msg)
                 self.print(f"Error: {exc}")
 
-    async def handle_result(self, cmdr):
+    async def handle_result(self, msg):
         """
-        Callback for remote command results or whatever. Untested.
+        Callback for our command results.
         """
-        self.print(f"Handle: {cmdr}")
-        try:
-            evt = self._replies.pop(cmdr)
-        except KeyError:
-            self.print(f"Spurious callback: {cmdr}")
+        for cmdr in self._replies.keys():
+            if cmdr.cmd == msg.cmd and cmdr.data == msg.data:
+                break
         else:
-            print("RESULTING",evt,evt.event)
-            evt.value = cmdr.result
-            evt.event.set()
+            self.print(f"Spurious callback: {msg}")
+            return
+
+        # This part may not await
+        evt = self._replies.pop(cmdr)
+        st = cmdr.storage
+        st.last_cmd=msg.cmd
+        st.last_data=msg.data
+        st.last_result = msg.result.success
+        st.last_result_data=msg.resultdata
+        st.last_cost = msg.result.cost
+        st.last_error = 0 if msg.result.success else msg.result.error  # XXX is that correct?
+
+        import _ttd
+        _ttd.msg._done_cb(cmdr.callback, st)
+
+        evt.value = st.result
+        evt.event.set()
 
     async def handle_result2(self, msg):
         """
-        Callback for local command results
+        Callback for local command results.
         """
+        breakpoint()
         for k,evt in self._replies.items():
             if k.cmd == msg.cmd and k.company == msg.company:
                 break
         else:
-            breakpoint()
             self.print(f"Spurious callback: {msg}")
             return
         evt = self._replies.pop(k)
+        breakpoint()
         evt.value = msg.result
         evt.event.set()
 
+    def check_pending(self, cmd, data):
+        """
+        Check whether this command is ours.
+
+        DANGER: this is called from the main task.
+        """
+        for cmdr in self._replies.keys():
+            if cmdr.cmd == cmd and cmdr.data == data:
+                return True
+        return False
 
     async def cmd_start(self, args) -> VEvent:
         """Start a game script or an AI.
@@ -332,7 +373,13 @@ class Main:
         else:
             self.print(f"Script {id_} ({type(scr)}) ended.")
 
-    def send_cmd(self, cmd, buf, company=None) -> Awaitable[CommandResult]:
+    def _send_cmd(self, cmd, buf, cb) -> Awaitable[CommandResult]:
+        # called from the command hook
+        if estimating.get():
+            raise RuntimeError(f"Test mode is on but command {cmd} got enqueued anyway")
+        return self.send_cmd(cmd, buf, cb=cb)
+
+    def send_cmd(self, cmd, buf, company=None, cb=0) -> Awaitable[CommandResult]:
         """
         Queue a command for execution by OpenTTD.
 
@@ -342,7 +389,7 @@ class Main:
         if company is None:
             company = _storage.get().company
 
-        cmdr = CmdR(openttd.internal.Command(cmd), buf, company)
+        cmdr = CmdR(openttd.internal.Command(cmd), buf, company, cb)
         if cmdr in self._replies:
             raise ValueError(f"Command {cmd} ({buf}) is already queued")
         evt = VEvent()
@@ -350,7 +397,10 @@ class Main:
 
         # print("TP",type(cmd),type(cmdr.data),type(company))
         self.send(openttd.internal.msg.CmdRelay(cmd, cmdr.data, company))
-        return self._wait_cmd(cmdr,evt)
+
+        if _async.get():
+            return self._wait_cmd(cmdr,evt)
+        return anyio.from_thread.run(self._wait_cmd,cmdr,evt)
 
     async def _wait_cmd(self, cmdr, evt):
         try:

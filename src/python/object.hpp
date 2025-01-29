@@ -33,7 +33,7 @@ namespace PyTTD {
 	/*
 	 * Python-compatible Storage objects are managed via a shared pointer.
 	 */
-	class Storage : public ScriptStorage, std::enable_shared_from_this<Storage> {
+	class NB_IMPORT Storage : public ScriptStorage, std::enable_shared_from_this<Storage> {
 		struct Private { explicit Private() = default; };
 
 		friend void PyTTD::init_ttd_object(nanobind::module_&);
@@ -54,6 +54,11 @@ namespace PyTTD {
 		virtual ~Storage() = default;
 
 		static StoragePtr from_python();
+		py::object get_result();
+		void add_result(py::object obj);
+
+	private:
+		py::object cmd_result = py::none();
 	};
 }
 

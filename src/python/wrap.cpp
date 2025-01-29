@@ -17,10 +17,8 @@
 #include "script/script_storage.hpp"
 
 namespace PyTTD {
-	LockGame::LockGame()
-		: storage(Storage::from_python())
-		, unlock()
-		, drv(reinterpret_cast<VDriver *>(VDriver::GetInstance()))
+	LockGame::LockGame(StoragePtr storage)
+		: drv(reinterpret_cast<VDriver *>(VDriver::GetInstance()))
 		, lock(drv->GetStateMutex())
 		, framerate(PFE_PYTHON)
 		, active(&instance)

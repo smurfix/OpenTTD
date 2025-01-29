@@ -15,6 +15,8 @@
 #include "python/msg_console.hpp"
 #include "python/msg_command.hpp"
 #include "python/msg_mode.hpp"
+#include "python/instance.hpp"
+#include "python/wrap.hpp"
 
 #include "company_type.h"
 
@@ -28,7 +30,7 @@ namespace PyTTD {
 
 	void init_ttd_msg(py::module_ &mg)
 	{
-		auto m = mg.def_submodule("msg", "Message support");
+		auto m = mg.def_submodule("msg", "Messaging and callback support");
 
 		py::class_<MsgBase>(m, "_Msg", py::dynamic_attr());
 
@@ -62,19 +64,35 @@ namespace PyTTD {
 
 		/* msg_command */
 		py::class_<Msg::CmdRelay, MsgBase>(m, "CmdRelay", py::dynamic_attr())
-			.def(py::new_([](Commands cmd, py::bytes data, CompanyID company){ return new Msg::CmdRelay(cmd,data,company);}));
+			.def(py::new_([](
+				Commands cmd,
+				py::bytes data,
+				CompanyID company)
+				//intptr_t callback)
+				 { return new Msg::CmdRelay(cmd,data,company);}), // ,(CommandCallbackData *)callback);}),
+				py::arg("cmd"),
+				py::arg("data"),
+				py::arg("company"));
+				//py::arg("callback"));
 
 		py::class_<Msg::CmdResult, MsgBase>(m, "CmdResult", py::dynamic_attr())
 			.def_prop_ro("cmd", &CmdResult::GetCmd)
-			.def_prop_ro("data", &CmdResult::GetData)
+			.def_prop_ro("data", [](const CmdResult &x) {
+				auto d = x.GetData();
+				return py::bytes(d.data(),d.size());
+			})
 			.def_prop_ro("result", &CmdResult::GetResult)
-			.def_prop_ro("resultdata", &CmdResult::GetResultData)
+			.def_prop_ro("resultdata", [](const CmdResult &x) {
+				auto d = x.GetResultData();
+				return py::bytes(d.data(),d.size());
+			})
 			;
-		py::class_<Msg::CmdResult2, MsgBase>(m, "CmdResult2", py::dynamic_attr())
-			.def_prop_ro("cmd", &CmdResult2::GetCmd)
-			.def_prop_ro("result", &CmdResult2::GetResult)
-			.def_prop_ro("company", &CmdResult2::GetCompany)
-			.def_prop_ro("tile", &CmdResult2::GetTile)
+		py::class_<Msg::CmdResult3, MsgBase>(m, "CmdResult3", py::dynamic_attr())
+			.def_prop_ro("cmd", &CmdResult3::GetCmd)
+			.def_prop_ro("result", &CmdResult3::GetResult)
+			.def_prop_ro("company", &CmdResult3::GetCompany)
+			.def_prop_ro("tile", &CmdResult3::GetTile)
+			.def_prop_ro("data", &CmdResult3::GetData)
 			;
 		py::class_<Msg::CmdTrace, MsgBase>(m, "CmdTrace", py::dynamic_attr())
 			.def_prop_ro("cmd", &CmdTrace::GetCmd)
@@ -82,5 +100,15 @@ namespace PyTTD {
 			.def_prop_ro("result", &CmdTrace::GetResult)
 			.def_prop_ro("resultdata", &CmdTrace::GetResultData)
 			;
+
+		m.def("_done_cb", []( intptr_t callback, StoragePtr storage ){
+
+			typedef void (*callback_t)(ScriptInstance *) ;
+			callback_t cb = (callback_t)callback;
+			SObject::AInstance active(&instance);
+			StorageSetter setter(instance, storage);
+
+			(*cb)(&instance);
+		});
 	}
 }
