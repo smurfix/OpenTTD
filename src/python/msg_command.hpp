@@ -21,15 +21,22 @@ namespace PyTTD::Msg {
 	// Send a command to OpenTTD for execution
 	class NB_IMPORT CmdRelay : public MsgBase {
 	public:
-		CmdRelay(Commands cmd, const CommandDataBuffer &data, CompanyID company);
-		CmdRelay(Commands cmd, py::bytes data, CompanyID company) : CmdRelay(cmd, std::vector<uint8_t>((const uint8_t *)data.data(),((const uint8_t *)data.data())+data.size()), company) {}
+		CmdRelay(Commands cmd, const CommandDataBuffer &data, CompanyID company //, CommandCallbackData *callback
+		);
+
+		CmdRelay(Commands cmd, py::bytes data, CompanyID company //, CommandCallbackData *callback
+		) : CmdRelay(cmd, std::vector<uint8_t>((const uint8_t *)data.data(),((const uint8_t *)data.data())+data.size()), company //, callback
+		) {}
 
 		inline Commands GetCmd() { return command->cmd; }
 		inline CommandDataBuffer GetData() { return command->data; }
 		inline CompanyID GetCompany() { return command->company; }
 		inline StringID GetErrMsg() { return command->err_msg; }
+		inline CommandCallback *GetCallback() { return command->callback; }
+		// inline CommandCallbackData *GetDataCallback() { return callback; }
 	private:
 		CommandPacketPtr command;
+		// CommandCallbackData *callback;
 
 		void Process() override;
 	};
@@ -40,10 +47,10 @@ namespace PyTTD::Msg {
 		CmdResult(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, const CommandDataBuffer &result_data)
 			: cmd(cmd), result(result), data(data), result_data(result_data) {}
 
-		inline const Commands &GetCmd() { return cmd; }
-		inline const CommandCost &GetResult() { return result; }
-		inline const CommandDataBuffer &GetData() { return data; }
-		inline const CommandDataBuffer &GetResultData() { return result_data; }
+		inline const Commands &GetCmd() const { return cmd; }
+		inline const CommandCost &GetResult() const { return result; }
+		inline const CommandDataBuffer &GetData() const { return data; }
+		inline const CommandDataBuffer &GetResultData() const { return result_data; }
 	private:
 		Commands cmd;
 		CommandCost result;
@@ -51,20 +58,22 @@ namespace PyTTD::Msg {
 		CommandDataBuffer result_data;
 	};
 
-	// send a completed command to Python
-	class CmdResult2 : public MsgBase {
+	// send the completed data back
+	class NB_IMPORT CmdResult3 : public MsgBase {
 	public:
-		CmdResult2(Commands cmd, const CommandCost &result, TileIndex tile, CompanyID company) : cmd(cmd), result(result), tile(tile), company(company) {}
+		CmdResult3(Commands cmd, const CommandCost &result, TileIndex tile, CompanyID company, py::object data) : cmd(cmd), result(result), tile(tile), company(company), data(data) {}
 
 		inline Commands GetCmd() { return cmd; }
 		inline CommandCost GetResult() { return result; }
 		inline TileIndex GetTile() { return tile; }
 		inline CompanyID GetCompany() { return company; }
+		inline py::object GetData() { return data; }
 	private:
 		Commands cmd;
 		CommandCost result;
 		TileIndex tile;
 		CompanyID company;
+		py::object data;
 	};
 
 	// Log command execution to Python

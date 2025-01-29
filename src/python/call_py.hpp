@@ -11,6 +11,8 @@
 #include <vector>
 #include <string>
 #include "company_type.h"
+#include "command_type.h"
+
 
 namespace PyTTD {
 
@@ -34,6 +36,9 @@ namespace PyTTD {
 	/* TODO */
 	int StartScript(std::string name, std::string params);
 	bool StopScript(unsigned int id);
+
+	bool CheckPending(Commands cmd, const CommandDataBuffer &data);
+	CommandCallbackData CcPython;
 }
 
 #endif

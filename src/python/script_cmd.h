@@ -13,7 +13,6 @@
 #include "../command_type.h"
 #include "../tile_type.h"
 
-CommandCallbackData PyCmdCB;
-void CcPython(Commands cmd, const CommandCost &result, TileIndex tile);
+CommandCallbackData CcPython;
 
 #endif /* PY_SCRIPT_CMD_H */

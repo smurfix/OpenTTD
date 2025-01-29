@@ -24,13 +24,13 @@ namespace PyTTD {
 	struct CommandData {
 		Commands cmd;
 		CommandDataBuffer data;
+		Script_SuspendCallbackProc *callback;
 	};
 	typedef std::unique_ptr<CommandData, py::deleter<CommandData>> CommandDataPtr;
 
-
 	class NB_IMPORT Instance : public ScriptInstance {
 	public:
-		Instance() : ScriptInstance("Python") {}
+		Instance();
 		virtual ~Instance();
 
 		/**
@@ -43,23 +43,33 @@ namespace PyTTD {
 		ScriptInfo *FindLibrary(const std::string &library, int version) override;
 		void LoadDummyScript() override {}
 
-		inline void SetStorage(StoragePtr p) { this->py_storage = p; }
+		inline void SetStorage(StoragePtr p) {
+			this->py_storage = p;
+			this->storage = &*p;
+		}
 
 		/**
 		 * If a call from Python to TTD generated a command, we store it here.
 		 */
 		CommandDataPtr currentCmd;
 
+		void InsertResult(bool result) override;
+        void InsertResult(int result) override;
+
 	private:
 		void RegisterAPI() override;
 		void Died() override;
-
-		Storage *GetStorage() override;
+		Squirrel *dead_engine;
 
 		CommandCallbackData *GetDoCommandCallback() override;
-		CommandHookProc *GetDoCommandHook() override;
+		CommandDoHookProc *GetDoCommandHook() override;
+		CommandDoneHookProc *GetDoneCommandHook() override;
 
+	protected:
 		StoragePtr py_storage;
+
+	public:
+		inline py::object get_result() { return py_storage->get_result(); }
 	};
 
 	extern class Instance instance;

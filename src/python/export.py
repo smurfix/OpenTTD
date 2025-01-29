@@ -186,11 +186,12 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
                             list_name = None
                     if not list_name and api_cls.endswith("List"):
                         list_name = api_cls
+                        api_cls = "List"
                     if do_events:
                         print(f'{{ auto m = me.def_submodule("{api_cls}");')
 
                     else:
-                        print(f'void init_{api_cls.lower()}([[maybe_unused]] py::module_ &m)')
+                        print(f'void init_{(list_name or api_cls).lower()}([[maybe_unused]] py::module_ &m)')
                         print('{');
                     cls_def = f'    auto cls_{cls_name} = py::class_<{cls_name}, {cls_super}>(m, "{api_cls}");'
 
@@ -385,7 +386,10 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
                 if cls_def is not None:
                     print(cls_def)
                     cls_def = None
-                print(f'    cls_{cls_name}.def(py::init<{params}>());');
+                if params:
+                    print(f"// TODO {cls_name} {params}")
+                else:
+                    print(f'    cls_{cls_name}.def(wrap_new([](){{ return new {cls_name} (); }}));');
             continue
 
         if api_selected is None:

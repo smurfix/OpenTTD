@@ -44,15 +44,36 @@ namespace PyTTD {
 			.def_rw("company", &Storage::company)
 			.def_ro("root_company", &Storage::root_company)
 			.def_rw("allow_do_command", &Storage::allow_do_command)
-			.def_ro("costs", &Storage::costs)
-			.def_ro("last_cost", &Storage::last_cost)
-			.def_ro("last_error", &Storage::last_error)
-			.def_ro("last_command_res", &Storage::last_command_res)
-			.def_ro("last_data", &Storage::last_data)
-			.def_ro("last_cmd", &Storage::last_cmd)
-			.def_ro("last_cmd_ret", &Storage::last_cmd_ret)
-			.def_ro("road_type", &Storage::road_type)
-			.def_ro("rail_type", &Storage::rail_type)
+			.def_rw("costs", &Storage::costs)
+
+			.def_rw("last_cmd", &Storage::last_cmd)
+			.def_prop_rw("last_data",
+					[](const Storage &x) {
+						auto &d = x.last_data;
+						return py::bytes((const uint8_t *)d.data(),d.size());
+					},
+					[](Storage &x, py::bytes d) {
+						auto &ld = x.last_data;
+						ld.assign((const uint8_t *)d.data(),((const uint8_t *)d.data())+d.size());
+					})
+			.def_rw("last_result", &Storage::last_command_res)
+			.def_prop_rw("last_result_data",
+					[](const Storage &x) {
+						auto &d = x.last_cmd_ret;
+						return py::bytes((const uint8_t *)d.data(),d.size());
+					},
+					[](Storage &x, py::bytes d) {
+						auto &ld = x.last_cmd_ret;
+						ld.assign((const uint8_t *)d.data(),((const uint8_t *)d.data())+d.size());
+					})
+
+			.def_rw("last_cost", &Storage::last_cost)
+			.def_rw("last_error", &Storage::last_error)
+
+			.def_rw("road_type", &Storage::road_type)
+			.def_rw("rail_type", &Storage::rail_type)
+
+			.def_prop_rw("result", &Storage::get_result, &Storage::add_result, "Read the command result data")
 			;
 		py::class_<Task>(m, "Task")
 			.def("stop", &Task::PyStop, "Stop the Python task")
@@ -69,11 +90,25 @@ namespace PyTTD {
 	StoragePtr Storage::from_python()
 	{
 		static py::object cbfn;
+		py::gil_scoped_acquire lock;
 
 		if(! cbfn) {
 			py::module_ ttd = py::module_::import_("_ttd");
 			cbfn = ttd.attr("_storage_hook");
 		}
 		return py::cast<StoragePtr>(cbfn());
+	}
+
+	py::object Storage::get_result()
+	{
+		auto val = cmd_result;
+		cmd_result = py::none();
+		return val;
+	}
+	void Storage::add_result(py::object obj)
+	{
+		if (cmd_result.is_none())
+			cmd_result = py::list();
+		py::cast<py::list>(cmd_result).append(obj);
 	}
 }

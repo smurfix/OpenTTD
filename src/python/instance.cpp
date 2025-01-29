@@ -24,7 +24,26 @@
 #include "stdafx.h"
 #include "safeguards.h"
 
+namespace py = nanobind;
+
 namespace PyTTD {
+
+	Instance::Instance() : ScriptInstance("Python")
+	{
+		dead_engine = nullptr;
+	}
+
+	// GIL must be held
+	void Instance::InsertResult(bool result)
+	{
+		py_storage->add_result(py::bool_(result));
+	}
+
+	// GIL must be held
+	void Instance::InsertResult(int result)
+	{
+		py_storage->add_result(py::int_(result));
+	}
 
 	void Instance::Initialize(GameInfo *info)
 	{
@@ -32,6 +51,9 @@ namespace PyTTD {
 
 		/* Register the GameController */
 		// SQGSController_Register(this->engine);
+
+		delete this->engine;
+		this->engine = nullptr;
 
 		ScriptInstance::Initialize(info->GetMainScript(), info->GetInstanceName(), OWNER_DEITY);
 	}
@@ -68,54 +90,52 @@ namespace PyTTD {
 		/* Don't show errors while loading savegame. They will be shown at end of loading anyway. */
 	}
 
-}
-using namespace PyTTD;
-/**
- * DoCommand callback function for commands executed by Python scripts.
- * @param cmd command as given to DoCommandPInternal.
- * @param result The result of the command.
- * @param data Command data as given to Command<>::Post.
- * @param result_data Additional returned data from the command.
- */
-void PyCmdCB(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
-{
-	Task::Send(NewMsg<Msg::CmdResult>(cmd, result, data, result_data));
-}
-
-void CcPython(Commands cmd, const CommandCost &result, TileIndex tile)
-{
-	Task::Send(NewMsg<Msg::CmdResult2>(cmd, result, tile, _current_company));
-}
-
-namespace PyTTD {
-	CommandCallbackData *Instance::GetDoCommandCallback()
+	/**
+	 * "CommandCallback" function for commands executed by Python scripts.
+	 * @param cmd command as given to DoCommandPInternal.
+	 * @param result The result of the command.
+	 * @param data Command data as given to Command<>::Post.
+	 * @param result_data Additional returned data from the command.
+	 */
+	void CcPython(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
 	{
-		return &PyCmdCB;
+		if (! Task::IsRunning())
+			return;
+		Task::Send(NewMsg<Msg::CmdResult>(cmd, result, data, result_data));
 	}
 
-	static void saveCmd(Commands cmd, CommandDataBuffer data) {
+	CommandCallbackData *Instance::GetDoCommandCallback()
+	{
+		return &CcPython;
+	}
+
+	static void saveCmd(Commands cmd, CommandDataBuffer data, Script_SuspendCallbackProc *callback) {
 		if(instance.currentCmd)
 			throw std::domain_error("Second command");
 		instance.currentCmd.reset(new CommandData());
 		instance.currentCmd->cmd = cmd;
 		instance.currentCmd->data = data;
+		instance.currentCmd->callback = callback;
 	}
 
-	CommandHookProc *Instance::GetDoCommandHook() {
+	static void sendResult(Commands cmd, const CommandCost &result, TileIndex tile)
+	{
+		// XXX this happens to work without taking the GIL, but beware
+		py::object data = instance.get_result();
+		Task::Send(NewMsg<Msg::CmdResult3>(cmd, result, tile, _current_company, data));
+	}
+
+	CommandDoHookProc *Instance::GetDoCommandHook() {
 		return &saveCmd;
+	}
+	CommandDoneHookProc *Instance::GetDoneCommandHook() {
+		return &sendResult;
 	}
 
 	// The empty destructor is there to tell the compiler to create the class
 	Instance::~Instance() { }
 
-	// storage accessor
-	Storage *Instance::GetStorage()
-	{
-		if(! this->py_storage)
-			throw std::domain_error("no script data");
-		return this->py_storage.get();
-	}
-	// This is our dummy script instance, which we activate
-	// during calls from Python
+	// This is our singleton script instance.
+	// We activate it during calls from Python.
 	Instance instance;
 }

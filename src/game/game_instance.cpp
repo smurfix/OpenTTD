@@ -101,13 +101,11 @@ void GameInstance::Died()
 void CcGame(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
 {
 #ifdef WITH_PYTHON
-	if (PyTTD::CheckPending(cmd, data)) {
+	if (Game::GetGameInstance() == nullptr || PyTTD::CheckPending(cmd, data)) {
 		PyTTD::CcPython(cmd, result, data, std::move(result_data));
 		return;
 	}
 #endif
-	if (Game::GetGameInstance() == nullptr)
-		return;
 	if (Game::GetGameInstance()->DoCommandCallback(result, data, std::move(result_data), cmd)) {
 		Game::GetGameInstance()->Continue();
 	}
