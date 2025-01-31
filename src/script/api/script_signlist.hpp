@@ -19,9 +19,11 @@
  */
 class ScriptSignList : public ScriptList {
 public:
-#ifdef DOXYGEN_API
+	/**
+	 * The constructor wrapper.
+	 */
 	ScriptSignList();
-
+#ifdef DOXYGEN_API
 	/**
 	 * Apply a filter when building the list.
 	 * @param filter_function The function which will be doing the filtering.
@@ -41,8 +43,6 @@ public:
 	 * @endcode
 	 */
 	ScriptSignList(function filter_function, ...);
-#else
-	ScriptSignList(HSQUIRRELVM);
 #endif /* DOXYGEN_API */
 };
 

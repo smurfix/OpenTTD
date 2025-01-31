@@ -13,9 +13,10 @@
 
 #include "../../safeguards.h"
 
-ScriptTownList::ScriptTownList(HSQUIRRELVM vm)
+
+ScriptTownList::ScriptTownList()
 {
-	ScriptList::FillList<Town>(vm, this);
+	ScriptList::FillList<Town>(this);
 }
 
 ScriptTownEffectList::ScriptTownEffectList()

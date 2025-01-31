@@ -19,8 +19,12 @@
  */
 class ScriptSubsidyList : public ScriptList {
 public:
-#ifdef DOXYGEN_API
+	/**
+	 * The constructor wrapper.
+	 */
+
 	ScriptSubsidyList();
+#ifdef DOXYGEN_API
 
 	/**
 	 * Apply a filter when building the list.
@@ -40,8 +44,6 @@ public:
 	 * @endcode
 	 */
 	ScriptSubsidyList(function filter_function, ...);
-#else
-	ScriptSubsidyList(HSQUIRRELVM vm);
 #endif /* DOXYGEN_API */
 };
 

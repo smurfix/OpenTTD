@@ -13,9 +13,9 @@
 
 #include "../../safeguards.h"
 
-ScriptIndustryList::ScriptIndustryList(HSQUIRRELVM vm)
+ScriptIndustryList::ScriptIndustryList()
 {
-	ScriptList::FillList<Industry>(vm, this);
+	ScriptList::FillList<Industry>(this);
 }
 
 ScriptIndustryList_CargoAccepting::ScriptIndustryList_CargoAccepting(CargoID cargo_id)
