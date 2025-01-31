@@ -14,11 +14,11 @@
 
 #include "../../safeguards.h"
 
-ScriptGroupList::ScriptGroupList(HSQUIRRELVM vm)
+ScriptGroupList::ScriptGroupList()
 {
 	EnforceCompanyModeValid_Void();
 	CompanyID owner = ScriptObject::GetCompany();
-	ScriptList::FillList<Group>(vm, this,
+	ScriptList::FillList<Group>(this,
 		[owner](const Group *g) { return g->owner == owner; }
 	);
 }

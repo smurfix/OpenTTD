@@ -20,8 +20,12 @@
  */
 class ScriptVehicleList : public ScriptList {
 public:
-#ifdef DOXYGEN_API
+	/**
+	 * The constructor wrapper.
+	 */
 	ScriptVehicleList();
+
+#ifdef DOXYGEN_API
 
 	/**
 	 * Apply a filter when building the list.
@@ -43,11 +47,6 @@ public:
 	 * @endcode
 	 */
 	ScriptVehicleList(function filter_function, ...);
-#else
-	/**
-	 * The constructor wrapper from Squirrel.
-	 */
-	ScriptVehicleList(HSQUIRRELVM vm);
 #endif /* DOXYGEN_API */
 };
 

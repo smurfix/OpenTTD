@@ -19,14 +19,14 @@
 
 #include "../../safeguards.h"
 
-ScriptVehicleList::ScriptVehicleList(HSQUIRRELVM vm)
+ScriptVehicleList::ScriptVehicleList()
 {
 	EnforceDeityOrCompanyModeValid_Void();
 
 	bool is_deity = ScriptCompanyMode::IsDeity();
 	CompanyID owner = ScriptObject::GetCompany();
 
-	ScriptList::FillList<Vehicle>(vm, this,
+	ScriptList::FillList<Vehicle>(this,
 		[is_deity, owner](const Vehicle *v) {
 			return (is_deity || v->owner == owner) && (v->IsPrimaryVehicle() || (v->type == VEH_TRAIN && ::Train::From(v)->IsFreeWagon()));
 		}

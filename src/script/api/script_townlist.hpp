@@ -19,9 +19,12 @@
  */
 class ScriptTownList : public ScriptList {
 public:
-#ifdef DOXYGEN_API
+	/**
+	 * The constructor wrapper.
+	 */
 	ScriptTownList();
 
+#ifdef DOXYGEN_API
 	/**
 	 * Apply a filter when building the list.
 	 * @param filter_function The function which will be doing the filtering.
@@ -42,8 +45,6 @@ public:
 	 * @endcode
 	 */
 	ScriptTownList(function filter_function, ...);
-#else
-	ScriptTownList(HSQUIRRELVM vm);
 #endif /* DOXYGEN_API */
 };
 

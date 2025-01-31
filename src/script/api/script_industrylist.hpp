@@ -19,9 +19,12 @@
  */
 class ScriptIndustryList : public ScriptList {
 public:
-#ifdef DOXYGEN_API
+    /**
+     * The constructor wrapper.
+     */
 	ScriptIndustryList();
 
+#ifdef DOXYGEN_API
 	/**
 	 * Apply a filter when building the list.
 	 * @param filter_function The function which will be doing the filtering.
@@ -42,11 +45,6 @@ public:
 	 * @endcode
 	 */
 	ScriptIndustryList(function filter_function, ...);
-#else
-	/**
-	 * The constructor wrapper from Squirrel.
-	 */
-	ScriptIndustryList(HSQUIRRELVM vm);
 #endif /* DOXYGEN_API */
 };
 

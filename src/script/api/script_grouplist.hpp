@@ -20,12 +20,14 @@
  */
 class ScriptGroupList : public ScriptList {
 public:
-#ifdef DOXYGEN_API
 	/**
+	 * The constructor wrapper.
+	 *
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 */
 	ScriptGroupList();
 
+#ifdef DOXYGEN_API
 	/**
 	 * Apply a filter when building the list.
 	 * @param filter_function The function which will be doing the filtering.
@@ -45,11 +47,6 @@ public:
 	 * @endcode
 	 */
 	ScriptGroupList(function filter_function, ...);
-#else
-	/**
-	 * The constructor wrapper from Squirrel.
-	 */
-	ScriptGroupList(HSQUIRRELVM vm);
 #endif /* DOXYGEN_API */
 };
 
