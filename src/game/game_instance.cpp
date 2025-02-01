@@ -89,9 +89,16 @@ void GameInstance::Died()
  * @param result The result of the command.
  * @param data Command data as given to Command<>::Post.
  * @param result_data Additional returned data from the command.
+ *
+ * This callback is also used for Python scripts.
+ * (Otherwise we'd lose interoperability with stock OpenTTD.)
+ * TODO: fix that.
+ *
  */
 void CcGame(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
 {
+	if (Game::GetGameInstance() == nullptr)
+		return;
 	if (Game::GetGameInstance()->DoCommandCallback(result, data, std::move(result_data), cmd)) {
 		Game::GetGameInstance()->Continue();
 	}
