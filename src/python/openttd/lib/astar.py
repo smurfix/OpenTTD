@@ -14,11 +14,13 @@ import openttd
 __all__ = ["AStar"]
 
 
-TileDir=openttd.tile.TileDir
+TilePath=openttd.tile.TilePath
+
+from openttd._main import _async, test_mode
 
 @define
 class Cache:
-    """Per-tile cached data, stored in TileDir"""
+    """Per-tile cached data, stored in TilePath"""
 
     gscore:float=0
     fscore:float=0
@@ -40,13 +42,13 @@ class Cache:
 class TileKeeper(dict):
     """A cache dict that returns existing content"""
 
-    def get(self, tile: TileDir):
+    def get(self, tile: TilePath):
         if tile in self:
             return self[tile]
         self[tile] = tile
         return tile
 
-    def set(self, tile: TileDir):
+    def set(self, tile: TilePath):
         self[tile] = tile
         return tile
 
@@ -54,7 +56,7 @@ class TileKeeper(dict):
 class ToDo:
     """A heapq that keeps our not-yet-processed tiles."""
     def __init__(self) -> None:
-        self.heap: list[TileDir] = []
+        self.heap: list[TilePath] = []
 
     def push(self, item: SNType) -> None:
         item.cache.in_todo = True
@@ -86,7 +88,7 @@ class AStar:
 
     This class must be subclassed to be useful.
     """
-    def estimate(self, current: TileDir) -> float:
+    def estimate(self, current: TilePath) -> float:
         """
         Computes the estimated (rough) distance to the goal(s).
 
@@ -94,7 +96,7 @@ class AStar:
         """
         raise NotImplementedError
 
-    def neighbors(self, tile: TileDir) -> Iterable[tuple[TileDir,float]]:
+    def neighbors(self, tile: TilePath) -> Iterable[tuple[TilePath,float]]:
         """
         For a given tile, returns (or yields) a list of its neighbors and
         the (incremental) cost for getting to each.
@@ -103,7 +105,7 @@ class AStar:
         """
         raise NotImplementedError
 
-    def is_goal(self, current: TileDir) -> bool:
+    def is_goal(self, current: TilePath) -> bool:
         """
         Returns true when the algorithm should terminate.
 
@@ -111,7 +113,7 @@ class AStar:
         """
         raise NotImplementedError
 
-    def is_not_goal(self, current: TileDir) -> bool:
+    def is_not_goal(self, current: TilePath) -> bool:
         """
         Returns true when the algorithm should skip this node.
 
@@ -125,16 +127,16 @@ class AStar:
         """
         return False
 
-    def run(self, start: TileDir|Iterable[TileDir]) -> TileDir | None:
+    def run(self, start: TilePath|Iterable[TilePath]) -> TilePath | None:
         """
         Run the search.
         """
         todo = ToDo()
         self.cache = TileKeeper()
-        if not openttd.estimating.get():
+        if _async.get():
             raise RuntimeError("You *must* run the pathfinder in a subthread!")
 
-        if isinstance(start,TileDir):
+        if isinstance(start,TilePath):
             start = [start]
         for tile in start:
             if self.is_goal(tile):
@@ -144,6 +146,10 @@ class AStar:
             tile.cache = Cache(gscore=0, fscore=self.estimate(tile))
             todo.push(tile)
 
+        with test_mode():
+            return self._run(todo)
+
+    def _run(self, todo):
         while todo:
             openttd.test_stop()
 

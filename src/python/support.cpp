@@ -71,6 +71,7 @@ namespace PyTTD {
 					return TileIndex(xy);
 				}))
 			.def(py::new_([](unsigned int x, unsigned int y){
+					// not off by one, SizeX/SizeY subtract one from 2^n
 					if (x>Map::SizeX())
 						throw std::domain_error("X coord out of bounds");
 					if (y>Map::SizeY())
@@ -85,7 +86,6 @@ namespace PyTTD {
 			.def_prop_ro("x", [](const TileIndex &t){ return TileX(t);})
 			.def_prop_ro("y", [](const TileIndex &t){ return TileY(t);})
 			.def_ro("value", &TileIndex::value)
-			.def_ro("xy", &TileIndex::value)
 			;
 
 		m.attr("INVALID_TILE") = INVALID_TILE;

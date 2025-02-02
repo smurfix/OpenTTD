@@ -11,11 +11,19 @@ This module elaborates on tiles.
 
 from __future__ import annotations
 
-import _ttd
 import openttd
+import _ttd
 import enum
+import os
 from attrs import define,field
-from .util import extension_of
+from .util import extension_of, PlusSet
+from .error import TTDError
+
+import typing
+
+if typing.TYPE_CHECKING:
+    Town = _ttd.script.town.Town
+    from typing import Callable,Self
 
 
 _offsets = (
@@ -151,11 +159,12 @@ class Turn: # (enum.IntEnum):
             return type(self)((self.value + d.value) % 8)
         return NotImplemented
 
-class Tile(_ttd.support.Tile_):
+@extension_of(_ttd.support.Tile_)
+class Tile:
     def __new__(cls, x,y=None):
         if y is not None:
             try:
-                return super().__new__(cls,x,y)
+                return _ttd.support.Tile_(x,y)
             except TypeError:
                 if x<0:
                     raise ValueError("x coord out of bounds") from None
@@ -164,20 +173,15 @@ class Tile(_ttd.support.Tile_):
                 raise
         elif isinstance(x,Tile):
             return x
-        elif isinstance(x,_ttd.support.Tile_):
-            # upgrade me
-            return super().__new__(cls, x.value)
         elif isinstance(x,int):
-            return super().__new__(cls, x)
+            return _ttd.support.Tile_(x)
         else:
             raise ValueError(f"Tile: no creator for {x}")
-
-    def __init__(self, x,y=None):
-        self._ = self
 
     @property
     def xy(self):
         return (self.x,self.y)
+
     def __str__(self):
         return f"({self.x},{self.y})"
 
@@ -204,10 +208,10 @@ class Tile(_ttd.support.Tile_):
         return NotImplemented
 
     def __matmul__(self, x):
-        """Tile @ direction returns a TileDir.
+        """Tile @ direction returns a TilePath.
         """
         if isinstance(x,(Dir,_ttd.enum.Direction)):
-            return TileDir(self, x)+x
+            return TilePath(self, x)+x
         return NotImplemented
 
     def __sub__(self, t:Tile|tuple[int,int]) -> Tile|tuple[int,int]:
@@ -262,126 +266,226 @@ class Tile(_ttd.support.Tile_):
         return _offset_ids[(dx,dy)]
 
     @property
+    def content_str(self) -> str:
+        class RR(list):
+            def __getattr__(self, k):
+                self.append(k)
+        R=RR()
+
+        if self.is_road:
+            R.road
+        if self.is_rail:
+            R.rail
+        if self.is_river:
+            R.river
+        if self.is_water:
+            R.water
+        if self.is_sea:
+            R.sea
+        if self.is_coast:
+            R.coast
+        if self.is_farm:
+            R.farm
+        if self.has_tree:
+            R.tree
+        if self.has_rock:
+            R.rock
+        if self.in_snow:
+            R.snow
+        if self.in_desert:
+            R.desert
+        if self.is_station:
+            R.station
+        # TODO check for waypoint, there are different types ...
+        if self.has_bridge:
+            R.bridge
+        if self.has_tunnel:
+            R.tunnel
+        if self.is_buildable:
+            R.can_build
+
+        if not R:
+            return "?"
+        return " ".join(R)
+
+    @property
     def is_buildable(self) -> bool:
-        return openttd.tile.is_buildable(self)
+        return _ttd.script.tile.is_buildable(self)
     def is_buildable_rect(self, w:int, h:int) -> bool:
-        return openttd.tile.is_buildable_rectangle(self, w, h)
+        return _ttd.script.tile.is_buildable_rectangle(self, w, h)
     @property
     def is_sea(self) -> bool:
-        return openttd.tile.is_sea_tile(self)
+        return _ttd.script.tile.is_sea_tile(self)
     @property
     def is_river(self) -> bool:
-        return openttd.tile.is_river_tile(self)
+        return _ttd.script.tile.is_river_tile(self)
     @property
     def is_water(self) -> bool:
-        return openttd.tile.is_water_tile(self)
+        return _ttd.script.tile.is_water_tile(self)
     @property
     def is_coast(self) -> bool:
-        return openttd.tile.is_coast_tile(self)
+        return _ttd.script.tile.is_coast_tile(self)
     @property
     def is_station(self) -> bool:
-        return openttd.tile.is_station_tile(self)
+        return _ttd.script.tile.is_station_tile(self)
+    def has_waypoint(self, type_: WaypointType) -> bool:
+        return _ttd.script.waypoint.has_waypoint_type(self, type_)
+    @property
+    def has_station(self) -> bool:
+        id = _ttd.script.station.get_station_id(self)
+        return _ttd.script.station.is_valid_station(id)
+    @property
+    def station(self) -> Station:
+        id = _ttd.script.station.get_station_id(self)
+        if not _ttd.script.station.is_valid_station(id):
+            raise ValueError(f"not a station at {self.xy}")
+        return Station(id)
+    @property
+    def waypoint(self) -> Waypoint:
+        id = _ttd.script.station.get_waypoint_id(self)
+        return Waypoint(id)
+    @property
+    def is_road_station(self) -> bool:
+        return _ttd.script.road.is_road_station_tile(self)
+    @property
+    def is_drivethru_road_station(self) -> bool:
+        return _ttd.script.road.is_drive_through_road_station_tile(self)
+    @property
+    def is_road_depot(self) -> bool:
+        return _ttd.script.road.is_road_depot_tile(self)
     @property
     def has_tree(self) -> bool:
-        return openttd.tile.has_tree_on_tile(self)
+        return _ttd.script.tile.has_tree_on_tile(self)
     @property
     def is_farm(self) -> bool:
-        return openttd.tile.is_farm_tile(self)
+        return _ttd.script.tile.is_farm_tile(self)
     @property
-    def is_rock(self) -> bool:
-        return openttd.tile.is_rock_tile(self)
+    def has_rock(self) -> bool:
+        return _ttd.script.tile.is_rock_tile(self)
     @property
     def is_rough(self) -> bool:
-        return openttd.tile.is_rough_tile(self)
+        return _ttd.script.tile.is_rough_tile(self)
     @property
-    def is_snow(self) -> bool:
-        return openttd.tile.is_snow_tile(self)
+    def in_snow(self) -> bool:
+        return _ttd.script.tile.is_snow_tile(self)
     @property
-    def is_desert(self) -> bool:
-        return openttd.tile.is_desert_tile(self)
+    def in_desert(self) -> bool:
+        return _ttd.script.tile.is_desert_tile(self)
     @property
     def is_road(self) -> bool:
-        return openttd.road.is_road_tile(self)
+        return _ttd.script.road.is_road_tile(self)
+    @property
+    def maybe_road(self) -> bool:
+        "The tile either is a road, or we can build one on it"
+        return self.is_road or self.is_buildable
     @property
     def is_rail(self) -> bool:
-        return openttd.rail.is_rail_tile(self)
+        return _ttd.script.rail.is_rail_tile(self)
     @property
     def is_bridge(self) -> bool:
-        return openttd.bridge.is_bridge_tile(self)
+        return _ttd.script.bridge.is_bridge_tile(self)
+    @property
+    def count_adjacent_roads(self) -> int:
+        return _ttd.script.road.get_neighbour_road_count(self)
+    def is_valid_orderflags(self, flags:OrderfFlags) -> bool:
+        return _ttd.script.order.are_order_flags_valid(self, flags)
     @property
     def bridge_dest(self) -> Tile:
-        return Tile(openttd.bridge.get_other_bridge_end(self))
+        return Tile(_ttd.script.bridge.get_other_bridge_end(self))
     @property
     def is_tunnel(self) -> bool:
-        return openttd.tunnel.is_tunnel_tile(self)
+        return _ttd.script.tunnel.is_tunnel_tile(self)
     @property
     def tunnel_dest(self) -> Tile:
-        return Tile(openttd.tunnel.get_other_tunnel_end(self))
+        return Tile(_ttd.script.tunnel.get_other_tunnel_end(self))
     @property
-    def terrain(self) -> openttd.tile.TerrainType:
-        return openttd.tile.get_terrain_type(self)
+    def terrain(self) -> _ttd.script.tile.TerrainType:
+        return _ttd.script.tile.get_terrain_type(self)
 
     def has_road_to(self, other:Tile):
-        return openttd.road.are_road_tiles_connected(self, other._)
+        return _ttd.script.road.are_road_tiles_connected(self, other._)
 
     def can_build_connected_road_parts(self, prev: Tile, next: Tile):
-        return openttd.road.can_build_connected_road_parts_here(self, prev._, next._)
+        return _ttd.script.road.can_build_connected_road_parts_here(self, prev._, next._)
+
+    def Sign(self, text:str) -> Sign:
+        res = _ttd.script.sign.build_sign(self, openttd.Text(text))
+        if not res:
+            raise TTDError(f"No sign at {pos}")
+        return openttd._.Sign(res[0])
+
+    @property
+    def signs(self) -> Signs:
+        return openttd._.Signs() @ (lambda s: s.location == self)
 
     def build_road_to(self, other:Tile, full:bool=False, oneway:bool=False):
         # it's rather silly to split that into four, only for
         # script_road.cpp to piece it together again. Oh well. TODO.
-        r = openttd.road
+        r = _ttd.script.road
         p = (r.build_one_way_road_full if oneway else r.build_road_full) if full else (r.build_one_way_road if oneway else r.build_road)
         return p(self, other._)
 
-    def build_bridge_to(self, other:Tile, roadtype: openttd.vehicle.Type, bridgetype: int):
-        return openttd.bridge.build_bridge(roadtype,bridgetype, self, other._)
+    def build_bridge_to(self, other:Tile, roadtype: _ttd.script.vehicle.Type, bridgetype: int):
+        return _ttd.script.bridge.build_bridge(roadtype,bridgetype, self, other._)
 
-    def build_tunnel(self, roadtype: openttd.vehicle.Type):
-        return openttd.tunnel.build_tunnel(roadtype, self)
+    def build_tunnel(self, roadtype: _ttd.script.vehicle.Type):
+        return with_(None,_ttd.script.tunnel.build_tunnel,roadtype, self)
 
     @property
-    def slope(self) -> openttd.tile.Slope:
-        return openttd.tile.get_slope(self)
+    def slope(self) -> _ttd.script.tile.Slope:
+        return _ttd.script.tile.get_slope(self)
     @property
     def min_height(self) -> int:
-        return openttd.tile.get_min_height(self)
+        return _ttd.script.tile.get_min_height(self)
     @property
     def max_height(self) -> int:
-        return openttd.tile.get_max_height(self)
-    def corner_height(self, corner: openttd.tile.Corner):
-        return openttd.tile.get_corner_height(self, corner)
+        return _ttd.script.tile.get_max_height(self)
+    def corner_height(self, corner: _ttd.script.tile.Corner):
+        return _ttd.script.tile.get_corner_height(self, corner)
     @property
     def owner(self) -> CompanyID:
-        return openttd.tile.get_owner(self)
-    def has_transport(self, ttype: openttd.tile.TransportType):
-        return openttd.tile.has_transport_type(self, ttype)
-    def cargo_acceptance(self, cargo_type: openttd.cargo.Cargo, width: int, height: int, radius: int) -> int:
-        return openttd.tile.get_cargo_acceptance(self, cargo_type, width,height,radius)
-    def cargo_production(self, cargo_type: openttd.cargo.Cargo, width: int, height: int, radius: int) -> int:
-        return openttd.tile.get_cargo_production(self, cargo_type, width,height,radius)
-    def raise_(self, slope:openttd.tile.Slope) -> Awaitable:
+        return _ttd.script.tile.get_owner(self)
+    def has_transport(self, ttype: _ttd.script.tile.TransportType):
+        return _ttd.script.tile.has_transport_type(self, ttype)
+    def cargo_acceptance(self, cargo_type: _ttd.script.cargo.Cargo, width: int, height: int, radius: int) -> int:
+        return _ttd.script.tile.get_cargo_acceptance(self, cargo_type, width,height,radius)
+    def cargo_production(self, cargo_type: _ttd.script.cargo.Cargo, width: int, height: int, radius: int) -> int:
+        return _ttd.script.tile.get_cargo_production(self, cargo_type, width,height,radius)
+
+    def raise_(self, slope:_ttd.script.tile.Slope) -> bool:
         """*sigh* Python syntax"""
-        return openttd.tile.raise_tile(self, slope)
-    def lower(self, slope:openttd.tile.Slope) -> Awaitable:
-        return openttd.tile.lower_tile(self, slope)
-    def level_to(self, tile: Tile) -> Awaitable:
-        return openttd.tile.level_tiles(self, tile)
-    def demolish(self) -> Awaitable:
-        return openttd.tile.demolish_tile(self)
-    def plant_tree(self) -> Awaitable:
-        return openttd.tile.plant_tree(self)
-    def plant_tree_rect(self, width: int, height: int) -> Awaitable:
-        return openttd.tile.plant_tree_rectangle(self, width, height)
-    def is_within_town(self, town: int):
+        return _ttd.script.tile.raise_tile(self, slope)
+    def lower(self, slope:_ttd.script.tile.Slope) -> bool:
+        return _ttd.script.tile.lower_tile(self, slope)
+    def level_to(self, tile: Tile) -> bool:
+        return _ttd.script.tile.level_tiles(self, tile)
+    def demolish(self) -> bool:
+        return _ttd.script.tile.demolish_tile(self)
+    def plant_tree(self) -> bool:
+        return _ttd.script.tile.plant_tree(self)
+    def plant_tree_rect(self, width: int, height: int) -> bool:
+        return _ttd.script.tile.plant_tree_rectangle(self, width, height)
+    def is_within_town(self, town: Town):
         """test influence"""
-        return openttd.tile.is_within_town_influence(self, town)
+        return _ttd.script.tile.is_within_town_influence(self, town)
     @property
-    def authority_town(self):
-        return openttd.tile.get_town_authority(self)
+    def authority_town(self) -> Town:
+        res = _ttd.script.tile.get_town_authority(self)
+        breakpoint()
+        if not res:
+            return 0
+        return _ttd.script.Town(res)
     @property
-    def closest_town(self):
-        return openttd.tile.get_closest_town(self)
+    def closest_town(self) -> Town:
+        return openttd._.Town(_ttd.script.tile.get_closest_town(self))
+
+    @property
+    def adjacent(self):
+        for d in (Dir.NE,Dir.SE,Dir.SW,Dir.NW):
+            try:
+                yield self+d
+            except ValueError:
+                pass
 
     # don't call out to openttd for this
     def d_manhattan(self, tile: Tile) -> int:
@@ -395,22 +499,26 @@ class Tile(_ttd.support.Tile_):
         ay = abs(self.y-tile.y)
         return ax+ay+max(ax,ay)
 
+    def found_town(self, size:TownSize, city:bool, layout:RoadLayout, name:str):
+        return _ttd.script.town.found_town(self, site, ciy, layout, openttd.Text(name))
 
 
 @define
-class TileDir:
+class TilePath:
     """
-    A tile with a path, direction, and cache for the cost function.
+    A tile with a path, direction, and a cache for the pathfinder's cost function.
+
+    TODO: rail paths.
     """
     t:Tile=field()
     d:Dir=field()
-    _prev:TileDir|None=field(default=None)
+    _prev:TilePath|None=field(default=None)
     dist:int=field(default=0)
     cache:Any=None
     jump:bool=False # bridge or tunnel
 
     def __attrs_post_init__(self):
-        if isinstance(self.t, openttd.tile.Tile):
+        if isinstance(self.t, Tile):
             self.t = Tile(self.t)
         else:
             assert isinstance(self.t,Tile)
@@ -446,7 +554,7 @@ class TileDir:
         d="_" if self.jump else ""
         return f"TDir({self.t} {self.d.name}*{self.dist} {c}{d})"
 
-    def __eq__(self, other:Tile|TileDir):
+    def __eq__(self, other:Tile|TilePath):
         """Compares location only!"""
         if self.t.xy != other.xy:
             return False
@@ -458,7 +566,7 @@ class TileDir:
             return True
         return self.d is other.d
 
-    def __lt__(self, other:TileDir):
+    def __lt__(self, other:TilePath):
         return self.cache.__lt__(other.cache)
 
     def __add__(self, x):
@@ -466,22 +574,22 @@ class TileDir:
         if x is Turn.S:
             if self.jump:
                 # after a bridge/tunnel: build a new stretch
-                return TileDir(self.t+self.d, self.d, prev=self, dist=1)
-            return TileDir(self.t+self.d, self.d, prev=self._prev, dist=self.dist+1)
+                return TilePath(self.t+self.d, self.d, prev=self, dist=1)
+            return TilePath(self.t+self.d, self.d, prev=self._prev, dist=self.dist+1)
 
         # No, turn
         if isinstance(x,(Turn,_ttd.enum.DirDiff)):
             d=self.d+x
-            return TileDir(Tile(self.x,self.y)+d, d, prev=self, dist=1)
+            return TilePath(Tile(self.x,self.y)+d, d, prev=self, dist=1)
 
         if isinstance(x,(Dir,DirHop)):
             if x.d==self.d and not self.jump and x.n==1:
                 t = self.t+x.xy
-                return TileDir(t, self.d, prev=self._prev, dist=self.dist+1)
+                return TilePath(t, self.d, prev=self._prev, dist=self.dist+1)
 
             # otherwise turn or hop
             t = self.t+x.xy
-            return TileDir(t, x.d, prev=self, dist=x.n, jump=x.n>1)
+            return TilePath(t, x.d, prev=self, dist=x.n, jump=x.n>1)
 
         return NotImplemented
 
@@ -494,7 +602,7 @@ class TileDir:
         Note: the previous tile computed when it's not a corner,
         so cache data might be lost."""
         if self.dist>1:
-            return TileDir(self.t-self.d,self.d, prev=self._prev, dist=self.dist-1)
+            return TilePath(self.t-self.d,self.d, prev=self._prev, dist=self.dist-1)
         return self._prev
 
     @property
@@ -507,12 +615,12 @@ class TileDir:
         last = None
         if this.d is not Dir.SAME:
             # build an explicit start tile
-            last = TileDir(self.t,Dir.SAME)
+            last = TilePath(self.t,Dir.SAME)
             yield last
         while this is not None:
             if this.d is not Dir.SAME:  # skip no-movement tiles
                 d=this.d.back
-                last = TileDir(this.t+d*this.dist, d, prev=last, dist=this.dist, jump=this.jump)
+                last = TilePath(this.t+d*this.dist, d, prev=last, dist=this.dist, jump=this.jump)
                 yield last
             this=this._prev
 
@@ -526,5 +634,58 @@ class TileDir:
         res = self.prev_turn.show() if self.prev_turn is not None else ""
         i = self.d.value+1 +(9 if self.jump else 0)
         res += _arrows[i]*max(self.dist,1)
+        return res
+
+
+### Collections ###
+
+
+class Tiles(PlusSet[Tile]):
+    """
+    This class represents a set of tiles. Various generators and a simple
+    filter system make them reasonably easy to use.
+
+    NB: unlike all other collective functions, instantiating this class directly
+    returns an empty set.
+    """
+
+    @classmethod
+    def Adjacent(cls, center:Tile, diagonal:bool=False) -> Self:
+        """Return a set of all tiles next to this one.
+
+        If @diagonal is True, also returns the tiles which share a corner.
+        """
+        res = cls()
+        for d in (Dir.NE,Dir.SE,Dir.SW,Dir,SE)+((Dir.N,Dir.E,Dir.S,Dir,W) if diagonal else ()):
+            try:
+                t = center+d
+            except ValueError:
+                pass
+            else:
+                self.add(t)
+
+    @classmethod
+    def Rect(cls, center:Tile, size:int) -> Self:
+        xmin,xmax=max(1,center.x-size),min(center.x+size,_ttd.script.map.get_map_size_x()-1)
+        ymin,ymax=max(1,center.y-size),min(center.y+size,_ttd.script.map.get_map_size_y()-1)
+
+        res = cls()
+        for x in range(xmin,xmax+1):
+            for y in range(ymin,ymax+1):
+                res.add(center+(x,y))
+        return res
+
+    @classmethod
+    def Diamond(cls, center:Tile, size: int) -> Self:
+        xmin,xmax=max(1,center.x-size),min(center.x+size,_ttd.script.map.get_map_size_x()-1)
+        ymin,ymax=max(1,center.y-size),min(center.y+size,_ttd.script.map.get_map_size_y()-1)
+
+        res = cls()
+        cx,cy=center.xy
+        for x in range(xmin,xmax+1):
+            for y in range(ymin,ymax+1):
+                if abs(x-cx)+abs(y-cy)>size:
+                    continue
+                res.add(center+(x,y))
         return res
 
