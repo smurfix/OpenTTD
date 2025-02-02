@@ -15,9 +15,10 @@ import _ttd
 import openttd
 import enum
 from attrs import define,field
+from .util import extension_of
+
 
 _offsets = (
-    ( 0,  0), # SAME
     (-1, -1), # N
     (-1,  0), # NE
     (-1,  1), # E
@@ -30,33 +31,22 @@ _offsets = (
 
 _arrows = "○↑↗→↘↓↙←↖●🡱🡵🡲🡶🡳🡷🡰🡴"
 
-class Dir(enum.Enum):
+@extension_of(_ttd.enum.Direction)
+class Dir:
     """
     Encodes a compass direction. You can add a direction to a tile to get the next
     tile in that direction. You can add a Turn to a direction to rotate it.
     """
-    SAME=-1
-    N=0
-    NE=1
-    E=2
-    SE=3
-    S=4
-    SW=5
-    W=6
-    NW=7
-
     @property
     def xy(self):
         """
         Returns an x+y tuple to add to a tile.
         """
-        return _offsets[self.value+1]
+        return _offsets[self.value]
 
     @property
     def back(self):
         """reverse"""
-        if self is Dir.SAME:
-            return self
         return Dir((self.value+4) % 8)
     back1=back
 
@@ -71,15 +61,16 @@ class Dir(enum.Enum):
 
     def __add__(self, d):
         "direction plus turn is direction"
-        if isinstance(d,(Turn,_ttd.enum.DirDiff)):
+        if isinstance(d,Turn):
             return type(self)((self.value + d.value) % 8)
 
         return NotImplemented
 
     def __radd__(self, t):
         if isinstance(t,Tile):
-            off=_offsets[self.value+1]
+            off=_offsets[self.value]
             return type(t)(t.x+off[0], t.y+off[1])
+
         return NotImplemented
 
     def __sub__(self, d):
@@ -94,7 +85,7 @@ class Dir(enum.Enum):
                 return d.back
             return type(self)((self.value-d.value)%8)
 
-        if isinstance(d,(Turn,_ttd.enum.DirDiff)):
+        if isinstance(d,Turn):
             return type(self)((self.value - d.value) % 8)
 
         return NotImplemented
@@ -102,7 +93,10 @@ class Dir(enum.Enum):
     def __mul__(self, i):
         return DirHop(self,i)
 
-_offset_ids = { v:Dir(k-1) for k,v in enumerate(_offsets) }
+if "PY_OTTD_STUB_GEN" in os.environ:
+    _offset_ids = { }
+else:
+    _offset_ids = { v:Dir(k) for k,v in enumerate(_offsets) }
 
 class DirHop:
     """a direction that travels multiple tiles"""
@@ -145,24 +139,15 @@ class DirHop:
             return type(t)(t.x-off[0]*self.n, t.y-off[1]*self.n)
         return NotImplemented
 
-
-class Turn(enum.Enum):
+@extension_of(_ttd.support.DirDiff)
+class Turn: # (enum.IntEnum):
     """
     Encodes a relative direction. (You can add them.)
 
     Attributes are S (same), B (back), L/R (45°) and LL/RR(90°).
     """
-    S=0
-    R=1
-    RR=2
-    BR=3
-    B=4
-    BL=5
-    LL=6
-    L=7
-
     def __add__(self, d):
-        if isinstance(d,(Turn,_ttd.enum.DirDiff)):
+        if isinstance(d,Turn):
             return type(self)((self.value + d.value) % 8)
         return NotImplemented
 

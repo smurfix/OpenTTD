@@ -145,7 +145,7 @@ set(ENUM_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/export_enum.py)
 foreach(ENUM
         "src/command_type.h;Commands/CMD_,CommandType/CMDT_,CommandPauseLevel/CMDPL_"
         "src/openttd.h;GameMode/GM_,SwitchMode/SM_,*PauseMode/PM_PAUSED_/PM_"
-        "src/direction_type.h;Direction-B:E-I:DIR/DIR_,DiagDirection-B:E-I:DIAGDIR/DIAGDIR_,*DirDiff/DIRDIFF_"
+        "src/direction_type.h;Direction-B:E-I:DIR/DIR_,DiagDirection-B:E-I:DIAGDIR/DIAGDIR_"
         )
     list(GET ENUM 0 HEADER_FILE)
     list(GET ENUM 1 ENUM_NAMES)

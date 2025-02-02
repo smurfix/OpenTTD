@@ -31,6 +31,16 @@ namespace PyTTD {
 		m.def("get_version", &ScriptController::GetVersion);
 		m.def("print", &ScriptController::Print);
 
+		py::enum_<DirDiff>(m, "DirDiff" ,py::is_arithmetic())
+			.value("S", DirDiff::DIRDIFF_SAME)
+			.value("R", DirDiff::DIRDIFF_45RIGHT)
+			.value("RR", DirDiff::DIRDIFF_90RIGHT)
+			.value("RB", DirDiff::DIRDIFF_BACK_RIGHT)
+			.value("B", DirDiff::DIRDIFF_REVERSE)
+			.value("LB", DirDiff::DIRDIFF_BACK_LEFT)
+			.value("LL", DirDiff::DIRDIFF_90LEFT)
+			.value("L", DirDiff::DIRDIFF_45LEFT)
+			;
 		py::enum_<Owner>(m, "Owner", py::is_flag(), py::is_arithmetic())
 			.value("BEGIN",OWNER_BEGIN)
 			.value("MAX_COMPANIES",MAX_COMPANIES)
