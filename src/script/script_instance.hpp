@@ -13,6 +13,7 @@
 #include <variant>
 #include <squirrel.h>
 #include "script_suspend.hpp"
+#include "script_storage.hpp"
 #include "script_log_types.hpp"
 
 #include "../command_type.h"
@@ -96,6 +97,9 @@ public:
 	 * Get the log pointer of this script.
 	 */
 	ScriptLogTypes::LogData &GetLogData();
+
+
+	// These should really be non-static methods ...
 
 	/**
 	 * Return a true/false reply for a DoCommand.
@@ -250,6 +254,10 @@ public:
 	 **/
 	void ReleaseSQObject(HSQOBJECT *obj);
 
+	virtual void InsertResult(bool result);
+	virtual void InsertResult(int result);
+	inline void InsertResult(uint result) { this->InsertResult((int)result); }
+
 protected:
 	class Squirrel *engine;               ///< A wrapper around the squirrel vm.
 	std::string versionAPI;               ///< Current API used by this script.
@@ -281,6 +289,9 @@ protected:
 	 * Load the dummy script.
 	 */
 	virtual void LoadDummyScript() = 0;
+
+	bool GetLastCommandRes() { return storage->last_command_res; }
+	const CommandDataBuffer &GetLastCommandResData() { return storage->last_cmd_ret; }
 
 private:
 	class ScriptController *controller;   ///< The script main class.
