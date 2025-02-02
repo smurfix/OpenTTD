@@ -56,12 +56,14 @@ DECLARE_POSTFIX_INCREMENT(Direction)
  * @see ChangeDirDiff(DirDiff, DirDiff)
  */
 enum DirDiff {
-	DIRDIFF_SAME    = 0,    ///< Both directions faces to the same direction
-	DIRDIFF_45RIGHT = 1,    ///< Angle of 45 degrees right
-	DIRDIFF_90RIGHT = 2,    ///< Angle of 90 degrees right
-	DIRDIFF_REVERSE = 4,    ///< One direction is the opposite of the other one
-	DIRDIFF_90LEFT  = 6,    ///< Angle of 90 degrees left
-	DIRDIFF_45LEFT  = 7,    ///< Angle of 45 degrees left
+	DIRDIFF_SAME       = 0,    ///< Both directions faces to the same direction
+	DIRDIFF_45RIGHT    = 1,    ///< Angle of 45 degrees right
+	DIRDIFF_90RIGHT    = 2,    ///< Angle of 90 degrees right
+	DIRDIFF_BACK_RIGHT = 3,    ///< Angle of 135 degrees right
+	DIRDIFF_REVERSE    = 4,    ///< One direction is the opposite of the other one
+	DIRDIFF_BACK_LEFT  = 5,    ///< Angle of 135 degrees left
+	DIRDIFF_90LEFT     = 6,    ///< Angle of 90 degrees left
+	DIRDIFF_45LEFT     = 7,    ///< Angle of 45 degrees left
 };
 
 
