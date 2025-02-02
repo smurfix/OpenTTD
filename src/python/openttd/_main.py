@@ -16,6 +16,9 @@ import traceback
 import sys
 import warnings
 import importlib
+import shlex
+import outcome
+import ast
 from functools import partial
 from attrs import define,field
 from contextvars import ContextVar
@@ -24,7 +27,7 @@ from importlib import import_module
 from io import StringIO
 from inspect import cleandoc
 
-from .util import maybe_async,maybe_async_threaded
+from .util import maybe_async,maybe_async_threaded,PlusSet
 
 import logging
 
@@ -118,6 +121,8 @@ class Main:
     _game_mode:GameMode = None
     _pause_state:PauseState = None
 
+    signs:PlusSet[openttd.sign.Sign]
+
     def __init__(self):
         self._replies = {}
         self._globals = {}
@@ -125,6 +130,7 @@ class Main:
         self._code_next = 1
         self.logger = logger
         self._pause_change = anyio.Event()
+        self.signs = PlusSet()
 
     def get_free_index(self):
         id_ = self._code_next
@@ -172,7 +178,7 @@ class Main:
 
         async def _run_thread():
             try:
-                await anyio.to_thread.run_sync(_read_queue, abandon_on_cancel=True)
+                await anyio.to_thread.run_sync(_read_queue, abandon_on_cancel=False)
             finally:
                 openttd.internal.task.stop()  # assuming there was an exception
                 self._tg.cancel_scope.cancel()  # assuming we're told to shut down
@@ -185,6 +191,9 @@ class Main:
                 openttd.internal.task.stop()  # assuming there was an exception
 
     async def _process(self, q):
+        """
+        Process messages from OpenTTD.
+        """
         async def hdl(msg):
             try:
                 res = await maybe_async(msg.work, self)
@@ -195,30 +204,67 @@ class Main:
             res = self._tg.start_soon(hdl,msg)
 
     async def handle_run(self, msg):
-        # initial command line argument. Module or script file.
+        """
+        Process the "-Y" command line argument.
+        """
         try:
+            module, *args = shlex.split(msg.msg)
             try:
                 # Try as a module.
-                script_obj = importlib.import_module(msg.msg)
-            except ImportError:
+                script_mod = await anyio.to_thread.run_sync(importlib.import_module,module)
+            except (ImportError,TypeError):
                 # Try as a file.
-                sf = anyio.Path(msg.msg)
+                sf = anyio.Path(module)
                 sfd = await sf.read_text()
-                expr = compile(sfd,"__load__","exec")
 
-                g = dict()
+                g = self._globals
                 g["openttd"] = openttd
                 g["main"] = self
-                eval(expr, g,g)
+
+                # compile and eval in a thread
+                try:
+                    runner = await maybe_async_threaded(compile,sfd,module,"eval", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                except SyntaxError:
+                    runner = await maybe_async_threaded(compile,sfd,module,"exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+
+                runner = await maybe_async_threaded(eval,runner,g,g)
+                if hasattr(runner,"__await__"):
+                    # This is some toplevel await-ing code.
+                    await runner
+
+                    self.send(openttd.internal.msg.CommandRunEnd(""))
+                    return
+
+                data = g
             else:
-                await script_obj.run(self)
+                data = vars(script_mod)
+            try:
+                runner = data["run"]
+            except KeyError:
+                # last possibility, it's a plain script
+                runner = data["Script"]
+                vev = await self.do_start(runner, *args)
+                await vev.event.wait()
+
+            else:
+                # Again we don't know whether this is async or not
+                res = (await anyio.to_thread.run_sync(outcome.capture,runner,self,*args)).unwrap()
+                if hasattr(res,"__await__"):
+                    await res
+
+        except anyio.get_cancelled_exc_class():
+            raise
         except BaseException as ex:
+            self.logger.exception(f"{module} Died:")
             self.send(openttd.internal.msg.CommandRunEnd(repr(ex)))
         else:
             self.send(openttd.internal.msg.CommandRunEnd(""))
 
 
     async def handle_command(self, msg):
+        """
+        Process the "py …" console command
+        """
         args = msg.args
         try:
             cmd = getattr(self, f"cmd_{args[0]}")
@@ -274,6 +320,23 @@ class Main:
         evt.value = msg.result
         evt.event.set()
 
+
+    async def handle_result3(self, msg):
+        """
+        Callback for local command results.
+        """
+        breakpoint()
+        for k,evt in self._replies.items():
+            if k.cmd == msg.cmd and k.company == msg.company:
+                break
+        else:
+            self.print(f"Spurious callback: {msg}")
+            return
+        evt = self._replies.pop(k)
+        breakpoint()
+        evt.value = msg.result
+        evt.event.set()
+
     def check_pending(self, cmd, data):
         """
         Check whether this command is ours.
@@ -291,7 +354,9 @@ class Main:
         Arguments:
         * ID of the company to run under. Omit if this is a game script.
           The initial company is 1.
-        * the module to load. It must contain a class named "Script".
+        * the name of the module to load. It must contain a class named
+          "Script". Alternately you can pass the script instance in
+          directly.
         * name=value arguments (strings)
         * name:value arguments (numbers)
 
@@ -322,40 +387,33 @@ class Main:
         """
         Start a script, return a VEvent to hold its result (if any).
 
-        @company: the company to run uner, or DEITY for game scripts.
+        @company: the company to run under, or DEITY for game scripts.
 
         """
         if company is None:
             company = openttd.company.ID.DEITY
 
-        script = args[0]
+        Script = args[0]
         for val in args[1:]:
             try:
                 name,v = val.split(":")
                 try:
                     v = int(v)
                 except ValueError:
-                    try:
-                        v = float(v)
-                    except ValueError:
-                        self.print(f"Usage error: name:number, not {val !r}")
-                        return
+                    v = float(v)
 
             except ValueError:
-                try:
-                    name,v = val.split("=",1)
-                except ValueError:
-                    self.print(f"Usage error: params are name=text or name:number, not {val !r}")
-                    return
+                name,v = val.split("=",1)
             kw[name] = v
 
         id_ = self.get_free_index()
 
-        script_obj = importlib.import_module(script).Script(id_, company, **kw)
+        if isinstance(Script,str):
+            Script = await anyio.to_thread.run_sync(importlib.import_module,Script).Script
+        script_obj = Script(id_, company, **kw)
         try:
             res = await self._tg.start(script_obj._run)
         except StopAsyncIteration as stp:
-            breakpoint()
             self.print("Stopped with",stp)
         else:
             self._code[id_] = script_obj
@@ -420,30 +478,89 @@ class Main:
 
     @property
     def game_mode(self):
+        """
+        Returns the current game mode.
+        """
         return self._game_mode
 
     @property
     def pause_state(self):
+        """
+        Returns the current pause state.
+        """
         return self._pause_state
 
     async def set_game_mode(self, mode:GameMode):
+        """
+        Forward changes of game mode to scripts.
+        """
         self._game_mode = mode
 
-        if mode != openttd.internal.GameMode.NORMAL:
-            for v in list(self._code.values()):
-                async with anyio.create_task_group() as tg:
-                    if v.company != openttd.company.ID.DEITY:
-                        v.stop();
-                    else:
-                        tg.start_soon(maybe_async, v.set_game_mode, mode)
+        for v in list(self._code.values()):
+            async with anyio.create_task_group() as tg:
+                if v.company == openttd.company.ID.DEITY:
+                    tg.start_soon(maybe_async, v.set_game_mode, mode)
+                elif mode != openttd.internal.GameMode.NORMAL:
+                    v.stop();
 
     async def set_pause_state(self, mode:GameMode):
+        """
+        Forward changes of pause state to scripts.
+        """
         self._pause_state = mode
+        evt,self._pause_change = self._pause_change, anyio.Event()
+        evt.set()
 
         if mode != openttd.internal.GameMode.NORMAL:
             async with anyio.create_task_group() as tg:
                 for v in list(self._code.values()):
                     tg.start_soon(maybe_async, v.set_pause_state, mode)
+
+    async def tick_wait(self, ticks):
+        """
+        Wait for this number of game ticks to pass.
+
+        TODO. For the moment we're lazy and ignore both fast-forward mode
+        and getting paused while sleeping.
+        """
+        while self.pause_state is None or self.pause_state != openttd.internal.PauseState.UNPAUSED:
+            await self._pause_change.wait()
+
+        await anyio.sleep(ticks/74)
+
+    async def cmd_sign(self, args):
+        """Plant a sign (or remove it).
+
+        Arguments:
+        * x and y coordinate (if missing, remove all signs we planted)
+        * text (if missing, remove our sign at x,x)
+
+        The text does not need be quoted if it's multi-word.
+        An initial '+' will be replaced with the (x,y) position.
+        A trailing '+' is replaced with a short description of the tile (road, building, …).
+        """
+        if not args:
+            for s in self.signs:
+                await openttd.sign.remove_sign(s)
+                self.signs = PlusSet()
+        elif len(args) == 2:  # remove this sign
+            x,y = map(int,args)
+            t = Tile(x,y)
+            signs = self.signs @ (lambda s: s.location == t)
+            for s in signs:
+                await openttd.sign.remove_sign(s)
+            self.signs -= signs
+        else:
+            x,y,*text = args
+            t = Tile(int(x),int(y))
+            text = " ".join(text)
+            if text[0] == '+':
+                text = f'{t}: {text[1:]}'
+            if text[-1] == '+':
+                text = f'{text[:-1]} {t.content_str}'
+            s = await openttd.sign.build_sign(pos._, openttd.Text(text))
+            self.signs.add(s)
+
 
     def cmd_stop(self, args):
         """Stop game scripts or AIs.

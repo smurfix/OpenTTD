@@ -21,7 +21,7 @@ from openttd.lib.astar import AStar
 import openttd
 Turn=openttd.tile.Turn
 Dir=openttd.tile.Dir
-TileDir=openttd.tile.TileDir
+TilePath=openttd.tile.TilePath
 Slope=openttd.tile.Slope
 VT_Road=openttd.vehicle.Type.ROAD
 
@@ -33,7 +33,7 @@ class Info:
     version=3
     date="2008-06-18"
 
-class Node(TileDir):
+class Node(TilePath):
     pass
 
 
@@ -47,7 +47,6 @@ class Road(AStar):
     * The start tile can't be at a tunnel.
     * Bridges that start on flat land (e.g. to jump train tracks) are not considered.
     * There is no attempt to terraform for bridges or tunnels.
-    * Pathfinders *must* run in a subthread.
 
     You can set these attributes (or override them in a subclass):
 
@@ -78,7 +77,7 @@ class Road(AStar):
     max_bridge_length = 10
     max_tunnel_length = 20
 
-    def __init__(self, sources:Iterable[TileSet], goals:Iterable[TileSet], **cfg):
+    def __init__(self, sources:Iterable[Tile], goals:Iterable[Tile], **cfg):
         self.sources = sources
         self.goals = set(goals)
         for k,v in cfg:
@@ -86,7 +85,7 @@ class Road(AStar):
                 raise ValueError(f"Unknown attribute: {k !r}")
             setattr(self,k,v)
 
-    def run(self) -> TileSet:
+    def run(self) -> TilePath:
         """
         Main code. You *must* Run in a subthread without arguments.
         """

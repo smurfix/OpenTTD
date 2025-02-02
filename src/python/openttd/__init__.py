@@ -11,9 +11,12 @@ High-Level OpenTTD support.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import sys as _sys
+from importlib import import_module as _import
+from typing import TYPE_CHECKING as _CHK
+import openttd as this
 
-if TYPE_CHECKING:
+if _CHK:
 	def test_stop() -> None:
 		pass
 
@@ -24,12 +27,43 @@ __all__ = ["run", "test_stop"]
 try:
 	import _ttd
 except ImportError:
-	from ._stub import _importer
-	_importer()
-else:
-	from ._util import _importer
-	_importer(_ttd)
-	del _ttd
+	from ._stub import _ttd
+from ._util import _importer
+
+_importer(_ttd)
+del _ttd
 del _importer
 
 from ._main import run
+
+from .base import test_stop as _ts
+from . import util as _u
+_u.test_stop = _ts
+del _u
+del _ts
+
+# This hack is used so you can do "from openttd._ import Tile" without
+# importing all up-front ... or "from openttd._ import *" if you want to do exactly that
+class _imp:
+	def __getattr__(self,k):
+		return getattr(_import(f"openttd.{_content[k]}"),k)
+	@property
+	def __all__(self):
+		return list(_content.keys())
+	__name__ = "_"
+	__package__ = f"{this.__package__}._"
+	__path__ = this.__path__
+	__doc__ = """
+		This is a pseudo module for easy access to various OpenTTD classes.
+		"""
+
+_ = _imp()
+_sys.modules["openttd._"] = _
+
+_content = {
+	'Sign':'sign',
+	'Signs':'sign',
+	'Tile':'tile',
+	'Town':'town',
+	'Towns':'town',
+}

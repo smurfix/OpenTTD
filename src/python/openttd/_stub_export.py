@@ -102,6 +102,7 @@ def expo(prefix:str, name:str, mod: Any, fw):
         stub = stub.replace("import enum\n","")
         stub = stub.replace("import _ttd\n","")
         stub = stub.replace("from typing import overload\n","")
+        stub = stub.replace("__repr__","_x__repr__")
         print(stub.lstrip("\n"),file=fw)
         if k != "Error":
             print(f"{k} = {pre_fix}_{k}",file=fw)

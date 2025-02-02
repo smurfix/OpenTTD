@@ -13,12 +13,19 @@ from __future__ import annotations
 
 import anyio
 import logging
+import threading
 from functools import partial
 from contextvars import ContextVar
+from contextlib import contextmanager
 from concurrent.futures import CancelledError
 
 import openttd
-from openttd._main import _storage, _main, estimating, VEvent, test_mode
+from openttd._main import _async, _storage, _main, estimating, VEvent, test_mode
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import ClassVar
+
 
 __all__ = ["GameScript","AIScript"]
 
@@ -26,20 +33,51 @@ __all__ = ["GameScript","AIScript"]
 def _err():
     raise CancelledError
 
+SELF = ContextVar("SELF")
 _STOP = ContextVar("_STOP", default=_err)
 
 def test_stop():
+    """
+    Test whether your code should stop.
+
+    If so, it raises a cancellation error.
+    """
     _STOP.get()()
 
-class _HLT:
+def sleep(ticks:int):
+    SELF.get().sleep(ticks)
+
+class HLT:
+    """
+    This object encapsulates a stoppable subthread and its result.
+    """
     res=None
-    halt=False
+    halt=None
     def __init__(self):
         self.evt=anyio.Event()
+        self.lock=threading.Lock()  # protects "halt"
 
-    def STOP(self):
+    def wait(self):
+        """
+        Wait for the subthread to finish and return its result.
+
+        If it raised an exception, that exception will be re-raised.
+        """
+        anyio.from_task.run(self.evt.wait)
+        if isinstance(self.res, Exception):
+            # this includes CancelledError
+            raise self.res
+        else:
+            return self.res
+
+    def stop(self):
+        self.halt = True
+
+    def _STOP(self):
+        "this method is added to the `_STOP` contextvar"
         if self.halt:
             raise CancelledError
+
 
 class BaseScript:
     """
@@ -59,7 +97,14 @@ class BaseScript:
     Inheriting from `GameScript` or `AIScript` instead of `BaseScript`
     checks the company attribute and raises an error if the type is wrong.
 
-    Scripts may not block!
+    Scripts typically run in a subthread. They *must* periodically call
+    either ``test_stop()``, ``sleep(game_ticks:int)``, or ``anyio.from_thread.*``.
+
+    If you want more control, you can designate your script as
+    asynchronous. Set `ASYNC=True` in your Script class. If you do this,
+    you're responsible for running everything that could possibly block in
+    a subthread. Also, be aware that methods which execute a command may or
+    may not return an awaitable result; use `await maybe_async(gamefn, …)`.
     """
     __setup_called = False
     __storage: Storage
@@ -68,6 +113,9 @@ class BaseScript:
     __kw: dict[str,int|float|str]
     __state: Any
     __stopped: bool = False
+
+    ASYNC:ClassVar[bool]=False
+    ATTRS:ClassVar[list[tuple[str,Any]]]=()  # (var,default), tuples
 
     def __init__(self, id, company, state=None, /, **kw):
         self.__id = id
@@ -88,10 +136,21 @@ class BaseScript:
         """Returns the company this script runs as."""
         return self.__company
 
-    # TODO typing
-    async def subthread(self, proc:Callable, *a, **kw) -> Awaitable[Any]:
+    def sleep(self, ticks):
         """
-        Start a thread, and wait for the result.
+        """
+        if _async.get():
+            return self._sleep(ticks)
+        else:
+            anyio.from_thread.run(self._sleep,ticks)
+
+    async def _sleep(self, ticks):
+        await _main.get().tick_wait(ticks)
+
+    # TODO typing
+    def subthread(self, proc:Callable, *a, **kw):
+        """
+        Start a thread.
 
         The thread can read OpenTTD data. It runs synchronously.
         Test mode is enabled.
@@ -99,30 +158,64 @@ class BaseScript:
         Your procedure *MUST* periodically call 'test_stop()'.
         This call will raise a `CancelledError` exception if your thread
         should exit. *DO NOT* ignore it.
+
+        In sync mode, this method returns a HLT object.
+
+        In async mode, this returns the subthread's result. You can stop
+        the task the usual way (i.e. wrap the call to this method in an
+        `anyio.CancelScope` and cancel that).
         """
-
-        hlt = _HLT()
-
         def _call2(hlt,proc,a,k):
-            _STOP.set(hlt.STOP)
-            estimating.set(True)
+            _STOP.set(hlt._STOP)
+            _async.set(False)
+            estimating.set(False)
+            with hlt.lock:
+                if hlt.halt is not None:
+                    return
+                hlt.halt=False
             return proc(*a,**kw)
 
         async def _call(hlt,proc,a,kw):
             try:
-                hlt.res = await anyio.to_thread.run_sync(_call2,hlt,proc,a,kw, abandon_on_cancel=True)
+                hlt.res = await anyio.to_thread.run_sync(_call2,hlt,proc,a,kw, abandon_on_cancel=False)
             except* CancelledError:
                 pass
-            hlt.evt.set()
+            finally:
+                hlt.halt=True
+                hlt.evt.set()
 
+        hlt = HLT()
+
+        if self.ASYNC:
+            return self._subthread(_call,hlt,proc,a,kw)
+        else:
+            return anyio.from_thread.run_sync(self.taskgroup.start_soon,_call,hlt,proc,a,kw)
+
+    async def _subthread(self, _call,hlt,proc,a,kw) -> Awaitable[Any]:
+        "Encapsulate a subthread so it's cancelled on error."
         async with anyio.create_task_group() as tg:
             try:
                 tg.start_soon(_call,hlt,proc,a,kw)
                 await hlt.evt.wait()
-                return hlt.res
-            except BaseException:
-                hlt.stop=True
+            except BaseException:  # we got cancelled
+                with hlt.lock:
+                    if hlt.halt is None:
+                        # didn't yet start, so set the event here.
+                        hlt.evt.set()
+                    hlt.halt=True
+                    # otherwise _call2 is running, so _call will set the event.
+
+                # In any case, we wait a bit for the thread to end
+                with anyio.move_on_after(0.2,shield=True):
+                    await hlt.evt.wait()
+                    raise
+                # ... and if it didn't, complain and wait somewhat longer
+                self.log.error(f"Thread {proc} was asked to terminate but didn't")
+                with anyio.move_on_after(1.5,shield=True):
+                    await hlt.evt.wait()
                 raise
+
+            return hlt.res
 
     def print(self, *a, **kw) -> None:
         """
@@ -175,33 +268,70 @@ class BaseScript:
         """
         raise RuntimeError("You're async context. Run sync things in a thread!")
 
+
     async def _run(self, *, task_status):
+        """
+        The controlling task for this script, started from the main loop.
+
+        Don't override this.
+        """
         import _ttd
         evt = VEvent()
         self.__storage = st = _ttd.object.Storage(self.__company)
         _storage.set(st)
         _STOP.set(self._test_stop)
+        SELF.set(self)
+
         task = _main.get()
 
         async with anyio.create_task_group() as self.taskgroup:
-            if self.__state is None:
-                res = await self.setup(**self.__kw)
-            else:
-                res = await self.restore(self.__state)
+            try:
+                if self.__state is None:
+                    if self.ASYNC:
+                        res = await self.setup(**self.__kw)
+                    else:
+                        res = await anyio.to_thread.run_sync(partial(self.setup, **self.__kw))
+                else:
+                    if self.ASYNC:
+                        res = await self.restore(self.__state)
+                    else:
+                        res = await anyio.to_thread.run_sync(self.restore, self.__state)
+            except TypeError:
+                breakpoint()
+                raise
+            except Exception as exc:
+                self.log.exception("Script Setup Error")
+                self.print(f"DEAD: {exc}")
+                evt.value = exc
+                task_status.started(evt)
+                evt.event.set()
+                return
+            except BaseException as exc:
+                self.print(f"DEAD: {exc}")
+                evt.value = exc
+                evt.event.set()
+                raise
+
             if not self.__setup_called:
-                raise RuntimeError("You forgot to `await super().setup()`.")
+                raise RuntimeError("You forgot to call `super().setup()`.")
 
             evt.value = res
             task_status.started(evt)
             try:
-                evt.value = await self.main()
+                if self.ASYNC:
+                    evt.value = await self.main()
+                    # Stop remaining subthreads. This can happen if the
+                    # module starts one thread which then starts another
+                    self.taskgroup.cancel_scope.cancel()
+                else:
+                    evt.value = await anyio.to_thread.run_sync(self.main)
             except Exception as exc:
                 self.log.exception("Script Error")
                 self.print(f"DEAD: {exc}")
                 evt.value = exc
             except BaseException as exc:
                 self.print(f"DEAD: {exc}")
-                evt.value = exc
+                evt.value = CancelledError()
                 raise
             else:
                 self.print("Script terminated.")
@@ -219,21 +349,57 @@ class BaseScript:
         self.__stopped = True
         self.taskgroup.cancel_scope.cancel()
 
-    async def setup(self):
+    def setup(self, **kw):
         """
         Override this to set up your script.
         All script arguments are passed to this method, as keywords.
 
-        Don't forget to call `await super().setup()`.
+        The default implementation assigns all keywords that are declared
+        in ATTRS to the class.
+
+        Don't forget to call `super().setup()`.
         """
+        setup = {}
+        for cls in self.__class__.__mro__:
+            attr = cls.__dict__.get('ATTRS',())
+            for k,v,*typ in setup:
+                if k in setup:
+                    continue
+                if not typ:
+                    typ = type(v)
+                setup[k] = (v,typ)
+
+        for k,v in kw.items():
+            typ = setup[k][1]
+            if not isinstance(v,typ):
+                raise ValueError(f"The value of {k} must be {typ}, not {v !r}")
+            setup[k] = v,
+
+        for k,v in setup.items():
+            setattr(self,k,v[0])
+
         self.__setup_called = True
 
-    async def restore(self):
+        # Fake being an async method if necessary
+        if self.ASYNC:
+            async def dummy():
+                pass
+            return dummy()
+
+    def save(self):
+        """
+        Override this to save your script's status / savegame data.
+
+        Not yet used. TODO.
+        """
+        raise NotImplementedError
+
+    def restore(self):
         """
         Override this to restore your script's status / savegame data.
-        Called instead of `setup`.
+        Called instead of `setup`. May be async.
 
-        Don't forget to call `await super().setup()`.
+        You still need to call `super().setup()`.
         """
         raise NotImplementedError
 
@@ -257,6 +423,14 @@ class BaseScript:
         """
         pass
 
+    def set_game_mode(self, mode: GameMode):
+        """
+        Game mode change notification.
+
+        You might want to override this.
+        """
+        pass
+
 
 class GameScript(BaseScript):
     """
@@ -266,10 +440,10 @@ class GameScript(BaseScript):
     NB: Game scripts run in all modes. You might
     """
 
-    async def setup(self, **kw):
+    def setup(self, **kw):
         if self.company != openttd.company.ID.DEITY:
             raise RuntimeError("This is a game script. It doesn't work as an AI.")
-        await super().setup(*kw)
+        return super().setup(**kw)
 
     @property
     def game_mode(self) -> GameMode:
@@ -288,8 +462,8 @@ class AIScript(BaseScript):
     This class checks the company attribute and raises an error if it was
     called as a game script.
     """
-    async def setup(self, **kw):
+    def setup(self, **kw):
         if self.company == openttd.company.ID.DEITY:
             raise RuntimeError("This is an AI script. It doesn't work as a game script.")
-        await super().setup(*kw)
+        return super().setup(*kw)
 

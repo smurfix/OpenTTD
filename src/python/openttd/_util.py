@@ -18,6 +18,15 @@ _assigned = set()
 class StopWork(RuntimeError):
     pass
 
+class Unknown:
+    def __init__(self, path,repr_):
+        self.p = path
+        if repr_.startswith('<') and repr_.endswith('>'):
+            repr_ = repr_[1:-1]
+        self.r = repr_
+    def __repr__(self):
+        return f"‹{self.p:self.r}›"
+
 class _Sub:
     """A simple pseudo-submodule"""
     def __init__(self, name, m=None):
@@ -76,9 +85,8 @@ class _ListWrap:
     def __call__(self, *a, **kw):
         return _WrappedList(self.cls(*a, **kw))
 
-
 def _set(p,v):
-    # submodule assigner. currently unused
+    # submodule assigner.
     m = t
     p = p.split(".")
     vp = []
@@ -172,7 +180,7 @@ def _importer(_ttd):
             else:
                 setattr(tx,k,v)
 
-    # Now wrap all list generators (and hope that there are no collisions)
+    # Now wrap list generators (and hope that there are no collisions)
     for k in dir(_ttd.script):
         if k.endswith("list"):
             kproc(k[:-4], getattr(_ttd.script,k))
@@ -194,17 +202,25 @@ def _importer(_ttd):
     t.Text = _ttd.support.Text
     t.Money = _ttd.support.Money
 
-    t.tile.Tile = _ttd.support.Tile_
 
-    from . import _support  as _s
-    t.Tile = _s.Tile
-    t.tile.Turn = _s.Turn
-    t.tile.Dir = _s.Dir
-    t.tile.TileDir = _s.TileDir
+#   from . import _support as _s
+#   t.Tile = _s.Tile
+#   t.tile.Turn = _s.Turn
+#   t.tile.Dir = _s.Dir
+#   t.tile.TilePath = _s.TilePath
 
-    _copy(ti,_ttd.support,"get_")
+#   from ._support import town as _sto
+#   t.Town = _sto.Town
 
-    _assigned.clear()
+#   from ._support import towns as _stos
+#   t.Towns = _stos.Towns
+
+#   from ._support import station as _st
+#   t.station.SpecialIDs = _st.ID
+
+#   _copy(ti,_ttd.support,"get_")
+
+#   _assigned.clear()
     _import2()
 
 def _import2():
@@ -212,10 +228,11 @@ def _import2():
     from .base import test_stop
     from ._main import test_mode, estimating
     import openttd as t
+    import openttd.tile
     t.test_stop = test_stop
     t.test_mode = test_mode
     t.estimating = estimating
 
-    t.tile.Transport = t.tile.TransportType
-    del t.tile.TransportType
+#    t.tile.Transport = t.tile.TransportType
+#    del t.tile.TransportType
 
