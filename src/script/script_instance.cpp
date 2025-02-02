@@ -168,6 +168,23 @@ void ScriptInstance::Died()
 	this->engine = nullptr;
 }
 
+bool ScriptInstance::CanSuspend()
+{
+	if (this->engine == nullptr) {
+		return false;
+	}
+	return engine->CanSuspend();
+}
+
+void ScriptInstance::InsertResult(bool result)
+{
+	engine->InsertResult(result);
+}
+void ScriptInstance::InsertResult(int result)
+{
+	engine->InsertResult(result);
+}
+
 void ScriptInstance::GameLoop()
 {
 	ScriptObject::ActiveInstance active(this);
@@ -267,47 +284,47 @@ void ScriptInstance::CollectGarbage()
 
 /* static */ void ScriptInstance::DoCommandReturn(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(ScriptObject::GetLastCommandRes());
+	instance->InsertResult(instance->GetLastCommandRes());
 }
 
 /* static */ void ScriptInstance::DoCommandReturnVehicleID(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(EndianBufferReader::ToValue<VehicleID>(ScriptObject::GetLastCommandResData()));
+	instance->InsertResult(EndianBufferReader::ToValue<VehicleID>(instance->GetLastCommandResData()));
 }
 
 /* static */ void ScriptInstance::DoCommandReturnSignID(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(EndianBufferReader::ToValue<SignID>(ScriptObject::GetLastCommandResData()));
+	instance->InsertResult(EndianBufferReader::ToValue<SignID>(instance->GetLastCommandResData()));
 }
 
 /* static */ void ScriptInstance::DoCommandReturnGroupID(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(EndianBufferReader::ToValue<GroupID>(ScriptObject::GetLastCommandResData()));
+	instance->InsertResult(EndianBufferReader::ToValue<GroupID>(instance->GetLastCommandResData()));
 }
 
 /* static */ void ScriptInstance::DoCommandReturnGoalID(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(EndianBufferReader::ToValue<GoalID>(ScriptObject::GetLastCommandResData()));
+	instance->InsertResult(EndianBufferReader::ToValue<GoalID>(instance->GetLastCommandResData()));
 }
 
 /* static */ void ScriptInstance::DoCommandReturnStoryPageID(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(EndianBufferReader::ToValue<StoryPageID>(ScriptObject::GetLastCommandResData()));
+	instance->InsertResult(EndianBufferReader::ToValue<StoryPageID>(instance->GetLastCommandResData()));
 }
 
 /* static */ void ScriptInstance::DoCommandReturnStoryPageElementID(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(EndianBufferReader::ToValue<StoryPageElementID>(ScriptObject::GetLastCommandResData()));
+	instance->InsertResult(EndianBufferReader::ToValue<StoryPageElementID>(instance->GetLastCommandResData()));
 }
 
 /* static */ void ScriptInstance::DoCommandReturnLeagueTableElementID(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(EndianBufferReader::ToValue<LeagueTableElementID>(ScriptObject::GetLastCommandResData()));
+	instance->InsertResult(EndianBufferReader::ToValue<LeagueTableElementID>(instance->GetLastCommandResData()));
 }
 
 /* static */ void ScriptInstance::DoCommandReturnLeagueTableID(ScriptInstance *instance)
 {
-	instance->engine->InsertResult(EndianBufferReader::ToValue<LeagueTableID>(ScriptObject::GetLastCommandResData()));
+	instance->InsertResult(EndianBufferReader::ToValue<LeagueTableID>(instance->GetLastCommandResData()));
 }
 
 
