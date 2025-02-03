@@ -64,6 +64,9 @@ _content = {
 	'Sign':'sign',
 	'Signs':'sign',
 	'Tile':'tile',
+	'TilePath':'tile',
+	'Dir':'tile',
+	'Turn':'tile',
 	'Town':'town',
 	'Towns':'town',
 
