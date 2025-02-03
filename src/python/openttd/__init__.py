@@ -68,4 +68,8 @@ _content = {
     'Tile':'tile',
     'Town':'town',
     'Towns':'town',
+
+    'TTDError':'error',
+    'TTDCommandError':'error',
+    'TTDResultError':'error',
 }

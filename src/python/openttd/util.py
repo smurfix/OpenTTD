@@ -13,6 +13,7 @@ import anyio
 from contextlib import nullcontext
 from contextvars import copy_context
 from outcome import capture
+from ._util import capture
 import heapq
 
 test_stop = None  # from openttd.base. Circular import. Patched in later.
@@ -106,7 +107,7 @@ async def maybe_async_threaded(fn, *a, **kw):
     This is useful if you need to call user-supplied code and you don't
     know whether it's async or not.
     """
-    # The "outcome" wrapper is required for Trio: returning an Awaitable
+    # The capture/unwrap wrapper is required for Trio: returning an Awaitable
     # from a subthread smells like an async function call that ended up in
     # a thread, thus Trio raises an exception instead of returning it to us.
     def syn2(fn,a,kw):
