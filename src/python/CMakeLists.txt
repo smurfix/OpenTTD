@@ -191,3 +191,23 @@ add_dependencies(script_python
     script_python_enum
 )
 target_sources(openttd_lib PRIVATE ${ENUM_BINARY_FILE} ${ENUM_BINARY_FILES})
+
+
+# The code below auto-generates the API stub file.
+
+set(STUB_OUT "${CMAKE_CURRENT_BINARY_DIR}/stub/data.py")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stub")
+
+add_custom_command_timestamp(OUTPUT ${STUB_OUT}
+        COMMAND env "TTDPYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}:${CMAKE_SOURCE_DIR}/src/3rdparty/nanobind/" ${CMAKE_BINARY_DIR}/openttd -v null -s null -b null -Q -Y 'openttd._stub_export ${STUB_OUT}'
+        MAIN_DEPENDENCY ${CMAKE_BINARY_DIR}/openttd
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating stub API file"
+)
+set_property(SOURCE ${STUB_OUT} PROPERTY GENERATED ON)
+
+add_custom_target_timestamp(script_python_stub
+        DEPENDS
+        ${STUB_OUT}
+)
+install(FILES ${STUB_OUT} DESTINATION ${GLOBAL_DIR}/python/openttd/_stub/)
