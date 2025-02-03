@@ -12,8 +12,61 @@ This submodule is used to re-organize the raw _ttd import.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from .error import TTDCommandError
+
+from attrs import define,field,validators
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Callable
 
 _assigned = set()
+
+def with_(Wrap:type, proc, *a, **kw):
+    """
+    Generate a result type or an error, whether or not we're in async context.
+
+    Usage::
+
+        sign = [await] with_(Sign,ttd.script.sign.make_sign(Text("Hello")))
+
+    The 'await' is necessary *only* in async mode.
+    """
+    from openttd._main import _async
+
+    def _resolve(result, maybe_async=True):
+        if maybe_async:
+            if hasattr(result,"__await__"):
+                # Definitely in async mode. Retrieve the result and retry.
+                async def hdl():
+                    return _resolve(await result, maybe_async=False)
+                return hdl()
+            if _async.get():
+                # Async mode, but the call returned without issuing a command.
+                # Wrap us.
+                async def hdl():
+                    return _resolve(result, maybe_async=False)
+                return hdl()
+
+        if Wrap is None:
+            if not result:
+                raise TTDCommandError(proc,a,kw)
+            return result
+        return Wrap(*result)
+    return _resolve(proc(*a,**kw))
+
+def unless(err, proc, *a, **kw):
+    """
+    Call this non-command method and return its result.
+    "err" indicates an error that is not otherwise signalled.
+    """
+    result = proc(*a,**kw)
+    if hasattr(result,"__await__"):
+        raise RuntimeError(f"Owch. {proc} is supposed not to be async")
+    if result == err:
+        raise TTDError(proc,a,kw)
+    return result
+
 
 class StopWork(RuntimeError):
     pass

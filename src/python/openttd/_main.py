@@ -26,6 +26,7 @@ from importlib import import_module
 from io import StringIO
 from inspect import cleandoc
 
+from .error import TTDResultError
 from .util import maybe_async,maybe_async_threaded,PlusSet
 from ._util import capture
 
@@ -290,18 +291,23 @@ class Main:
 
         # This part may not await
         evt = self._replies.pop(cmdr)
-        st = cmdr.storage
-        st.last_cmd=msg.cmd
-        st.last_data=msg.data
-        st.last_result = msg.result.success
-        st.last_result_data=msg.resultdata
-        st.last_cost = msg.result.cost
-        st.last_error = 0 if msg.result.success else msg.result.error  # XXX is that correct?
-
         import _ttd
-        _ttd.msg._done_cb(cmdr.callback, st)
+        if not msg.result.success:
+            evt.value = TTDResultError(msg.cmd, msg.result.error)
 
-        evt.value = st.result
+        elif cmdr.callback:
+            st = cmdr.storage
+            st.last_cmd=msg.cmd
+            st.last_data=msg.data
+            st.last_result = msg.result.success
+            st.last_result_data=msg.resultdata
+            st.last_cost = msg.result.cost
+            st.last_error = 0
+
+            _ttd.msg._done_cb(cmdr.callback, st)
+            evt.value = st.result
+        else:
+            evt.value = msg.result.success
         evt.event.set()
 
     async def handle_result2(self, msg):

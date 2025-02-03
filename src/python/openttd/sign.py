@@ -14,7 +14,7 @@ from __future__ import annotations
 import openttd
 import _ttd
 from .util import PlusSet
-from ._util import _WrappedList
+from ._util import _WrappedList, with_
 import enum
 from attrs import define,field
 from ._support.id import _ID
@@ -36,8 +36,8 @@ class Sign(_ID, int):
     def text(self) -> str|None:
         return _ttd.script.sign.get_name(self)
 
-    def set_text(self, text: str) -> bool:
-        return _ttd.script.sign.set_text(self, openttd.Text(text))
+    def set_text(self, text: str) -> None:
+        return with_(None, _ttd.script.sign.set_name, self, openttd.Text(text))
 
     @property
     def location(self) -> int:
