@@ -136,3 +136,15 @@ class TTDResultError(TTDExecError):
         self.resolve()
         return f"{super().__str__()}::{self.cmd.name}"
 
+class TTDWrongTurn(TTDError):
+    """You cn't turn more than that."""
+    def __init__(self,a,b, reason):
+        self.a = a
+        self.b = b
+        self.reason = reason
+
+    def __repr__(self):
+        return f"WrongTurn:{self.a !r}:{self.b !r}:{self.reason !r}"
+
+    def __str__(self):
+        return f"WrongTurn::{self.a.name}:{self.b.name}:{self.reason}"
