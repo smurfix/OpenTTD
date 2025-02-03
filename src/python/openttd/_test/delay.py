@@ -18,7 +18,7 @@ import time
 from . import TestScript
 
 class Script(TestScript):
-    ASYNC=True
+
     async def test(self):
         self.step=90
         def ts(n):

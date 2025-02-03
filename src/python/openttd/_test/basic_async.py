@@ -14,19 +14,19 @@ import anyio
 import openttd
 from openttd.base import BaseScript
 from openttd._main import VEvent
+from openttd.error import TTDError
 from . import TestScript
-from .._ import TTDError
 
 class Script(TestScript):
-
-    def test(self):
+    ASYNC=True
+    async def test(self):
         pos = openttd._.Tile(30,30)
-        p3 = pos+(3,3)
+        p3 = pos+(5,5)
         ti = pos.closest_town
         tname = ti.name
 
-        res2 = pos.Sign(f"Close to {tname}")
-        res3 = p3.Sign("more signage")
+        res2 = await pos.Sign(f"Close to {tname}")
+        res3 = await p3.Sign("more signage")
         assert res2 and res3 and res2 != res3, (res2,res3)
         signs = openttd._.Sign.List()
         assert len(signs) == 2, signs
@@ -35,17 +35,17 @@ class Script(TestScript):
         assert list(pos.signs)[0].location == pos, pos.signs
         s3 = next(iter(p3.signs))
         assert s3.text == "more signage", s3.text
-        s3.set_text("less signage please")
+        await s3.set_text("less signage please")
         assert s3.text == "less signage please", s3.text
         for s in signs:
-            res = s.remove()
-            assert res
+            assert await s.remove()
         signs = openttd._.Sign.List()
         assert len(signs) == 0, signs
         try:
-            s3.remove()
-        except TTDError:
+            await s3.remove()
+        except TTDError as exc:
+            print(str(exc))
+            print(repr(exc))
             pass
         else:
             raise RuntimeError("invalid but no error raised")
-

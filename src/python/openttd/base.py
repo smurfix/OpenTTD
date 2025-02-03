@@ -14,13 +14,13 @@ from __future__ import annotations
 import anyio
 import logging
 import threading
-from functools import partial
 from contextvars import ContextVar
 from contextlib import contextmanager
 from concurrent.futures import CancelledError
 
 import openttd
-from openttd._main import _async, _storage, _main, estimating, VEvent, test_mode
+from ._main import _async, _storage, _main, estimating, VEvent, test_mode
+from .util import maybe_async_threaded
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -71,6 +71,9 @@ class HLT:
             return self.res
 
     def stop(self):
+        """
+        Stop the subthread. (Or rather, ask it to stop.)
+        """
         self.halt = True
 
     def _STOP(self):
@@ -101,10 +104,9 @@ class BaseScript:
     either ``test_stop()``, ``sleep(game_ticks:int)``, or ``anyio.from_thread.*``.
 
     If you want more control, you can designate your script as
-    asynchronous. Set `ASYNC=True` in your Script class. If you do this,
+    asynchronous, simply by using "async main". If you do this,
     you're responsible for running everything that could possibly block in
-    a subthread. Also, be aware that methods which execute a command may or
-    may not return an awaitable result; use `await maybe_async(gamefn, …)`.
+    a subthread.
     """
     __setup_called = False
     __storage: Storage
@@ -114,7 +116,6 @@ class BaseScript:
     __state: Any
     __stopped: bool = False
 
-    ASYNC:ClassVar[bool]=False
     ATTRS:ClassVar[list[tuple[str,Any]]]=()  # (var,default), tuples
 
     def __init__(self, id, company, state=None, /, **kw):
@@ -159,11 +160,11 @@ class BaseScript:
         This call will raise a `CancelledError` exception if your thread
         should exit. *DO NOT* ignore it.
 
-        In sync mode, this method returns a HLT object.
+        In sync mode, this method returns a `HLT` object.
 
-        In async mode, this returns the subthread's result. You can stop
-        the task the usual way (i.e. wrap the call to this method in an
-        `anyio.CancelScope` and cancel that).
+        In async mode, awaiting this returns the subthread's result. You
+        can stop the task the usual way (i.e. wrap the call to this method
+        in an `anyio.CancelScope` and cancel that).
         """
         def _call2(hlt,proc,a,k):
             _STOP.set(hlt._STOP)
@@ -186,7 +187,7 @@ class BaseScript:
 
         hlt = HLT()
 
-        if self.ASYNC:
+        if _async.get():
             return self._subthread(_call,hlt,proc,a,kw)
         else:
             return anyio.from_thread.run_sync(self.taskgroup.start_soon,_call,hlt,proc,a,kw)
@@ -287,18 +288,9 @@ class BaseScript:
         async with anyio.create_task_group() as self.taskgroup:
             try:
                 if self.__state is None:
-                    if self.ASYNC:
-                        res = await self.setup(**self.__kw)
-                    else:
-                        res = await anyio.to_thread.run_sync(partial(self.setup, **self.__kw))
+                    res = await maybe_async_threaded(self.setup, **self.__kw)
                 else:
-                    if self.ASYNC:
-                        res = await self.restore(self.__state)
-                    else:
-                        res = await anyio.to_thread.run_sync(self.restore, self.__state)
-            except TypeError:
-                breakpoint()
-                raise
+                    res = await maybe_async_threaded(self.restore,self.__state)
             except Exception as exc:
                 self.log.exception("Script Setup Error")
                 self.print(f"DEAD: {exc}")
@@ -318,13 +310,8 @@ class BaseScript:
             evt.value = res
             task_status.started(evt)
             try:
-                if self.ASYNC:
-                    evt.value = await self.main()
-                    # Stop remaining subthreads. This can happen if the
-                    # module starts one thread which then starts another
-                    self.taskgroup.cancel_scope.cancel()
-                else:
-                    evt.value = await anyio.to_thread.run_sync(self.main)
+                await maybe_async_threaded(self.main)
+                self.taskgroup.cancel_scope.cancel()
             except Exception as exc:
                 self.log.exception("Script Error")
                 self.print(f"DEAD: {exc}")
@@ -354,10 +341,10 @@ class BaseScript:
         Override this to set up your script.
         All script arguments are passed to this method, as keywords.
 
-        The default implementation assigns all keywords that are declared
-        in ATTRS to the class.
+        The default implementation assigns all attributes that are declared
+        in ATTRS to the class, and refuses to add any that are not.
 
-        Don't forget to call `super().setup()`.
+        Don't forget to call this, via `super().setup()`.
         """
         setup = {}
         for cls in self.__class__.__mro__:
@@ -380,11 +367,6 @@ class BaseScript:
 
         self.__setup_called = True
 
-        # Fake being an async method if necessary
-        if self.ASYNC:
-            async def dummy():
-                pass
-            return dummy()
 
     def save(self):
         """
