@@ -13,75 +13,66 @@ from __future__ import annotations
 
 import _ttd
 
-from .plus import PlusSet
+from .util import PlusSet
 import enum
 from attrs import define,field
-from openttd._util import _Sub
+from openttd._util import _Sub, _WrappedList
 from openttd.util import extension_of
-from .id import _ID
+from ._support.id import _ID
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Callable,Self,Iterable
 
-_IDS = _ttd.script.cargo.SpecialCargoIDs
-for k in dir(_IDS):
-    if not k.startswith("CT_"):
-        continue
-    setattr(ID, k[3:], getattr(_ID,k))
-
 @extension_of(_ttd.script.cargo.TownEffect)
 class TownEffect(_ID,int):
 
     @staticmethod
-    def is_valid(id:int):
+    def is_valid(id:int) -> bool:
         return _ttd.script.cargo.is_valid_town_effect(id)
 
-@extension_of(_ttd.script.cargo.Cargo)
+#@extension_of(_ttd.script.cargo.Cargo)
 class Cargo(_ID, int):
-    def for_str(self):
-        return self.name,
+    def for_str(self)-> tuple[str, ...]:
+        return int(self),self.name,
+
+    def for_repr(self) -> tuple[str, ...]:
+        return int(self),
 
     @staticmethod
-    def is_valid(id:int):
+    def is_valid(id:int) -> bool:
         return _ttd.script.cargo.is_valid_cargo(id)
 
     @property
     def name(self) -> str|None:
-        return _ttd.script.cargo.get_name(self._)
+        return _ttd.script.cargo.get_name(self)
 
     @property
     def label(self) -> str|None:
-        return _ttd.script.cargo.get_cargo_label(self._)
+        return _ttd.script.cargo.get_cargo_label(self)
 
     @property
     def is_freight(self) -> bool:
-        return _ttd.script.cargo.is_freight(self._)
+        return _ttd.script.cargo.is_freight(self)
 
     def has_class(self, cls:CargoClass) -> bool:
-        return _ttd.script.cargo.has_class(self._, cls)
+        return _ttd.script.cargo.has_class(self, cls)
 
     def town_effect(self) -> TownEffect:
-        return _ttd.script.cargo.get_town_effect(self._)
+        return _ttd.script.cargo.get_town_effect(self)
 
     def income_for(self, distance:int, days:int) -> Money:
-        return _ttd.script.cargo.get_cargo_income(self._, distance, days)
+        return _ttd.script.cargo.get_cargo_income(self, distance, days)
 
     @property
     def distribution_type(self) -> DistributionType:
-        return _ttd.script.cargo.get_distribution_type(self._)
+        return _ttd.script.cargo.get_distribution_type(self)
 
     def weight_for(self, amount:int) -> int:
-        return _ttd.script.cargo.get_weight(self._, amount)
+        return _ttd.script.cargo.get_weight(self, amount)
 
 ##### Lists #####
 
-
-from .plus import PlusSet
-
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from typing import Iterable
 
 class Cargoes(PlusSet[Cargo]):
     """
@@ -91,7 +82,7 @@ class Cargoes(PlusSet[Cargo]):
     """
     def __init__(self, source:Iterable[Cargo|int]=None):
         if source is None:
-            source = _ttd.script.cargolist.List()
+            source = _WrappedList(_ttd.script.cargolist.List())
         for c in source:
             self.add(Cargo(c))
 
@@ -107,3 +98,7 @@ class Cargoes(PlusSet[Cargo]):
     def AcceptedByStation(cls, station:Station):
         return cls(_ttd.script.cargolist.StationAccepting(station._))
 
+Cargo.List=Cargoes
+Cargo.AcceptedByIndustry=Cargoes.AcceptedByIndustry
+Cargo.ProducedByIndustry=Cargoes.ProducedByIndustry
+Cargo.AcceptedByStation=Cargoes.AcceptedByStation

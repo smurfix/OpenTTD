@@ -63,6 +63,7 @@ _ = _imp()
 _sys.modules["openttd._"] = _
 
 _content = {
+    'Cargo':'cargo',
     'Sign':'sign',
     'Signs':'sign',
     'Tile':'tile',

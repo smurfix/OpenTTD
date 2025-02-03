@@ -93,5 +93,6 @@ error       triggers an exception (to test error handling)""")
 TESTS = [
     "basic",
     "basic_async",
+    "cargo",
     "delay",  # must be last, as it shuts down OpenTTD
 ]
