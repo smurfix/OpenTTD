@@ -43,6 +43,9 @@ class Sign(_ID, int):
     def location(self) -> int:
         return _ttd.script.sign.get_location(self)
 
+    def remove(self) -> bool:
+        return with_(None, _ttd.script.sign.remove_sign, self)
+
 
 class Signs(PlusSet[Sign]):
     def __init__(self, source:Iterable[Sign|int]=None):
