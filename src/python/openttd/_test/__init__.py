@@ -11,6 +11,7 @@ Test runner.
 from __future__ import annotations
 
 import openttd
+import sys
 from importlib import import_module
 from openttd.util import maybe_async_threaded
 from inspect import cleandoc
@@ -66,7 +67,12 @@ async def run(main, *tests):
                     ex = exc
             else:
                 d = cleandoc(mod.__doc__ or '(no description)').split("\n")[0]
-            print(f"{t :10s} {d}")
+            print(f"{t :11s} {d}")
+
+        print("""
+            Not in "all":
+debug       breaks into the debugger (Python is stopped)
+bugtask     starts a debugger thread (Python continues to run)""")
 
         if ex is not None:
             from traceback import print_exception
@@ -78,6 +84,13 @@ async def run(main, *tests):
     for t in tests:
         if t == "debug":
             breakpoint()
+            continue
+        if t == "bugtask":
+            def bug():
+                breakpoint()
+                pass # "c" to end the debugger, "q" to exit OpenTTD
+
+            await main.subthread(bug)
             continue
         mod = import_module(f"openttd._test.{t}")
         script = mod.Script
