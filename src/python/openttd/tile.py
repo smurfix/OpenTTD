@@ -160,8 +160,22 @@ class Turn: # (enum.IntEnum):
             return type(self)((self.value + d.value) % 8)
         return NotImplemented
 
+
+class Tiles(PlusSet["Tile"]):
+    """
+    This class represents a set of tiles. Various generators and a simple
+    filter system make them reasonably easy to use.
+
+    NB: unlike all other collective functions, instantiating this class directly
+    returns an empty set.
+    """
+    pass
+
+
 @extension_of(_ttd.support.Tile_)
-class Tile:
+class Tile[Collection:Tiles]:
+    Tiles:Collection = Tiles
+
     def __new__(cls, x,y=None):
         if y is not None:
             try:
@@ -501,6 +515,48 @@ class Tile:
         return _ttd.script.town.found_town(self, site, ciy, layout, openttd.Text(name))
 
 
+    ## Collections
+
+    def Adjacent(self, diagonal:bool=False) -> Self:
+        """Return a set of all tiles next to this one.
+
+        If @diagonal is True, also returns the tiles which share a corner.
+        """
+        res = Tiles()
+        for d in (Dir.NE,Dir.SE,Dir.SW,Dir,SE)+((Dir.N,Dir.E,Dir.S,Dir,W) if diagonal else ()):
+            try:
+                t = self+d
+            except ValueError:
+                pass
+            else:
+                self.add(t)
+
+    @classmethod
+    def Rect(self, size:int) -> Self:
+        xmin,xmax=max(1,self.x-size),min(self.x+size,_ttd.script.map.get_map_size_x()-1)
+        ymin,ymax=max(1,self.y-size),min(self.y+size,_ttd.script.map.get_map_size_y()-1)
+
+        res = self.Tiles()
+        for x in range(xmin,xmax+1):
+            for y in range(ymin,ymax+1):
+                res.add(self+(x,y))
+        return res
+
+    @classmethod
+    def Diamond(cls, size: int) -> Self:
+        xmin,xmax=max(1,self.x-size),min(self.x+size,_ttd.script.map.get_map_size_x()-1)
+        ymin,ymax=max(1,self.y-size),min(self.y+size,_ttd.script.map.get_map_size_y()-1)
+
+        res = self.Tiles()
+        cx,cy=self.xy
+        for x in range(xmin,xmax+1):
+            for y in range(ymin,ymax+1):
+                if abs(x-cx)+abs(y-cy)>size:
+                    continue
+                res.add(self+(x,y))
+        return res
+
+
 @define
 class TilePath:
     """
@@ -634,56 +690,4 @@ class TilePath:
         res += _arrows[i]*max(self.dist,1)
         return res
 
-
-### Collections ###
-
-
-class Tiles(PlusSet[Tile]):
-    """
-    This class represents a set of tiles. Various generators and a simple
-    filter system make them reasonably easy to use.
-
-    NB: unlike all other collective functions, instantiating this class directly
-    returns an empty set.
-    """
-
-    @classmethod
-    def Adjacent(cls, center:Tile, diagonal:bool=False) -> Self:
-        """Return a set of all tiles next to this one.
-
-        If @diagonal is True, also returns the tiles which share a corner.
-        """
-        res = cls()
-        for d in (Dir.NE,Dir.SE,Dir.SW,Dir,SE)+((Dir.N,Dir.E,Dir.S,Dir,W) if diagonal else ()):
-            try:
-                t = center+d
-            except ValueError:
-                pass
-            else:
-                self.add(t)
-
-    @classmethod
-    def Rect(cls, center:Tile, size:int) -> Self:
-        xmin,xmax=max(1,center.x-size),min(center.x+size,_ttd.script.map.get_map_size_x()-1)
-        ymin,ymax=max(1,center.y-size),min(center.y+size,_ttd.script.map.get_map_size_y()-1)
-
-        res = cls()
-        for x in range(xmin,xmax+1):
-            for y in range(ymin,ymax+1):
-                res.add(center+(x,y))
-        return res
-
-    @classmethod
-    def Diamond(cls, center:Tile, size: int) -> Self:
-        xmin,xmax=max(1,center.x-size),min(center.x+size,_ttd.script.map.get_map_size_x()-1)
-        ymin,ymax=max(1,center.y-size),min(center.y+size,_ttd.script.map.get_map_size_y()-1)
-
-        res = cls()
-        cx,cy=center.xy
-        for x in range(xmin,xmax+1):
-            for y in range(ymin,ymax+1):
-                if abs(x-cx)+abs(y-cy)>size:
-                    continue
-                res.add(center+(x,y))
-        return res
 
