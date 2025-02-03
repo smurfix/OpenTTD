@@ -20,20 +20,15 @@ from openttd.company import Company
 
 class TestScript(BaseScript):
     """
-    Test script.
-
-    Modes:
-    0 basic work
-    1 parallel idle test
+    Basic test script, async mode.
     """
-    ASYNC=True
 
     step="idle"
-    async def setup(self):
+    def setup(self):
         self._set_company(1)
 
         self.step="after setup"
-        await super().setup()
+        super().setup()
 
     def _set_company(self, cid=None):
         self._basescript__company = openttd.company.ID.DEITY if cid is None else openttd. company.ID(cid-1)
@@ -92,14 +87,17 @@ bugtask     starts a debugger thread (Python continues to run)""")
 
             await main.subthread(bug)
             continue
+        print(f"* Test: {t}{' (final, exiting)' if t == 'delay' else ''}", file=sys.stderr)
         mod = import_module(f"openttd._test.{t}")
         script = mod.Script
         val = await main.do_start(script, company=getattr(mod,"COMPANY",Company(1)))
         await val.event.wait()
         if isinstance(val.value,Exception):
             raise val.value
+        print("  … completed.", file=sys.stderr)
 
 TESTS = [
     "basic",
+    "basic_async",
     "delay",  # must be last, as it shuts down OpenTTD
 ]
