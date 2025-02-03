@@ -17,7 +17,6 @@ import sys
 import warnings
 import importlib
 import shlex
-import outcome
 import ast
 from functools import partial
 from attrs import define,field
@@ -28,6 +27,7 @@ from io import StringIO
 from inspect import cleandoc
 
 from .util import maybe_async,maybe_async_threaded,PlusSet
+from ._util import capture
 
 import logging
 
@@ -248,7 +248,7 @@ class Main:
 
             else:
                 # Again we don't know whether this is async or not
-                res = (await anyio.to_thread.run_sync(outcome.capture,runner,self,*args)).unwrap()
+                res = (await anyio.to_thread.run_sync(capture,runner,self,*args)).unwrap()
                 if hasattr(res,"__await__"):
                     await res
 

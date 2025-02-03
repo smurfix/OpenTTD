@@ -102,6 +102,47 @@ def _set(p,v):
     _assigned.add(v)
     setattr(m,p[-1],v)
 
+
+# the following is a simplified version of "outcome".
+# We do this because Trio will unpack us.
+
+def capture(sync_fn, *args, **kwargs):
+    try:
+        return Value(sync_fn(*args, **kwargs))
+    except Exception as exc:
+        return Error(exc)
+
+class Outcome:
+    pass
+
+@define(frozen=True, repr=False, slots=True)
+class Value(Outcome):
+    value = field()
+
+    def __repr__(self):
+        return f'Value({self.value!r})'
+
+    def unwrap(self):
+        return self.value
+
+
+@define(frozen=True, repr=False, slots=True)
+class Error(Outcome):
+    error = field(validator=validators.instance_of(Exception))
+
+    def __repr__(self):
+        return f'Error({self.error!r})'
+
+    def unwrap(self):
+        captured_error = self.error
+        try:
+            raise captured_error
+        finally:
+            del captured_error, self
+
+## end of Outcome
+
+
 def _copy(dst,src,prefix=""):
     # attribute copier
     for k in dir(src):
