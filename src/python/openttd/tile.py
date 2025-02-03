@@ -17,6 +17,7 @@ import enum
 import os
 from attrs import define,field
 from .util import extension_of, PlusSet
+from ._util import with_
 from .error import TTDError
 
 import typing
@@ -409,10 +410,7 @@ class Tile:
         return _ttd.script.road.can_build_connected_road_parts_here(self, prev._, next._)
 
     def Sign(self, text:str) -> Sign:
-        res = _ttd.script.sign.build_sign(self, openttd.Text(text))
-        if not res:
-            raise TTDError(f"No sign at {pos}")
-        return openttd._.Sign(res[0])
+        return with_(openttd._.Sign, _ttd.script.sign.build_sign, self, openttd.Text(text))
 
     @property
     def signs(self) -> Signs:
