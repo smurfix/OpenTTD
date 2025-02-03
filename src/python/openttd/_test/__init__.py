@@ -67,7 +67,8 @@ async def run(main, *tests):
         print("""
             Not in "all":
 debug       breaks into the debugger (Python is stopped)
-bugtask     starts a debugger thread (Python continues to run)""")
+bugtask     starts a debugger thread (Python continues to run)
+error       triggers an exception (to test error handling)""")
 
         if ex is not None:
             from traceback import print_exception
@@ -79,13 +80,6 @@ bugtask     starts a debugger thread (Python continues to run)""")
     for t in tests:
         if t == "debug":
             breakpoint()
-            continue
-        if t == "bugtask":
-            def bug():
-                breakpoint()
-                pass # "c" to end the debugger, "q" to exit OpenTTD
-
-            await main.subthread(bug)
             continue
         print(f"* Test: {t}{' (final, exiting)' if t == 'delay' else ''}", file=sys.stderr)
         mod = import_module(f"openttd._test.{t}")
