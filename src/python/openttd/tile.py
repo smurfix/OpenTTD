@@ -18,9 +18,10 @@ import os
 from attrs import define,field
 from .util import extension_of, PlusSet
 from ._util import with_
-from .error import TTDError
+from .error import TTDError, TTDWrongTurn
 
 import typing
+from typing import overload
 
 if typing.TYPE_CHECKING:
     Town = _ttd.script.town.Town
@@ -59,23 +60,28 @@ class Dir:
         return Dir((self.value+4) % 8)
     back1=back
 
-    # DirHop compatibility
+    # DirJump compatibility
     @property
-    def d(self):
+    def d(self) -> Self:
         return self
+
+    @property
+    def jump(self) -> bool:
+        return False
 
     @property
     def n(self):
         return 1
 
-    def __add__(self, d):
-        "direction plus turn is direction"
+    def __add__(self, d:Turn):
+        "direction + turn is a new direction"
         if isinstance(d,Turn):
             return type(self)((self.value + d.value) % 8)
 
         return NotImplemented
 
-    def __radd__(self, t):
+    def __radd__(self, t) -> Tile:
+        "Tile + direction = tile"
         if isinstance(t,Tile):
             off=_offsets[self.value]
             return type(t)(t.x+off[0], t.y+off[1])
@@ -100,35 +106,52 @@ class Dir:
         return NotImplemented
 
     def __mul__(self, i):
-        return DirHop(self,i)
+        return DirJump(self,i)
+
+class DirSame:
+    pass
+DirSame = DirSame()
+Dir.SAME = DirSame
+
 
 if "PY_OTTD_STUB_GEN" in os.environ:
     _offset_ids = { }
 else:
     _offset_ids = { v:Dir(k) for k,v in enumerate(_offsets) }
 
-class DirHop:
+class DirJump:
     """a direction that travels multiple tiles"""
-    def __init__(self,d,n):
+    def __init__(self,d:Dir,n:int,jump:bool=True):
         self.d = d
         self.n = n
+        self.jump = jump
+
     @property
     def back(self):
-        return DirHop(self.d.back,self.n)
+        """Back to where we came from"""
+        return DirJump(self.d.back,self.n)
+
     @property
     def back1(self):
+        """Back one step"""
         return self.d.back
+
     @property
     def xy(self):
+        """x,y offset of this step"""
         d=self.d.xy
         return (d[0]*self.n, d[1]*self.n)
+
     def __repr__(self):
         return f"{self.d}*{self.n}"
+
     def __mul__(self, n):
         return type(self)(self.d,self.n*n)
+
     __rmul__=__mul__
 
     def __add__(self,td):
+        """Add one more step"""
         if isinstance(td,Dir):
             if td==self.d:
                 return type(self)(self.d,self.n+1)
@@ -137,12 +160,14 @@ class DirHop:
         return NotImplemented
 
     def __radd__(self, t):
+        """Movement: Tile+DirJump"""
         if isinstance(t,Tile):
             off=_offsets[self.d.value+1]
             return type(t)(t.x+off[0]*self.n, t.y+off[1]*self.n)
         return NotImplemented
 
     def __rsub__(self, t):
+        """Movement back: Tile-DirJump"""
         if isinstance(t,Tile):
             off=_offsets[self.d.value+1]
             return type(t)(t.x-off[0]*self.n, t.y-off[1]*self.n)
@@ -209,17 +234,32 @@ class Tile[Collection:Tiles]:
     def __repr__(self):
         return f"Tile({self.x},{self.y})"
 
+    @overload
+    def __add__(self, x: Literal[Dir.SAME]) -> Self: ...
+
+    @overload
+    def __add__(self, x: Tuple[int,int]) -> Self: ...
+
+    @overload
+    def __add__(self, x: Dir) -> Self: ...
+
+    @overload
+    def __add__(self, x: DirJump) -> TilePath: ...
+
     def __add__(self, x):
         """Tile plus some x-y offset returns a tile.
         Tile plus direction returns a new Tile.
+        Tile plus step (DirJump) returns a TilePath.
         """
-        if isinstance(x,(list,tuple)):
-            return Tile(self.x+x[0], self.y+x[1])
-        if isinstance(x,(Dir,_ttd.enum.Direction)):
-            x=x.xy
-            return Tile(self.x+x[0], self.y+x[1])
         if x is Dir.SAME:
             return self
+        if isinstance(x,(list,tuple)):
+            return Tile(self.x+x[0], self.y+x[1])
+        if isinstance(x,Dir):
+            x=x.xy
+            return Tile(self.x+x[0], self.y+x[1])
+        if isinstance(x,DirJump):
+            return TilePath(self, x)
         return NotImplemented
 
     def __matmul__(self, x):
@@ -326,42 +366,54 @@ class Tile[Collection:Tiles]:
     @property
     def is_buildable(self) -> bool:
         return _ttd.script.tile.is_buildable(self)
+
     def is_buildable_rect(self, w:int, h:int) -> bool:
         return _ttd.script.tile.is_buildable_rectangle(self, w, h)
+
     @property
     def is_sea(self) -> bool:
         return _ttd.script.tile.is_sea_tile(self)
+
     @property
     def is_river(self) -> bool:
         return _ttd.script.tile.is_river_tile(self)
+
     @property
     def is_water(self) -> bool:
         return _ttd.script.tile.is_water_tile(self)
+
     @property
     def is_coast(self) -> bool:
         return _ttd.script.tile.is_coast_tile(self)
+
     @property
     def is_station(self) -> bool:
         return _ttd.script.tile.is_station_tile(self)
+
     def has_waypoint(self, type_: WaypointType) -> bool:
         return _ttd.script.waypoint.has_waypoint_type(self, type_)
+
     @property
     def has_station(self) -> bool:
         id = _ttd.script.station.get_station_id(self)
         return _ttd.script.station.is_valid_station(id)
+
     @property
     def station(self) -> Station:
         id = _ttd.script.station.get_station_id(self)
         if not _ttd.script.station.is_valid_station(id):
             raise ValueError(f"not a station at {self.xy}")
         return Station(id)
+
     @property
     def waypoint(self) -> Waypoint:
         id = _ttd.script.station.get_waypoint_id(self)
         return Waypoint(id)
+
     @property
     def is_road_station(self) -> bool:
         return _ttd.script.road.is_road_station_tile(self)
+
     @property
     def is_drivethru_road_station(self) -> bool:
         return _ttd.script.road.is_drive_through_road_station_tile(self)
@@ -464,19 +516,20 @@ class Tile[Collection:Tiles]:
     def cargo_production(self, cargo_type: _ttd.script.cargo.Cargo, width: int, height: int, radius: int) -> int:
         return _ttd.script.tile.get_cargo_production(self, cargo_type, width,height,radius)
 
-    def raise_(self, slope:_ttd.script.tile.Slope) -> bool:
+    def raise_(self, slope:_ttd.script.tile.Slope) -> None:
         """*sigh* Python syntax"""
-        return _ttd.script.tile.raise_tile(self, slope)
-    def lower(self, slope:_ttd.script.tile.Slope) -> bool:
-        return _ttd.script.tile.lower_tile(self, slope)
-    def level_to(self, tile: Tile) -> bool:
-        return _ttd.script.tile.level_tiles(self, tile)
-    def demolish(self) -> bool:
-        return _ttd.script.tile.demolish_tile(self)
-    def plant_tree(self) -> bool:
-        return _ttd.script.tile.plant_tree(self)
-    def plant_tree_rect(self, width: int, height: int) -> bool:
-        return _ttd.script.tile.plant_tree_rectangle(self, width, height)
+        return with_(None, _ttd.script.tile.raise_tile, self, slope)
+    def lower(self, slope:_ttd.script.tile.Slope) -> None:
+        return with_(None, _ttd.script.tile.lower_tile, self, slope)
+    def level_to(self, tile: Tile) -> None:
+        return with_(None, _ttd.script.tile.level_tiles, self, tile)
+    def demolish(self) -> None:
+        return with_(None, _ttd.script.tile.demolish_tile, self)
+    def plant_tree(self) -> None:
+        return with_(None, _ttd.script.tile.plant_tree, self)
+    def plant_tree_rect(self, width: int, height: int) -> None:
+        return with_(None, _ttd.script.tile.plant_tree_rectangle, self, width, height)
+
     def is_within_town(self, town: Town):
         """test influence"""
         return _ttd.script.tile.is_within_town_influence(self, town)
@@ -512,7 +565,7 @@ class Tile[Collection:Tiles]:
         return ax+ay+max(ax,ay)
 
     def found_town(self, size:TownSize, city:bool, layout:RoadLayout, name:str):
-        return _ttd.script.town.found_town(self, site, ciy, layout, openttd.Text(name))
+        return with_(None, _ttd.script.town.found_town, self, site, ciy, layout, openttd.Text(name))
 
 
     ## Collections
@@ -623,32 +676,50 @@ class TilePath:
     def __lt__(self, other:TilePath):
         return self.cache.__lt__(other.cache)
 
+    @overload
+    def __add__(self, x:Literal[Turn.S]) -> Self: ...
+
+    @overload
+    def __add__(self, x:Turn) -> Self: ...
+
     def __add__(self, x):
-        # go straight ahead?
+        """Prolong the path."""
         if x is Turn.S:
+            # go straight ahead
             if self.jump:
                 # after a bridge/tunnel: build a new stretch
                 return TilePath(self.t+self.d, self.d, prev=self, dist=1)
             return TilePath(self.t+self.d, self.d, prev=self._prev, dist=self.dist+1)
 
-        # No, turn
-        if isinstance(x,(Turn,_ttd.enum.DirDiff)):
+        if isinstance(x,Turn):
+            # No, turn
             d=self.d+x
-            return TilePath(Tile(self.x,self.y)+d, d, prev=self, dist=1)
+            return TilePath(self.t+d.xy, d, prev=self, dist=1)
 
-        if isinstance(x,(Dir,DirHop)):
-            if x.d==self.d and not self.jump and x.n==1:
-                t = self.t+x.xy
-                return TilePath(t, self.d, prev=self._prev, dist=self.dist+1)
+        if isinstance(x,(Dir,DirJump)):
+            # doesn't move at all?
+            if x.n == 0:
+                return self
+            if self.d == Dir.SAME or x.d in (self.d,Dir.SAME) or self.jump or x.jump:
+                # start, turn, or jump
+                if x.d is not Dir.SAME:
+                    if self.d - x.d not in ({Turn.R,Turn.S,Turn.L} if self.jump else {Turn.RR,Turn.R,Turn.S,Turn.L,Turn.LL}):
+                            raise TTDWrongTurn(self.d,x.d, "corner")
 
-            # otherwise turn or hop
-            t = self.t+x.xy
-            return TilePath(t, x.d, prev=self, dist=x.n, jump=x.n>1)
+                return TilePath(t+x.xy, self.d, prev=self, dist=x.n, jump=x.jump)
+
+            # continue on
+            return TilePath(t+x.xy, self.d, prev=self._prev, dist=self.dist+x.n)
 
         return NotImplemented
 
     def __mod__(self, other):
         return self.t.__mod__(other)
+
+    @property
+    def next(self):
+        """Return the next tile the current path would lead to."""
+        return self.t+self.d
 
     @property
     def prev(self):
