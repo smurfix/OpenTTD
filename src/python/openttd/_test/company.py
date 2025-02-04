@@ -18,10 +18,12 @@ class Script(TestScript):
     def test(self):
         for c in openttd._.Company.List():
             print(c)
-        c=openttd._.Company(0)
+        c=openttd._.Company(1)
+        assert int(c) == 0
+        assert bool(c)
         c.set_name("HelloCo")
         assert c.name=="HelloCo", c.name
-        assert str(c) == "Company:0:HelloCo", str(c)
+        assert str(c) == "Company:1:HelloCo", str(c)
         for c in openttd._.Company.List():
             print(c)
 

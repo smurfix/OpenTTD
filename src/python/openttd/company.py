@@ -52,11 +52,32 @@ class Expenses(_ID,int):
 
 @extension_of(_ttd.support.CompanyID)
 class Company(_ID,int):
+    """
+    This class represents a company.
+
+    Note: The user interface numbers the first company as #1.
+    The interface of this class reflects this in its external
+    interface by auto-decrementing (only) integer numbers,
+    but not existing instances.
+
+    * int(Company.FIRST) == 0
+    * int(Company(Company.FIRST)) == 0
+    * int(Company(1)) == 0
+    * str(Company(1)) == "Company:1:…"
+    * bool(Company(1)) == True
+    """
+    # Internal: be aware that instances of the underlying
+    # _ttd.support.CompanyID.FIRST class show up as integers
+    # despite not being integer objects.
+    # This is a limitation of Python's enum API.
+
     def __new__(cls, id, raw=False):
         if raw:
             nid = id
         else:
-            nid = _ttd.script.company.resolve_company_id(id)
+            if type(id) is int:
+                id -= 1
+            nid = _ttd.script.company.resolve_company_id(_ttd.support.CompanyID(id))
             if nid == Company.INVALID:
                 raise ValueError(id)
         return _ID.__new__(cls, int(nid))
@@ -78,7 +99,7 @@ class Company(_ID,int):
         return _ttd.script.company.is_mine(self)
 
     def for_str(self) -> Iterable[str]:
-        return int(self),self.name,
+        return int(self)+1,self.name,
 
     def for_repr(self) -> Iterable[str]:
         return int(self),
@@ -213,8 +234,8 @@ def _gen_companies():
     while id <= int(Company.LAST):
         if not Company.is_valid(id):
             break
-        yield Company(id)
         id += 1
+        yield Company(id)
 
 class Companies(PlusSet[Company]):
     def __init__(self, source:Iterable[Sign|int]=None):
