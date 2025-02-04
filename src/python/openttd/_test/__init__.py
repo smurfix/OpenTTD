@@ -96,5 +96,6 @@ TESTS = [
     "basic_async",
     "cargo",
     "company",
+    "town",
     "delay",  # must be last, as it shuts down OpenTTD
 ]

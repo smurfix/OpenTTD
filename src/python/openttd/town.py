@@ -17,6 +17,7 @@ from .util import PlusSet
 import enum
 from attrs import define,field
 from ._support.id import _ID
+from ._util import _WrappedList, with_
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -36,10 +37,10 @@ class Town(_ID, int):
         return _ttd.script.town.get_name(self)
 
     def set_name(self, name) -> bool:
-        return _ttd.script.town.set_name(self, openttd.Text(name))
+        return with_(None,_ttd.script.town.set_name,self, openttd.Text(name))
 
-    def set_text(self, text: str) -> bool:
-        return _ttd.script.town.set_text(self, openttd.Text(text))
+    def set_text(self, text: str) -> None:
+        return with_(_ttd.script.town.set_text,self, openttd.Text(text))
 
     @property
     def population(self) -> int:
@@ -53,15 +54,12 @@ class Town(_ID, int):
     def tile(self) -> Tile:
         return Tile(_ttd.script.town.get_location(self))
 
-    @property
     def last_month_production(self, cargo:int) -> int:
         return Tile(_ttd.script.town.get_last_month_production(self, cargo))
 
-    @property
     def last_month_supplied(self, cargo:int) -> int:
         return Tile(_ttd.script.town.get_last_month_supplied(self, cargo))
 
-    @property
     def last_month_transported(self, cargo:int) -> int:
         "percentage"
         return Tile(_ttd.script.town.get_last_month_transported_percentage(self, cargo))
@@ -70,14 +68,14 @@ class Town(_ID, int):
     def last_month_received(self, effect:TownEffect) -> int:
         return Tile(_ttd.script.town.get_last_month_supplied(self, effect))
 
-    def set_cargo_goal(self, effect:TownEffect, goal:int) -> bool:
-        return _ttd.script.town.set_cargo_goal(self, effect, goal)
+    def set_cargo_goal(self, effect:TownEffect, goal:int) -> None:
+        return with_(_ttd.script.town.set_cargo_goal,self, effect, goal)
 
     def get_cargo_goal(self, effect:TownEffect) -> int:
         return _ttd.script.town.set_cargo_goal(self, effect)
 
-    def set_growth_rate(self, rate:int) -> bool:
-        return _ttd.script.town.set_growth_rate(self, rate)
+    def set_growth_rate(self, rate:int) -> None:
+        return with_(None,_ttd.script.town.set_growth_rate,self, rate)
 
     def get_growth_rate(self, effect:TownEffect) -> int:
         return _ttd.script.town.set_growth_rate(self)
@@ -117,11 +115,11 @@ class Town(_ID, int):
     def is_action_available(self, action) -> bool:
         return _ttd.script.town.is_action_available(self, action)
 
-    def act(self, action) -> bool:
-        return _ttd.script.town.perform_town_action(self,action)
+    def act(self, action) -> None:
+        return with_(None,_ttd.script.town.perform_town_action,self,action)
 
-    def expand(self, houses: int):
-        return _ttd.script.town.expand_town(self, houses)
+    def expand(self, houses: None):
+        return with_(None,_ttd.script.town.expand_town,self, houses)
 
     # found_town: Tile.found_town
 
@@ -131,8 +129,8 @@ class Town(_ID, int):
     def detailed_rating_of(self, company:CompanyID) -> int:
         return _ttd.script.town.get_detailed_rating(self, company)
 
-    def set_rating_of(self, company:CompanyID) -> bool:
-        return _ttd.script.town.change_rating(self, company)
+    def set_rating_of(self, company:CompanyID) -> None:
+        return with_(None,_ttd.script.town.change_rating,self, company)
 
     @property
     def allowed_noise(self):
@@ -146,8 +144,11 @@ class Town(_ID, int):
 class Towns(PlusSet[Town]):
     def __init__(self, source:Iterable[Town|int]=None):
         if source is None:
-            source = _ttd.script.town.List()
+            source = _WrappedList(_ttd.script.townlist.List())
         for t in source:
             self.add(Town(t))
 
     # XXX maybe add classmethods for adjacency
+
+
+Town.List = staticmethod(Towns)
