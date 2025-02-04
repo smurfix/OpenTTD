@@ -11,11 +11,15 @@ from __future__ import annotations
 
 import anyio
 from contextlib import nullcontext
+from operator import itemgetter
 from ._util import capture
-import heapq
+from heapq import heappush,heappop
 
 test_stop = None  # from openttd.base. Circular import. Patched in later.
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Callable,Awaitable,Sequence
 
 class _add_new_checker(type):
     def __instancecheck__(cls,obj):
@@ -32,7 +36,7 @@ class _add_new_checker(type):
         return getattr(self._DERIV__Base, k)
 
 
-def extension_of(base):
+def extension_of(base: type) -> Callable[[type],type]:
     """
     Mostly-transparently extend a class or enum with additional methods.
     This is a shorthand for monkeypatching the base class.
@@ -57,7 +61,7 @@ def extension_of(base):
         assert x1 is x3
         assert x3.hello(42) == 44
     """
-    def mangler(deriv):
+    def mangler(deriv: type):
         import _ttd
         import os
         if "PY_OTTD_STUB_GEN" in os.environ:
@@ -179,6 +183,14 @@ class PlusSet[T](set):
     """
 
     def filter(self, test: Callable[[T],bool]) -> set[T]:
+        """
+        Filter the list by a test function.
+
+        The original is not modified: the result is a new list.
+
+        This method is aliased to the `@` operator. Use `@=` if you want to
+        filter in-place (i.e. remove the members that do not match).
+        """
         res = set()
         for t in self:
             if test(t):
@@ -188,6 +200,11 @@ class PlusSet[T](set):
     __matmul__ = filter
 
     async def filter_a(self, test: Callable[[T],Awaitable[bool]]) -> set[T]:
+        """
+        Filter the list by an async test function.
+
+        The original is not modified: the result is a new list.
+        """
         res = set()
         for t in self:
             if await test(t):
@@ -195,6 +212,11 @@ class PlusSet[T](set):
         return self
 
     def __imatmul__(self, test: Callable[[T],bool]) -> set[T]:
+        """
+        Filter the list by a test function.
+
+        Non-matching members are removed.
+        """
         drop = []
         for t in self:
             if not test(t):
@@ -213,7 +235,7 @@ class PlusSet[T](set):
         return self
 
     def min(self, key: Callable[[T], int|float]) -> T:
-        "Return the smallest element, according to a key"
+        "Return the smallest element, according to a key function"
         tt = iter(self)
         res = next(tt)
         val = key(res)
@@ -225,7 +247,7 @@ class PlusSet[T](set):
         return res
 
     def max(self, key: Callable[[T], int|float]) -> T:
-        "Return the largest element, according to a key"
+        "Return the largest element, according to a key function"
         tt = iter(self)
         res = next(tt)
         val = key(res)
@@ -236,31 +258,35 @@ class PlusSet[T](set):
                 val = v
         return res
 
-    def max_n(self, n:int, key: Callable[[T], int|float]) -> T:
+    def max_n(self, n:int, key: Callable[[T], int|float]) -> Sequence[T]:
         """
-        Return the largest element, as selected by the function 'key'.
+        Return the N largest elements, as selected by the function 'key'.
+
+        The result is *not* sorted.
         """
 
         res = []
-        for t in tt:
+        for x in self:
             test_stop()
-            heapq.push(res,(key(x),x))
+            heappush(res,(key(x),x))
             if len(res) > n:
                 # too long: take the smallest element off
-                heapq.pop(res)
+                heappop(res)
         return map(itemgetter(1), res)
 
-    def min_n(self, n:int, key: Callable[[T], int|float]) -> T:
+    def min_n(self, n:int, key: Callable[[T], int|float]) -> Sequence[T]:
         """
         Return the smallest element, as selected by the function 'key'.
+
+        The result is *not* sorted.
         """
         res = []
-        for t in tt:
+        for x in self:
             test_stop()
-            heapq.push(res,(-key(x),x))
+            heappush(res,(-key(x),x))
             if len(res) > n:
                 # too long: take the largest element off
-                heapq.pop(res)
+                heappop(res)
         return map(itemgetter(1), res)
 
 
@@ -318,7 +344,7 @@ class PlusSet[T](set):
                 val = v
         return res
 
-    async def max_na(self, n:int, key: Callable[[T], Awaitable[int|float]]) -> T:
+    async def max_na(self, n:int, key: Callable[[T], Awaitable[int|float]]) -> Sequence[T]:
         "Return the N largest elements, according to a key"
 
         res = []
@@ -335,13 +361,13 @@ class PlusSet[T](set):
         res.append((val,x))
 
         for x in it:
-            heapq.push(res,((await adapt(key(x))),x))
+            heappush(res,((await adapt(key(x))),x))
             if len(res) > n:
                 # too long: take the smallest element off
-                heapq.pop(res)
+                heappop(res)
         return map(itemgetter(1), res)
 
-    async def min_na(self, n:int, key: Callable[[T], Awaitable[int|float]]) -> T:
+    async def min_na(self, n:int, key: Callable[[T], Awaitable[int|float]]) -> Sequence[T]:
         "Return the N largest elements, according to a key"
 
         res = []
@@ -358,8 +384,8 @@ class PlusSet[T](set):
         res.append((-val,x))
 
         for x in it:
-            heapq.push(res,(-(await adapt(key(x))),x))
+            heappush(res,(-(await adapt(key(x))),x))
             if len(res) > n:
                 # too long: take the smallest element off
-                heapq.pop(res)
+                heappop(res)
         return map(itemgetter(1), res)
