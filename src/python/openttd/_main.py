@@ -58,8 +58,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger("OpenTTD")
 log = logger.debug
 
-_main = ContextVar("_main")
+deity_storage = _ttd.object.Storage(_ttd.support.CompanyID.DEITY)
 _storage = ContextVar("_storage")
+
+_main = ContextVar("_main")
 estimating = ContextVar("estimating", default=True)
 _async = ContextVar("_async", default=True)
 
@@ -550,6 +552,20 @@ class Main:
             await self._pause_change.wait()
 
         await anyio.sleep(ticks/74)
+
+    @property
+    @contextmanager
+    def as_deity(self):
+        """
+        A context manager to run part of the script in "system" mode.
+
+        Use only when necessary.
+        """
+        token = _storage.set(deity_storage)
+        try:
+            yield
+        finally:
+            _storage.reset(token)
 
     async def cmd_sign(self, args):
         """Plant a sign (or remove it).
