@@ -91,10 +91,6 @@ class CmdR:
     callback: int=field(eq=False,hash=False)
     storage:Storage=field(factory=_storage.get,eq=False,hash=False)
 
-class Obj:
-    def __init__(self, **kw):
-        for k,v in kw.items():
-            setattr(self,k,v)
 
 @define
 class VEvent:
@@ -491,13 +487,9 @@ class Main:
 
     async def _wait_cmd(self, cmdr, evt):
         try:
-            with anyio.fail_after(3):
+            with anyio.fail_after(10):
                 await evt.event.wait()
             return evt.value
-
-        except TimeoutError:
-            log(f"Command {cmdr}: no response")
-            return Obj(success=False)
 
         except BaseException as exc:
             logger.exception(f"Command {cmdr}: error")
