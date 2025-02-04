@@ -123,17 +123,12 @@ namespace PyTTD {
 			.def_prop_ro("callback", [](CommandData &x){return (intptr_t)(x.callback);})
 			;
 
-		py::class_<Text>(m, "_Text");
+		py::class_<Text, ScriptObject>(m, "_Text");
 		py::class_<RawText, Text>(m, "Text")
-			.def(py::new_([](std::string s) {
-				auto res = new RawText(s);
-				res->AddRef();
-				return res;
-			}))
 			.def(py::init<std::string>())
 			.def("__str__", &RawText::GetEncodedText)
-			.def("__del__", &SimpleCountedObject::Release)
 			;
+
 	}
 
 }

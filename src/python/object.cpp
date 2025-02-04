@@ -10,6 +10,7 @@
 #include <nanobind/stl/unique_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
+#include <nanobind/intrusive/counter.h>
 
 #include <iostream>
 #include <memory>
@@ -23,13 +24,27 @@
 #include "script/api/script_object.hpp"
 #include "script/script_storage.hpp"
 
+#include <nanobind/intrusive/counter.inl>
+
 namespace PyTTD {
 	namespace py = nanobind;
 	void init_ttd_object(py::module_ &mg)
 	{
 		auto m = mg.def_submodule("object", "ScriptObject support");
 
-		py::class_<SimpleCountedObject>(m, "SimpleCountedObject");
+		py::intrusive_init(
+			[](PyObject *o) noexcept {
+				py::gil_scoped_acquire guard;
+				Py_INCREF(o);
+			},
+			[](PyObject *o) noexcept {
+				py::gil_scoped_acquire guard;
+				Py_DECREF(o);
+			});
+
+		py::class_<SimpleCountedObject>(m, "SimpleCountedObject",
+			py::intrusive_ptr<SimpleCountedObject>(
+				[](SimpleCountedObject *o, PyObject *po) noexcept { o->set_self_py(po); }));
 		py::class_<ScriptObject, SimpleCountedObject>(m, "ScriptObject");
 
 		py::class_<Script>(m, "Script")
