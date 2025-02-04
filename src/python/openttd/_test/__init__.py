@@ -10,6 +10,7 @@ Test runner.
 
 from __future__ import annotations
 
+import _ttd
 import openttd
 import sys
 from importlib import import_module
@@ -31,7 +32,7 @@ class TestScript(BaseScript):
         super().setup()
 
     def _set_company(self, cid=None):
-        self._basescript__company = openttd.company.ID.DEITY if cid is None else openttd. company.ID(cid-1)
+        self._basescript__company = _ttd.support.CompanyID.DEITY if cid is None else _ttd.support.CompanyID(cid-1)
 
     def get_info(self):
         return f"Test {self.__name__}, in step {self.step}"

@@ -313,7 +313,7 @@ class BaseScript:
                 await maybe_async_threaded(self.main)
                 self.taskgroup.cancel_scope.cancel()
             except Exception as exc:
-                self.log.exception("Script Error")
+                self.log.exception(f"Script Error: {exc}")
                 self.print(f"DEAD: {exc}")
                 evt.value = exc
             except BaseException as exc:

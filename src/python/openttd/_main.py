@@ -10,6 +10,7 @@ OpenTTD's Python main loop.
 """
 from __future__ import annotations
 
+import _ttd
 import openttd
 import anyio
 import traceback
@@ -291,7 +292,6 @@ class Main:
 
         # This part may not await
         evt = self._replies.pop(cmdr)
-        import _ttd
         if not msg.result.success:
             evt.value = TTDResultError(msg.cmd, msg.result.error)
 
@@ -374,13 +374,13 @@ class Main:
         """
         self.print(repr(args))
         try:
-            company = openttd.company.ID(int(args[0])-1)
+            company = _ttd.support.CompanyID(int(args[0])-1)
         except ValueError:
-            company = openttd.company.ID.DEITY
+            company = _ttd.support.CompanyID.DEITY
             if self._game_mode is None:
                 raise RuntimeError("Oops: the game mode has not been set yet.")
         else:
-            if openttd.company.resolve_company_id(company) < 0:
+            if _ttd.script.company.resolve_company_id(company) < 0:
                 raise ValueError(f"Company #{args[0]} does not exist.")
             if self._game_mode != openttd.internal.GameMode.NORMAL:
                 raise RuntimeError("Sorry, but AIs only run when playing.")
@@ -397,7 +397,7 @@ class Main:
 
         """
         if company is None:
-            company = openttd.company.ID.DEITY
+            company = _ttd.support.CompanyID.DEITY
 
         Script = args[0]
         for val in args[1:]:
@@ -504,7 +504,7 @@ class Main:
 
         for v in list(self._code.values()):
             async with anyio.create_task_group() as tg:
-                if v.company == openttd.company.ID.DEITY:
+                if v.company == _ttd.support.CompanyID.DEITY:
                     tg.start_soon(maybe_async, v.set_game_mode, mode)
                 elif mode != openttd.internal.GameMode.NORMAL:
                     v.stop();
@@ -738,11 +738,9 @@ class Main:
 
         TODO.
         """
-        import _ttd  # to access Storage; intentionally not in openttd
-
         openttd.internal.debug(2,"Python START")
 
-        main_storage = _ttd.object.Storage(openttd.company.ID.SPECTATOR)
+        main_storage = _ttd.object.Storage(_ttd.support.CompanyID.SPECTATOR)
         main_storage.allow_do_command = False
         _storage.set(main_storage)
         _main.set(self)
@@ -768,7 +766,7 @@ class Main:
 
 def run():
     # protect against locale changes
-    import _ttd
+
     sys.stdout.reconfigure(encoding='utf-8', errors="replace")
     sys.stderr.reconfigure(encoding='utf-8', errors="replace")
 
