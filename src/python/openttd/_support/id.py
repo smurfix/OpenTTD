@@ -65,13 +65,6 @@ class _ID:
             return NotImplemented
         return self._Base(self) != self._Base(other)
 
-    def __lt__(self, other):
-        raise NotImplementedError
-
-    __gt__ = __lt__
-    __ge__ = __lt__
-    __le__ = __lt__
-
     def for_repr(self) -> list[str]:
         """Additional info for `__repr__`.
 
