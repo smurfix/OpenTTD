@@ -81,10 +81,11 @@ class TTDCommandError(TTDExecError):
     """
     name = None
 
-    def __init__(self,proc,a,kw):
+    def __init__(self,proc,a,kw, result=None):
         self.proc = proc
         self.a = a
         self.kw = kw
+        self.result = result
         super().__init__()
 
     def resolve(self):
@@ -114,6 +115,8 @@ class TTDCommandError(TTDExecError):
         res = f"{super().__repr__()}:{self.name}{self.a !r}"
         if self.kw:
             res += repr(self.kw)
+        if self.result is not None:
+            res += "/"+repr(self.result)
         return res
 
     def __str__(self):
