@@ -32,6 +32,18 @@
 
 #include "table/strings.h"
 
+#if defined(WITH_PNG)
+#include <png.h>
+
+#ifdef PNG_TEXT_SUPPORTED
+#include "rev.h"
+#include "newgrf_config.h"
+#include "ai/ai_info.hpp"
+#include "company_base.h"
+#include "base_media_base.h"
+#endif /* PNG_TEXT_SUPPORTED */
+#endif /* WITH_PNG */
+
 #include "safeguards.h"
 
 static const char * const SCREENSHOT_NAME = "screenshot"; ///< Default filename of a saved screenshot.
@@ -220,15 +232,6 @@ static bool MakeBMPImage(const char *name, ScreenshotCallback *callb, void *user
  **** SCREENSHOT CODE FOR PORTABLE NETWORK GRAPHICS (.PNG)
  *********************************************************/
 #if defined(WITH_PNG)
-#include <png.h>
-
-#ifdef PNG_TEXT_SUPPORTED
-#include "rev.h"
-#include "newgrf_config.h"
-#include "ai/ai_info.hpp"
-#include "company_base.h"
-#include "base_media_base.h"
-#endif /* PNG_TEXT_SUPPORTED */
 
 static void PNGAPI png_my_error(png_structp png_ptr, png_const_charp message)
 {
