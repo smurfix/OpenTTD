@@ -26,6 +26,7 @@ from contextlib import contextmanager
 from importlib import import_module
 from io import StringIO
 from inspect import cleandoc
+from concurrent.futures import CancelledError
 
 from .error import TTDResultError
 from .util import maybe_async,maybe_async_threaded,PlusSet
@@ -61,6 +62,12 @@ _main = ContextVar("_main")
 _storage = ContextVar("_storage")
 estimating = ContextVar("estimating", default=True)
 _async = ContextVar("_async", default=True)
+
+# Set to a cancel-test procedure.
+def _err():
+    raise CancelledError
+
+_STOP = ContextVar("_STOP", default=_err)
 
 
 @contextmanager
@@ -122,6 +129,7 @@ class Main:
     _code:dict[int,BaseScript]
     _game_mode:GameMode = None
     _pause_state:PauseState = None
+    stopping:bool = True
 
     signs:PlusSet[openttd.sign.Sign]
 
@@ -435,6 +443,23 @@ class Main:
         else:
             self.print(f"Script {id_} ({type(scr)}) ended.")
 
+    def test_stop(self) -> bool:
+        """
+        Generic test-if-shutting-down function
+        """
+        if self._tg is None:
+            return True
+        return self.stopping
+
+    async def _stopping(self) -> Never:
+        """
+        set "stopping" when cancelled
+        """
+        try:
+            await anyio.sleep_forever()
+        finally:
+            self.stopping = True
+
     def _send_cmd(self, cmd, buf, cb) -> Awaitable[CommandResult]:
         # called from the command hook
         if estimating.get():
@@ -745,15 +770,18 @@ class Main:
         _storage.set(main_storage)
         _main.set(self)
         _ttd._main = self
+        _STOP.set(self.test_stop)
 
         msg_in_w,msg_in_r = anyio.create_memory_object_stream(999)
 
         async with anyio.create_task_group() as tg:
             self._tg = tg
+            self.stopping = False
             estimating.set(False)
 
             await tg.start(self._ttd_reader, msg_in_w)
             tg.start_soon(self._process, msg_in_r)
+            tg.start_soon(self._stopping)
 
             # TODO signal readiness to openTTD
 

@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from concurrent.futures import CancelledError
 
 import openttd
-from ._main import _async, _storage, _main, estimating, VEvent, test_mode
+from ._main import _async, _storage, _main, estimating, VEvent, test_mode, _STOP
 from .util import maybe_async_threaded
 
 from typing import TYPE_CHECKING
@@ -29,12 +29,7 @@ if TYPE_CHECKING:
 
 __all__ = ["GameScript","AIScript"]
 
-# Set to a cancel-test procedure.
-def _err():
-    raise CancelledError
-
 SELF = ContextVar("SELF")
-_STOP = ContextVar("_STOP", default=_err)
 
 def test_stop():
     """
@@ -259,16 +254,6 @@ class BaseScript:
         """
         return {}
 
-    def _test_stop(self) -> bool:
-        """
-        Returns True if this script should stop.
-
-        You should never call this. In async context, stopping is
-        accomplished by getting cancelled. A subthread redirects _STOP to
-        checking its HLT instead.
-        """
-        raise RuntimeError("You're async context. Run sync things in a thread!")
-
 
     async def _run(self, *, task_status):
         """
@@ -280,7 +265,6 @@ class BaseScript:
         evt = VEvent()
         self.__storage = st = _ttd.object.Storage(self.__company)
         _storage.set(st)
-        _STOP.set(self._test_stop)
         SELF.set(self)
 
         task = _main.get()
