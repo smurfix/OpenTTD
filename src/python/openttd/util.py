@@ -21,13 +21,16 @@ class _add_new_checker(type):
     def __instancecheck__(cls,obj):
         return type(obj) in (cls,cls._DERIV__Base)
     def __call__(cls,*a,**kw):
-        return cls._DERIV__Base(*a,**kw)
+        if cls._DERIV__over_new:
+            return cls._DERIV__Base(*a,**kw)
+        return cls.__new__(cls,*a,**kw)
     def __repr__(self):
         return repr(self._DERIV__Base)
     def __str__(self):
         return str(self._DERIV__Base)
     def __getattr__(self, k):
-        return self._DERIV__Base.__getattr__(k)
+        return getattr(self._DERIV__Base, k)
+
 
 def extension_of(base):
     """
@@ -41,8 +44,8 @@ def extension_of(base):
             B=2
             C=3
 
-        @for_enum(Base)
-        class Deriv:
+        @extension_of(Base)
+        class Deriv(_ID, int):
             def hello(self,x):
                 assert isinstance(self,Base)
                 return x+self.value
@@ -74,12 +77,10 @@ def extension_of(base):
                     setattr(deriv,k,v)
                 except AttributeError:
                     pass
-#                   for kk,vv in v.items():
-#                       deriv.__members__[k] = v
-
 
         class DERIV(deriv,metaclass=_add_new_checker):
             __Base=base
+            __over_new = "__new__" not in deriv.__dict__
         DERIV.__name__=deriv.__name__
         return DERIV
     return mangler
