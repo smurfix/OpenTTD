@@ -579,25 +579,28 @@ class Main:
         A trailing '+' is replaced with a short description of the tile (road, building, …).
         """
         if not args:
-            for s in self.signs:
-                await openttd.sign.remove_sign(s)
-                self.signs = PlusSet()
+            with self.as_deity:
+                for s in self.signs:
+                    await s.remove()
+            self.signs = PlusSet()
         elif len(args) == 2:  # remove this sign
             x,y = map(int,args)
-            t = Tile(x,y)
-            signs = self.signs @ (lambda s: s.location == t)
-            for s in signs:
-                await openttd.sign.remove_sign(s)
-            self.signs -= signs
+            t = openttd._.Tile(x,y)
+            with self.as_deity:
+                signs = self.signs @ (lambda s: s.location == t)
+                for s in signs:
+                    await s.remove()
+                self.signs -= signs
         else:
             x,y,*text = args
-            t = Tile(int(x),int(y))
+            t = openttd._.Tile(int(x),int(y))
             text = " ".join(text)
-            if text[0] == '+':
-                text = f'{t}: {text[1:]}'
-            if text[-1] == '+':
-                text = f'{text[:-1]} {t.content_str}'
-            s = await openttd.sign.build_sign(pos._, openttd.Text(text))
+            with self.as_deity:
+                if text[0] == '+':
+                    text = f'{t.x},{t.y}:{text[1:]}'
+                if text[-1] == '+':
+                    text = f'{text[:-1]} {t.content_str}'
+                s = await t.Sign(text)
             self.signs.add(s)
 
 
