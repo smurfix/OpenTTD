@@ -495,6 +495,9 @@ class Tile[Collection:Tiles]:
     def build_tunnel(self, roadtype: _ttd.script.vehicle.Type):
         return with_(None,_ttd.script.tunnel.build_tunnel,roadtype, self)
 
+    def build_company_hq(self):
+        return with_(None, _ttd.script.company.build_company_hq, self)
+
     @property
     def slope(self) -> _ttd.script.tile.Slope:
         return _ttd.script.tile.get_slope(self)

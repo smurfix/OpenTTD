@@ -62,6 +62,7 @@ _sys.modules["openttd._"] = _
 
 _content = {
 	'Cargo':'cargo',
+	'Company':'company',
 	'Sign':'sign',
 	'Signs':'sign',
 	'Tile':'tile',
