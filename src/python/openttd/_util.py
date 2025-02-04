@@ -242,15 +242,6 @@ def _importer(_ttd):
     ti.msg._Msg.work = lambda self,main: main.print(f"Message not handled: {self}")
 
     # Import submodules
-    subs = set((
-            "accounting admin airport base bridge cargo client company "
-            "date depot engine error event game goal group industry inflation infrastructure "
-            "list log map marine newgrf news order rail road sign station "
-            "storypage subsidy tile town tunnel vehicle viewport waypoint window"
-            ).split())
-    for k in subs:
-        setattr(t,k,_Sub(k, getattr(_ttd.script,k,None)))
-
     def kproc(name, src):
         tt = getattr(_ttd.script, name, None)
         tx = getattr(t, name, None)
@@ -281,7 +272,7 @@ def _importer(_ttd):
         elif (pos := k.find("list_")) > 0:
             kproc(k[:pos], getattr(_ttd.script,k))
 
-    t.company.ID = _ttd.support.CompanyID
+#    t.company.ID = _ttd.support.CompanyID
     ti.debug = _ttd.debug
     ti.Owner = _ttd.support.Owner
     ti.Command = _ttd.enum.Command
