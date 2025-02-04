@@ -25,19 +25,25 @@
 
 #include "../../safeguards.h"
 
-void SimpleCountedObject::Release()
+bool SimpleCountedObject::Release()
 {
+#ifdef WITH_PYTHON
+	if(! m_ref_count.dec_ref())
+		return false;
+#else
 	int32_t res = --this->ref_count;
 	assert(res >= 0);
-	if (res == 0) {
-		try {
-			this->FinalRelease(); // may throw, for example ScriptTest/ExecMode
-		} catch (...) {
-			delete this;
-			throw;
-		}
+	if (res > 0)
+		return false;
+#endif
+	try {
+		this->FinalRelease(); // may throw, for example ScriptTest/ExecMode
+	} catch (...) {
 		delete this;
+		throw;
 	}
+	delete this;
+	return true;
 }
 
 /**

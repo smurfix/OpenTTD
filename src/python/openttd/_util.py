@@ -52,7 +52,11 @@ def with_(Wrap:type, proc, *a, **kw):
             if not result:
                 raise TTDCommandError(proc,a,kw)
             return result
-        return Wrap(*result)
+        try:
+            return Wrap(*result)
+        except TypeError:
+            breakpoint()
+            raise
     return _resolve(proc(*a,**kw))
 
 def unless(err, proc, *a, **kw):

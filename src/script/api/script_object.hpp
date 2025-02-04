@@ -10,6 +10,11 @@
 #ifndef SCRIPT_OBJECT_HPP
 #define SCRIPT_OBJECT_HPP
 
+#ifdef WITH_PYTHON
+#include "nanobind/nanobind.h"
+#include "nanobind/intrusive/counter.h"
+#endif
+
 #include "../../road_type.h"
 #include "../../rail_type.h"
 #include "../../string_func.h"
@@ -41,6 +46,33 @@ typedef bool (ScriptAsyncModeProc)();
  *  not using ScriptObjectRef.
  * @api -all
  */
+#ifdef WITH_PYTHON
+
+// Counted objects in nanobind are
+//
+namespace py = nanobind;
+
+class SimpleCountedObject {
+public:
+	SimpleCountedObject() {}
+	virtual ~SimpleCountedObject() = default;
+
+	inline void inc_ref() noexcept { AddRef(); }
+	inline bool dec_ref() noexcept { return Release(); }
+
+	void set_self_py(PyObject *self) noexcept {
+        m_ref_count.set_self_py(self);
+    }
+
+	inline void AddRef() noexcept { m_ref_count.inc_ref(); }
+	bool Release();
+	virtual void FinalRelease() {};
+
+private:
+	py::intrusive_counter m_ref_count;
+};
+
+#else
 class SimpleCountedObject {
 public:
 	SimpleCountedObject() : ref_count(0) {}
@@ -53,6 +85,7 @@ public:
 private:
 	int32_t ref_count;
 };
+#endif
 
 /**
  * Uper-parent object of all API classes. You should never use this class in
