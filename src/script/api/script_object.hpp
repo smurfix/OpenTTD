@@ -441,7 +441,7 @@ bool ScriptObject::ScriptDoCommandHelper<Tcmd, Tret(*)(DoCommandFlag, Targs...)>
 		if (hook != nullptr) {
 			auto buf = EndianBufferWriter<CommandDataBuffer>::FromValue(args);
 			(*hook)(Tcmd, buf, callback);
-			return true;
+			return false;
 		}
 	}
 

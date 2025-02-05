@@ -299,7 +299,7 @@ class Main:
         # This part may not await
         evt = self._replies.pop(cmdr)
         if not msg.result.success:
-            evt.value = TTDResultError(msg.cmd, msg.result.error)
+            evt.value = msg.result
 
         elif cmdr.callback:
             st = cmdr.storage
@@ -310,8 +310,14 @@ class Main:
             st.last_cost = msg.result.cost
             st.last_error = 0
 
-            _ttd.msg._done_cb(cmdr.callback, st)
-            evt.value = st.result
+            msg = _ttd.msg._done_cb(cmdr.callback, st)
+            if msg is not None:
+                # The callback enqueued another command.
+                # Wait on that and then trigger the original.
+
+                evt.value = await msg
+            else:
+                evt.value = st.result
         else:
             evt.value = msg.result.success
         evt.event.set()
@@ -328,7 +334,6 @@ class Main:
             self.print(f"Spurious callback: {msg}")
             return
         evt = self._replies.pop(k)
-        breakpoint()
         evt.value = msg.result
         evt.event.set()
 
@@ -345,7 +350,6 @@ class Main:
             self.print(f"Spurious callback: {msg}")
             return
         evt = self._replies.pop(k)
-        breakpoint()
         evt.value = msg.result
         evt.event.set()
 
@@ -822,7 +826,8 @@ def run():
             self.send(openttd.internal.msg.ConsoleMsg(f"Python died: {exc}"))
         except Exception:
             pass
-        traceback.print_exc()
+        if main._last_exc is not exc:
+            traceback.print_exc()
         exc.__cause__ = None
         exc.__context__ = None
         raise

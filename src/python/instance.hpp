@@ -28,7 +28,10 @@ namespace PyTTD {
 	};
 	typedef std::unique_ptr<CommandData, py::deleter<CommandData>> CommandDataPtr;
 
+	class LockGame;
+
 	class NB_IMPORT Instance : public ScriptInstance {
+		friend LockGame;
 	public:
 		Instance();
 		virtual ~Instance();
