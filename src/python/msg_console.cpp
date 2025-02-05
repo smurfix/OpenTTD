@@ -10,12 +10,15 @@
 #include "console_func.h"
 #include "console_type.h"
 #include "openttd.h"
+#include "nanobind/nanobind.h"
 
 #include <iostream>
 
 #include "safeguards.h"
 
 namespace PyTTD::Msg {
+
+	namespace py = nanobind;
 
 	ConsoleCmd::ConsoleCmd(int argc, const char* const argv[]) {
 		while(argc > 0) {
@@ -37,6 +40,7 @@ namespace PyTTD::Msg {
 	void CommandRunEnd::Process() {
 		if (this->msg.size()) {
 			std::cerr << "Python: Job died: " << this->msg << std::endl;
+			py::set_leak_warnings(false);
 			_exit_code = 2;
 		} else {
 			_exit_code = 0;
