@@ -65,12 +65,12 @@ class _ID:
             return NotImplemented
         return self._Base(self) != self._Base(other)
 
-    def for_repr(self) -> list[str]:
+    def for_repr(self) -> tuple[str,...]:
         """Additional info for `__repr__`.
 
         Override and append your data.
         """
-        return [int(self)]
+        return int(self),
 
     def __str__(self) -> str:
         fr=":".join(str(x) for x in self.for_str())

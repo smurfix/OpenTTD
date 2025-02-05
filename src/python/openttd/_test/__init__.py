@@ -97,5 +97,6 @@ TESTS = [
     "cargo",
     "company",
     "town",
+    "roadpath",
     "delay",  # must be last, as it shuts down OpenTTD
 ]

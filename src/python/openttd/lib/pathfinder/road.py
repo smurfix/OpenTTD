@@ -19,11 +19,21 @@ from __future__ import annotations
 from openttd.lib.astar import AStar
 
 import openttd
+import openttd.bridge
+import openttd.tile
+import openttd.vehicle
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Literal
+
 Turn=openttd.tile.Turn
 Dir=openttd.tile.Dir
 TilePath=openttd.tile.TilePath
+Transport=openttd.tile.TransportType
 Slope=openttd.tile.Slope
 VT_Road=openttd.vehicle.Type.ROAD
+BridgeType=openttd.bridge.BridgeType
 
 class Info:
     author="OpenTTD NoAI Developers Team"
@@ -37,7 +47,7 @@ class Node(TilePath):
     pass
 
 
-class Road(AStar):
+class RoadPath(AStar):
     """
     A pathfinder for roads. It finds the shortest path from a set of source
     tiles to a set of goals. Both sources and goals can optionally include
@@ -136,10 +146,10 @@ class Road(AStar):
 
         # If the new tile is an existing bridge / tunnel start,
         # we came from the other end.
-        if tile.is_bridge:
+        if tile.has_bridge:
             return tile.d_manhattan(prev) * self.cost_tile + self.slopes_for_bridge(tile, prev) * self.cost_slope
 
-        if tile.is_tunnel:
+        if tile.has_tunnel:
             return tile.d_manhattan(prev) * self.cost_tile
 
         # If the two tiles are more than 1 tile apart, the pathfinder wants a
@@ -169,7 +179,7 @@ class Road(AStar):
             # Check for two turns in succession. We make these a bit more
             # expensive so we don't end up with a zigzag pattern.
 
-            if tile.prev_turn is not None and tile.prev_turn.prev_turn is not None and tile.prev_turn.dist <= 2:
+            if tile.prev_turn is not None and tile.prev_turn.prev_turn is not None and tile.prev_turn.dist <= 2 and tile.prev_turn.prev_turn.d is not Dir.SAME:
                 if tile.prev_turn.d-tile.d == tile.prev_turn.prev_turn.d-tile.prev_turn.d:
                     # Tight U-turns get even more penalized.
                     cost += self.cost_turn*3
@@ -179,7 +189,7 @@ class Road(AStar):
         if tile.is_coast:
             cost += self.cost_coast
 
-        if prev.prev is not None and not prev.is_bridge and not prev.is_tunnel and self.is_sloped_road(prev.prev,prev,tile):
+        if prev.prev is not None and not prev.has_bridge and not prev.has_tunnel and self.is_sloped_road(prev.prev,prev,tile):
             cost += self.cost_slope
 
         if not prev.has_road_to(tile):
@@ -188,8 +198,17 @@ class Road(AStar):
         return cost
 
     def estimate(self, tile):
+        for g in self.goals:
+            if tile.t == g:
+                # We reached the tile from the wrong direction.
+                if tile.d == g.d.back:
+                    # do a loop
+                    return self.cost_tile*6+self.cost_turn*4
+                else:
+                    # do three lefts
+                    return (self.cost_tile+self.cost_turn)*3
         def turn_cost(goal):
-            if goal.d is Dir.SAME:
+            if goal.d is Dir.SAME or tile.d is Dir.SAME: # or goal.t == tile.t:
                 return 0
             return self.cost_turn*abs(tile.d.value - tile.step_to(goal,diagonal=False).value)//2
 
@@ -204,7 +223,7 @@ class Road(AStar):
         if tile.cache.fscore > self.max_cost:
             return
 
-        if (tile.is_bridge or tile.is_tunnel) and tile.has_transport(openttd.tile.Transport.ROAD):
+        if (tile.has_bridge or tile.has_tunnel) and tile.has_transport(Transport.ROAD):
             # We're at the exit of a bridge/tunnel.
             next_tile = tile+Turn.S
             # test whether we can step off the bridge/tunnel
@@ -232,7 +251,7 @@ class Road(AStar):
             if tile.has_road_to(next_tile):
                 # 1) There already is a connections between the current tile and the next tile.
                 yield _cost(next_tile)
-            elif (next_tile.is_buildable or next_tile.is_road) and (tile.prev is None or tile.can_build_connected_road_parts(tile.prev, next_tile)) and tile.build_road_to(next_tile):
+            elif (next_tile.is_buildable or next_tile.is_road) and (tile.prev is None or tile.can_build_road_parts(tile.prev.t, next_tile.t)) and tile.build_road_to(next_tile.t):
                 # 2) We can build a road to the next tile.
                 yield _cost(next_tile)
             elif (length := self.check_tunnel_bridge(tile, next_tile)):
@@ -256,13 +275,13 @@ class Road(AStar):
         # (XXX well …)
 
         for i in range(2, self.max_bridge_length):
-            bridges = openttd.bridge.List_Length(i + 1)
+            bridges = BridgeType.List(i + 1)
             if bridges:
                 try:
                     dest = tile+tile.d*(i+1)
                 except ValueError:
                     break
-                if tile.build_bridge_to(dest, VT_Road, bridges[0]):
+                if bridges.any.build(VT_Road, tile.t,dest.t):
                     yield _cost(dest)
 
         if slope not in {Slope.SW,Slope.NW,Slope.SE,Slope.NE}:
@@ -275,7 +294,7 @@ class Road(AStar):
         else:
             tunnel_length = tile.d_manhattan(dest)
             prev_tile = tile + dest%tile
-            if tunnel_length >= 2 and prev_tile.xy == tile.prev.xy and src == tile and tile.build_tunnel(VT_Road):
+            if src == tile and tunnel_length >= 2 and prev_tile.xy == tile.prev.xy and tile.build_tunnel(VT_Road):
                 yield _cost(tile+tile.d*tunnel_length)
 
     @staticmethod
@@ -299,7 +318,7 @@ class Road(AStar):
 
         # A road on a steep slope is always sloped.
         slope = middle.slope
-        if openttd.tile.is_steep_slope(slope):
+        if slope.is_steep:
             return True
 
         # If only one corner is raised, the road is sloped.
@@ -314,14 +333,14 @@ class Road(AStar):
         return False
 
     @staticmethod
-    def check_tunnel_bridge(current, new):
+    def check_tunnel_bridge(current, new) -> Literal[False]|int:
         """
         Check if the next tile is the start of a bridge/tunnel
         that goes in the correct direction.
         """
-        if new.is_bridge:
+        if new.has_bridge:
             other = new.bridge_dest
-        elif new.is_tunnel:
+        elif new.has_tunnel:
             other = new.tunnel_dest
         else:
             return False

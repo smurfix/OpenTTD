@@ -71,6 +71,10 @@ class Cargo(_ID, int):
     def weight_for(self, amount:int) -> int:
         return _ttd.script.cargo.get_weight(self, amount)
 
+    @property
+    def road_vehicle_type(self):
+        return _ttd.script.road.get_road_vehicle_type_for_cargo(self)
+
 ##### Lists #####
 
 
