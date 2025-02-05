@@ -52,6 +52,8 @@ def with_(Wrap:type, proc, *a, **kw):
             if not result:
                 raise TTDCommandError(proc,a,kw)
             return result
+        if Wrap is False:
+            return result
         if isinstance(result,list):
             return Wrap(*result)
         else:

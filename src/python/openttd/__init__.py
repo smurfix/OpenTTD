@@ -61,16 +61,22 @@ _ = _imp()
 _sys.modules["openttd._"] = _
 
 _content = {
+	'Bridge':'bridge',
+	'BridgeType':'bridge',
 	'Cargo':'cargo',
 	'Company':'company',
+	'Dir':'tile',
 	'Sign':'sign',
 	'Signs':'sign',
+	'RoadType':'road',
 	'Tile':'tile',
-	'TilePath':'tile',
-	'Dir':'tile',
+	'Path':'tile',
 	'Turn':'tile',
 	'Town':'town',
 	'Towns':'town',
+	'Vehicle':'vehicle',
+	'Vehicles':'vehicle',
+	'VehicleType':'vehicle',
 
 	'TTDError':'error',
 	'TTDCommandError':'error',

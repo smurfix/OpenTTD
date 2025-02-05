@@ -24,7 +24,8 @@ import typing
 from typing import overload
 
 if typing.TYPE_CHECKING:
-    Town = _ttd.script.town.Town
+    from openttd.town import Town
+    from openttd.road import RoadType
     from typing import Callable,Self
 
 
@@ -39,7 +40,8 @@ _offsets = (
     ( 0, -1), # NW
 )
 
-_arrows = "○↑↗→↘↓↙←↖●🡱🡵🡲🡶🡳🡷🡰🡴"
+_arrows = "↑↗→↘↓↙←↖🡱🡵🡲🡶🡳🡷🡰🡴"
+_places = "○●"
 
 @extension_of(_ttd.enum.Direction)
 class Dir:
@@ -94,11 +96,7 @@ class Dir:
         direction minus turn is direction.
         """
         if isinstance(d,Dir):
-            if d is Dir.SAME:
-                return self
-            if self is Dir.SAME:
-                return d.back
-            return type(self)((self.value-d.value)%8)
+            return Turn((self.value-d.value)%8)
 
         if isinstance(d,Turn):
             return type(self)((self.value - d.value) % 8)
@@ -109,6 +107,7 @@ class Dir:
         return DirJump(self,i)
 
 class DirSame:
+    name="SAME"
     pass
 DirSame = DirSame()
 Dir.SAME = DirSame
@@ -119,12 +118,14 @@ if "PY_OTTD_STUB_GEN" in os.environ:
 else:
     _offset_ids = { v:Dir(k) for k,v in enumerate(_offsets) }
 
+@define
 class DirJump:
-    """a direction that travels multiple tiles"""
-    def __init__(self,d:Dir,n:int,jump:bool=True):
-        self.d = d
-        self.n = n
-        self.jump = jump
+    """A direction that travels multiple tiles.
+    Used for bridges and tunnels. (No teleporting. Sorry.)
+    """
+    d:Dir
+    n:int
+    jump:bool=field(default=True)
 
     @property
     def back(self):
@@ -162,16 +163,63 @@ class DirJump:
     def __radd__(self, t):
         """Movement: Tile+DirJump"""
         if isinstance(t,Tile):
-            off=_offsets[self.d.value+1]
+            off=_offsets[self.d.value]
             return type(t)(t.x+off[0]*self.n, t.y+off[1]*self.n)
         return NotImplemented
 
     def __rsub__(self, t):
         """Movement back: Tile-DirJump"""
         if isinstance(t,Tile):
-            off=_offsets[self.d.value+1]
+            off=_offsets[self.d.value]
             return type(t)(t.x-off[0]*self.n, t.y-off[1]*self.n)
         return NotImplemented
+
+
+@extension_of(_ttd.script.tile.Slope)
+class Slope:
+    """
+    Encodes the direction of a slope and how steep it is.
+    """
+    @property
+    def is_steep(self) -> bool:
+        return bool(self.value & self.STEEP.value)
+
+    def can_build_road_parts(start:Dir, end:Dir, *existing:Dir):
+        """
+        Test whether a road from @start to @end is possible given this
+        slope and @existing other road connections.
+        """
+        return unless(-1, _ttd.script.road.can_build_connected_road_parts,self,[x.index for x in existing], start.index,end.index)
+
+
+
+
+@extension_of(_ttd.script.tile.TransportType)
+class TransportType:
+    """
+    Encodes the type of a transport
+    """
+
+@extension_of(_ttd.script.tile.BuildType)
+class BuildType:
+    """
+    Encodes the type for (re)building things
+
+    used mainly for retrieving cost
+    """
+    @property
+    def cost(self):
+        return _ttd.script.tile.get_build_cost(self)
+
+
+@extension_of(_ttd.script.tile.TerrainType)
+class TerrainType:
+    """
+    Encodes the type for (re)building things
+
+    used mainly for retrieving cost
+    """
+
 
 @extension_of(_ttd.support.DirDiff)
 class Turn: # (enum.IntEnum):
@@ -211,6 +259,8 @@ class Tile[Collection:Tiles]:
                 if y<0:
                     raise ValueError("y coord out of bounds") from None
                 raise
+        elif isinstance(x,TilePath):
+            return x.t
         elif isinstance(x,Tile):
             return x
         elif isinstance(x,int):
@@ -229,6 +279,8 @@ class Tile[Collection:Tiles]:
         return self.value
 
     def __eq__(self, other:Tile):
+        if isinstance(other,TilePath):
+            other = other.t
         return self.value == other.value
 
     def __repr__(self):
@@ -256,10 +308,11 @@ class Tile[Collection:Tiles]:
         if isinstance(x,(list,tuple)):
             return Tile(self.x+x[0], self.y+x[1])
         if isinstance(x,Dir):
-            x=x.xy
-            return Tile(self.x+x[0], self.y+x[1])
+            xy=x.xy
+            return Tile(self.x+xy[0], self.y+xy[1])
         if isinstance(x,DirJump):
-            return TilePath(self, x)
+            xy=x.xy
+            return TilePath(Tile(self.x+xy[0], self.y+xy[1]), x.d, dist=x.n, jump=x.jump)
         return NotImplemented
 
     def __matmul__(self, x):
@@ -417,9 +470,50 @@ class Tile[Collection:Tiles]:
     @property
     def is_drivethru_road_station(self) -> bool:
         return _ttd.script.road.is_drive_through_road_station_tile(self)
+
     @property
     def is_road_depot(self) -> bool:
         return _ttd.script.road.is_road_depot_tile(self)
+
+    @property
+    def road_depot_front(self) -> Tile:
+        return  _ttd.script.road.get_road_depot_front_tile(self)
+
+    @property
+    def road_station_front(self) -> Tile:
+        return  _ttd.script.road.get_road_station_front_tile(self)
+
+    @property
+    def road_station_back(self) -> Tile:
+        return  _ttd.script.road.get_drive_through_back_tile(self)
+
+    def is_road_type(self, type:RoadType) -> bool:
+        return _ttd.script.road.is_road_depot_tile(self)
+
+    def build_road_depot(self, front:Tile|Dir) -> None:
+        if isinstance(front,Dir):
+            front = self+front
+        return with_(None, _ttd.script.road.buil_road_depot,self,front)
+
+    def build_road_station(self, front:Tile|Dir, type: RoadType, drive_through:bool=False, station: Station|None=None) -> None:
+        if isinstance(front,Dir):
+            front = self+front
+        if station is None:
+            station = openttd._.Station.NEW
+        return with_(None, _ttd.script.road.build_drive_through_road_station if drive_through else _ttd.script.road.build_road_station,self,front,station)
+
+    def remove_road(self, full:bool=False) -> None:
+        return with_(None, _ttd.script.road.remove_road_full if full else _ttd.script.road.remove_road)
+
+    def remove_road_depot(self) -> None:
+        return with_(None,_ttd.script.road.remove_road_depot)
+
+    def remove_road_station(self) -> None:
+        return with_(None,_ttd.script.road.remove_road_station)
+
+
+    ## land status
+
     @property
     def has_tree(self) -> bool:
         return _ttd.script.tile.has_tree_on_tile(self)
@@ -449,16 +543,11 @@ class Tile[Collection:Tiles]:
     def is_rail(self) -> bool:
         return _ttd.script.rail.is_rail_tile(self)
     @property
-    def is_bridge(self) -> bool:
-        return _ttd.script.bridge.is_bridge_tile(self)
-    @property
     def count_adjacent_roads(self) -> int:
         return _ttd.script.road.get_neighbour_road_count(self)
     def is_valid_orderflags(self, flags:OrderfFlags) -> bool:
         return _ttd.script.order.are_order_flags_valid(self, flags)
-    @property
-    def bridge_dest(self) -> Tile:
-        return Tile(_ttd.script.bridge.get_other_bridge_end(self))
+
     @property
     def is_tunnel(self) -> bool:
         return _ttd.script.tunnel.is_tunnel_tile(self)
@@ -469,11 +558,23 @@ class Tile[Collection:Tiles]:
     def terrain(self) -> _ttd.script.tile.TerrainType:
         return _ttd.script.tile.get_terrain_type(self)
 
-    def has_road_to(self, other:Tile):
+    def has_road_to(self, other:Tile|Dir):
+        """
+        This tests a *direct* connection, i.e. the tiles need to be next to each other.
+        You can use a direction instead.
+        """
+        if isinstance(other,Dir):
+            if other.x and other.y:
+                raise ValueError("You can't have diagonal roads.")
+            other = self+other
         return _ttd.script.road.are_road_tiles_connected(self, other._)
 
-    def can_build_connected_road_parts(self, prev: Tile, next: Tile):
-        return _ttd.script.road.can_build_connected_road_parts_here(self, prev._, next._)
+    def can_build_road_parts(self, prev: Tile|Dir, next: Tile|Dir):
+        if isinstance(prev,Dir):
+            prev = tile+prev
+        if isinstance(next,Dir):
+            next = tile+next
+        return _ttd.script.road.can_build_connected_road_parts_here(self, prev, next)
 
     def Sign(self, text:str) -> Sign:
         return with_(openttd._.Sign, _ttd.script.sign.build_sign, self, openttd.Text(text))
@@ -482,15 +583,40 @@ class Tile[Collection:Tiles]:
     def signs(self) -> Signs:
         return openttd._.Signs() @ (lambda s: s.location == self)
 
-    def build_road_to(self, other:Tile, full:bool=False, oneway:bool=False):
+    def build_road_to(self, other:Tile|TilePath, full:bool=False, oneway:bool=False):
         # it's rather silly to split that into four, only for
         # script_road.cpp to piece it together again. Oh well. TODO.
         r = _ttd.script.road
         p = (r.build_one_way_road_full if oneway else r.build_road_full) if full else (r.build_one_way_road if oneway else r.build_road)
-        return p(self, other._)
+        if isinstance(other,TilePath):
+            other = other.t
+        return with_(None,p,self, other)
 
-    def build_bridge_to(self, other:Tile, roadtype: _ttd.script.vehicle.Type, bridgetype: int):
-        return _ttd.script.bridge.build_bridge(roadtype,bridgetype, self, other._)
+
+    ### Bridges ###
+
+    @property
+    def has_bridge(self) -> bool:
+        return _ttd.script.bridge.is_bridge_tile(self)
+
+    @property
+    def bridge(self) -> Bridge:
+        if not _ttd.script.bridge.is_bridge_tile(self):
+            return None
+        return openttd._.Bridge(self, with_(Tile, _ttd.script.bridge.get_other_bridge_end,self))
+
+    # Building: _.BridgeType.build
+
+    def remove_bridge(self) -> None:
+        # also available as _.Bridge.remove()
+        return with_(None, _ttd.script.bridge.remove_bridge, self)
+
+
+    ### Tunnels ###
+
+    @property
+    def has_tunnel(self) -> bool:
+        return _ttd.script.tunnel.is_tunnel_tile(self)
 
     def build_tunnel(self, roadtype: _ttd.script.vehicle.Type):
         return with_(None,_ttd.script.tunnel.build_tunnel,roadtype, self)
@@ -499,7 +625,7 @@ class Tile[Collection:Tiles]:
         return with_(None, _ttd.script.company.build_company_hq, self)
 
     @property
-    def slope(self) -> _ttd.script.tile.Slope:
+    def slope(self) -> Slope:
         return _ttd.script.tile.get_slope(self)
     @property
     def min_height(self) -> int:
@@ -519,10 +645,10 @@ class Tile[Collection:Tiles]:
     def cargo_production(self, cargo_type: _ttd.script.cargo.Cargo, width: int, height: int, radius: int) -> int:
         return _ttd.script.tile.get_cargo_production(self, cargo_type, width,height,radius)
 
-    def raise_(self, slope:_ttd.script.tile.Slope) -> None:
+    def raise_(self, slope:Slope) -> None:
         """*sigh* Python syntax"""
         return with_(None, _ttd.script.tile.raise_tile, self, slope)
-    def lower(self, slope:_ttd.script.tile.Slope) -> None:
+    def lower(self, slope:Slope) -> None:
         return with_(None, _ttd.script.tile.lower_tile, self, slope)
     def level_to(self, tile: Tile) -> None:
         return with_(None, _ttd.script.tile.level_tiles, self, tile)
@@ -539,10 +665,7 @@ class Tile[Collection:Tiles]:
     @property
     def authority_town(self) -> Town:
         res = _ttd.script.tile.get_town_authority(self)
-        breakpoint()
-        if not res:
-            return 0
-        return _ttd.script.Town(res)
+        return openttd._.Town(res)
     @property
     def closest_town(self) -> Town:
         return openttd._.Town(_ttd.script.tile.get_closest_town(self))
@@ -628,12 +751,12 @@ class TilePath:
     jump:bool=False # bridge or tunnel
 
     def __attrs_post_init__(self):
-        if isinstance(self.t, Tile):
+        if self.d is Dir.SAME and self.prev is not None:
+            raise ValueError("Can't stand still")
+        if not isinstance(self.t, Tile):
             self.t = Tile(self.t)
-        else:
-            assert isinstance(self.t,Tile)
-        if not isinstance(self.dist,int):
-            breakpoint()
+        if isinstance(self.d,DirJump):
+            raise ValueError("Won't create from DirJump. Be explicit.")
 
     def __getattr__(self,k):
         return getattr(self.t,k)
@@ -662,7 +785,7 @@ class TilePath:
     def __repr__(self):
         c="" if self.cache is None else "-" if self.cache is False else "+"
         d="_" if self.jump else ""
-        return f"TDir({self.t} {self.d.name}*{self.dist} {c}{d})"
+        return f"Path({self.t} {self.d.name}*{self.dist} {c}{d})"
 
     def __eq__(self, other:Tile|TilePath):
         """Compares location only!"""
@@ -670,8 +793,8 @@ class TilePath:
             return False
         if self.d is Dir.SAME:
             return True
-        if isinstance(other,Tile):
-            return False
+        if isinstance(other,(Tile,_ttd.support.Tile_)):
+            return self.t == other
         if other.d is Dir.SAME:
             return True
         return self.d is other.d
@@ -696,6 +819,8 @@ class TilePath:
 
         if isinstance(x,Turn):
             # No, turn
+            if self.d is Dir.SAME:
+                raise ValueError("No initial direction, so where to?")
             d=self.d+x
             return TilePath(self.t+d.xy, d, prev=self, dist=1)
 
@@ -703,16 +828,19 @@ class TilePath:
             # doesn't move at all?
             if x.n == 0:
                 return self
-            if self.d == Dir.SAME or x.d in (self.d,Dir.SAME) or self.jump or x.jump:
+            if self.d is Dir.SAME or x.d in (self.d,Dir.SAME) or self.jump or x.jump:
                 # start, turn, or jump
-                if x.d is not Dir.SAME:
+                if self.d is not Dir.SAME and x.d is not Dir.SAME:
+                    # can't do a 90° turn on the end of a bridge/tunnel
                     if self.d - x.d not in ({Turn.R,Turn.S,Turn.L} if self.jump else {Turn.RR,Turn.R,Turn.S,Turn.L,Turn.LL}):
-                            raise TTDWrongTurn(self.d,x.d, "corner")
+                        raise TTDWrongTurn(self.d,x.d, "corner")
 
-                return TilePath(t+x.xy, self.d, prev=self, dist=x.n, jump=x.jump)
+                if self.d is Dir.SAME and x.d is Dir.SAME:
+                    raise ValueError("can't walk in place")
+                return TilePath(self.t+x.xy, self.d if x.d is Dir.SAME else x.d, prev=self, dist=x.n, jump=x.jump)
 
             # continue on
-            return TilePath(t+x.xy, self.d, prev=self._prev, dist=self.dist+x.n)
+            return TilePath(self.t+x.xy, self.d, prev=self._prev, dist=self.dist+x.n)
 
         return NotImplemented
 
@@ -732,6 +860,12 @@ class TilePath:
         if self.dist>1:
             return TilePath(self.t-self.d,self.d, prev=self._prev, dist=self.dist-1)
         return self._prev
+
+    @property
+    def start(self):
+        """Return the start tile of this leg.
+        """
+        return self.t-self.d*self.dist
 
     @property
     def prev_turn(self):
@@ -760,8 +894,11 @@ class TilePath:
 
     def show(self):
         res = self.prev_turn.show() if self.prev_turn is not None else ""
-        i = self.d.value+1 +(9 if self.jump else 0)
-        res += _arrows[i]*max(self.dist,1)
+        if self.d is Dir.SAME:
+            res += _places[self.jump]
+        else:
+            i = self.d.value + (8 if self.jump else 0)
+            res += _arrows[i]*max(self.dist,1)
         return res
 
 
