@@ -33,15 +33,20 @@ namespace PyTTD {
 		dead_engine = nullptr;
 	}
 
-	// GIL must be held
 	void Instance::InsertResult(bool result)
 	{
+		// No perf measurement here because that'd count things twice.
+		// See msg.cpp:_done_cb: the LockGame RAII object already has
+		// a PerfMeasurer.
+		py::gil_scoped_acquire lock;
+
 		py_storage->add_result(py::bool_(result));
 	}
 
-	// GIL must be held
 	void Instance::InsertResult(int result)
 	{
+		py::gil_scoped_acquire lock;
+
 		py_storage->add_result(py::int_(result));
 	}
 

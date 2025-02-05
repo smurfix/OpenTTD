@@ -26,6 +26,7 @@ namespace PyTTD {
 	namespace py = nanobind;
 
 	class Storage;
+	class LockGame;
 	typedef std::shared_ptr<Storage> StoragePtr;
 
 	typedef std::unique_ptr<CommandPacket, py::deleter<CommandPacket>> CommandPacketPtr;
@@ -37,6 +38,7 @@ namespace PyTTD {
 		struct Private { explicit Private() = default; };
 
 		friend void PyTTD::init_ttd_object(nanobind::module_&);
+		friend LockGame;
 	public:
 		// This constructor, despite (necessarily) being public,
 		// is only usable by class methods.

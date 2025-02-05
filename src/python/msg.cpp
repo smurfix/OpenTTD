@@ -102,13 +102,20 @@ namespace PyTTD {
 			;
 
 		m.def("_done_cb", []( intptr_t callback, StoragePtr storage ){
-
 			typedef void (*callback_t)(ScriptInstance *) ;
 			callback_t cb = (callback_t)callback;
-			SObject::AInstance active(&instance);
-			StorageSetter setter(instance, storage);
 
-			(*cb)(&instance);
+			CommandDataPtr cmd = nullptr;
+			auto state = PyEval_SaveThread();
+			{
+				LockGame lock(storage);
+				(*cb)(&instance);
+			}
+			cmd = std::move(instance.currentCmd);
+			PyEval_RestoreThread(state);
+			if (cmd)
+				return cmd_hook(std::move(cmd));
+			return py::none();
 		});
 	}
 }
