@@ -225,6 +225,11 @@ class PlusSet[T](set):
             self.remove(t)
         return self
 
+    @property
+    def any(self) -> T:
+        "Return a random member"
+        return next(iter(self))
+
     async def filtered_a(self, test: Callable[[T],Awaitable[bool]]) -> set[T]:
         drop = []
         for t in self:
