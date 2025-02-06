@@ -294,6 +294,9 @@ def _importer(_ttd):
     t.Text = _ttd.support.Text
     t.Money = _ttd.support.Money
 
+    # Copy Error enum
+    from . import error as _error
+    _error.Error = _ttd.script.error.Error
 
 #   from . import _support as _s
 #   t.Tile = _s.Tile

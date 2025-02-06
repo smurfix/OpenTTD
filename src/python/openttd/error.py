@@ -37,10 +37,12 @@ class TTDExecError(TTDError):
 
     def __init__(self, err=None):
         if err is None:
-            from openttd._main import _storage
-            st = _storage.get()
-            err = st.last_error
-        self.err = err
+            raise RuntimeError("No Error!")
+        if isinstance(err,str):
+            self.error = err
+            self.err = -1
+        else:
+            self.err = err
 
     def resolve(self):
         """
@@ -64,6 +66,8 @@ class TTDExecError(TTDError):
         self.error = err
 
     def __repr__(self):
+        if self.err == -1:
+            return f"{self.error}"
         return f"{self.err}"
 
     def __str__(self):
@@ -81,12 +85,20 @@ class TTDCommandError(TTDExecError):
     """
     name = None
 
-    def __init__(self,proc,a,kw, result=None):
+    def __init__(self,proc,a,kw, result=None, err=None, value=None):
         self.proc = proc
         self.a = a
         self.kw = kw
         self.result = result
-        super().__init__()
+        self.value = value
+
+        if result is not None:
+            assert err is None
+            err = result.message
+            if result.extra_message is not None:
+                err += " "+result.extra_message
+            err=_ctrl_re.sub("",err)
+        super().__init__(err)
 
     def resolve(self):
         """
@@ -117,11 +129,14 @@ class TTDCommandError(TTDExecError):
             res += repr(self.kw)
         if self.result is not None:
             res += "/"+repr(self.result)
+        if self.value is not None:
+            res += ":"+repr(self.value)
         return res
 
     def __str__(self):
         self.resolve()
         return f"{super().__str__()}::{self.name}"
+
 
 class TTDResultError(TTDExecError):
     """
@@ -130,7 +145,7 @@ class TTDResultError(TTDExecError):
 
     Don't catch this exception; catch `TTDExecError` instead.
     """
-    def __init__(self,cmd,err=None):
+    def __init__(self,cmd,err):
         self.cmd = _ttd.enum.Command(cmd)
         super().__init__(err)
 
