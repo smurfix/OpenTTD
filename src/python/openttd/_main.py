@@ -106,7 +106,7 @@ class VEvent:
 
 
 def _print(fn, a, kw):
-    """Directly emit to the OpenTTD debug output"""
+    """Build output string (if necessary) from args and call @fn with it"""
     if len(a) == 1 and not kw:
         fn(a[0])
     else:
@@ -289,11 +289,12 @@ class Main:
         """
         Callback for our command results.
         """
+        self.debug(5,"RES:",msg)
         for cmdr in self._replies.keys():
             if cmdr.cmd == msg.cmd and cmdr.data == msg.data:
                 break
         else:
-            self.print(f"Spurious callback: {msg}")
+            self.debug(0,"Spurious callback:",msg)
             return
 
         # This part may not await
@@ -331,7 +332,7 @@ class Main:
             if k.cmd == msg.cmd and k.company == msg.company:
                 break
         else:
-            self.print(f"Spurious callback: {msg}")
+            self.debug(0,"Spurious callback",msg)
             return
         evt = self._replies.pop(k)
         evt.value = msg.result
@@ -347,7 +348,7 @@ class Main:
             if k.cmd == msg.cmd and k.company == msg.company:
                 break
         else:
-            self.print(f"Spurious callback: {msg}")
+            self.debug(0,"Spurious callback",msg)
             return
         evt = self._replies.pop(k)
         evt.value = msg.result
@@ -382,7 +383,7 @@ class Main:
         capture the script's execution state. This is mainly useful for
         automated testing.
         """
-        self.print(repr(args))
+        self.debug(1,"Start:",repr(args))
         try:
             company = _ttd.support.CompanyID(int(args[0])-1)
         except ValueError:
@@ -431,6 +432,7 @@ class Main:
             res = await self._tg.start(script_obj._run)
         except StopAsyncIteration as stp:
             self.print("Stopped with",stp)
+            self.debug(1,"Stopped with",stp)
         else:
             self._code[id_] = script_obj
             return res
@@ -444,6 +446,7 @@ class Main:
             pass
         else:
             self.print(f"Script {id_} ({type(scr)}) ended.")
+            self.debug(1,f"Script {id_} ({type(scr)}) ended.")
 
     def test_stop(self) -> bool:
         """
@@ -484,7 +487,7 @@ class Main:
         evt = VEvent()
         self._replies[cmdr] = evt
 
-        # print("TP",type(cmd),type(cmdr.data),type(company))
+        self.debug(5,"SEND",cmd, company)
         self.send(openttd.internal.msg.CmdRelay(cmd, cmdr.data, company))
 
         if _async.get():
