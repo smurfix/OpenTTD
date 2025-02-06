@@ -63,7 +63,7 @@ TextDirection _current_text_dir; ///< Text direction of the currently selected l
 std::unique_ptr<icu::Collator> _current_collator;    ///< Collator for the language currently in use.
 #endif /* WITH_ICU_I18N */
 
-ArrayStringParameters<20> _global_string_params;
+thread_local ArrayStringParameters<20> _global_string_params;
 
 /**
  * Prepare the string parameters for the next formatting run. This means
