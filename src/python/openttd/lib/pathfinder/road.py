@@ -22,6 +22,7 @@ import openttd
 import openttd.bridge
 import openttd.tile
 import openttd.vehicle
+from openttd.error import TTDWrongTurn
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -293,7 +294,10 @@ class RoadPath(AStar):
             pass
         else:
             tunnel_length = tile.d_manhattan(dest)
-            prev_tile = tile + dest%tile
+            try:
+                prev_tile = tile + dest%tile
+            except TTDWrongTurn:
+                return
             if src == tile and tunnel_length >= 2 and prev_tile.xy == tile.prev.xy and tile.build_tunnel(VT_Road):
                 yield _cost(tile+tile.d*tunnel_length)
 
