@@ -300,6 +300,9 @@ class BaseScript:
                 self.log.exception(f"Script Error: {exc}")
                 self.print(f"DEAD: {exc}")
                 evt.value = exc
+                _main.get()._last_exc = exc
+                exc.__cause__ = None
+                exc.__context__ = None
             except BaseException as exc:
                 self.print(f"DEAD: {exc}")
                 evt.value = CancelledError()

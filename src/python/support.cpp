@@ -30,6 +30,9 @@ namespace PyTTD {
 		m.def("get_setting", &ScriptController::GetSetting, nanobind::arg("name"));
 		m.def("get_version", &ScriptController::GetVersion);
 		m.def("print", &ScriptController::Print);
+		m.def("leakage_warning", [](bool warn) {
+			py::set_leak_warnings(warn);
+		});
 
 		py::enum_<DirDiff>(m, "DirDiff" ,py::is_arithmetic())
 			.value("S", DirDiff::DIRDIFF_SAME)

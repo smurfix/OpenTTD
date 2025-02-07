@@ -127,6 +127,7 @@ class Main:
     _code:dict[int,BaseScript]
     _game_mode:GameMode = None
     _pause_state:PauseState = None
+    _last_exc = None
     stopping:bool = True
 
     signs:PlusSet[openttd.sign.Sign]
@@ -262,9 +263,13 @@ class Main:
 
         except anyio.get_cancelled_exc_class():
             raise
-        except BaseException as ex:
-            self.logger.exception(f"{module} Died:")
-            self.send(openttd.internal.msg.CommandRunEnd(repr(ex)))
+        except BaseException as exc:
+            if self._last_exc is not exc:
+                self.logger.exception(f"{module} Died:")
+                self._last_exc = exc
+                exc.__cause__ = None
+                exc.__context__ = None
+            self.send(openttd.internal.msg.CommandRunEnd(repr(exc)))
         else:
             self.send(openttd.internal.msg.CommandRunEnd(""))
 
@@ -499,10 +504,6 @@ class Main:
             with anyio.fail_after(10):
                 await evt.event.wait()
             return evt.value
-
-        except BaseException as exc:
-            logger.exception(f"Command {cmdr}: error")
-            raise
 
         finally:
             if cmdr in self._replies:
@@ -821,16 +822,20 @@ def run():
     v = _ttd.debug_level
     logging.basicConfig(level=logging.ERROR if v==0 else logging.WARNING if
                         v==1 else logging.INFO if v==2 else logging.DEBUG)
+    main = None
     try:
         # TODO use asyncio when a script needs libraries that don't work with trio
-        anyio.run(Main().main, backend="trio")
+        main = Main()
+        anyio.run(main.main, backend="trio")
+        main.send(openttd.internal.msg.Stop())
     except Exception as exc:
         try:
+            _ttd.support.leakage_warning(False)
             self.send(openttd.internal.msg.ConsoleMsg(f"Python died: {exc}"))
+            self.send(openttd.internal.msg.Stop(str(exc)))
         except Exception:
             pass
         if main._last_exc is not exc:
             traceback.print_exc()
         exc.__cause__ = None
         exc.__context__ = None
-        raise

@@ -99,14 +99,17 @@ namespace PyTTD {
 			status = Py_InitializeFromConfig(&cfg);
 			if (PyStatus_Exception(status) != 0) {
 				PyConfig_Clear(&cfg);
-				throw std::runtime_error(PyStatus_IsError(status) != 0 ? status.err_msg
-																	: "Failed to init CPython");
+				throw std::runtime_error(PyStatus_IsError(status) != 0 ? status.err_msg : "Failed to init CPython");
 			}
 			PyConfig_Clear(&cfg);
 
 			try {
 				py::module_ sys_ = py::module_::import_("sys");
 				py::list m_ = sys_.attr("path").attr("insert");
+
+				// Python does have a native way to set up the
+				// interpreter's paths, it's based on wide-char
+				// strings and thus a major hassle to use.
 
 				int i = 0;
 				char *env = getenv("TTDPYTHONPATH");
@@ -139,11 +142,14 @@ namespace PyTTD {
 				Debug(python, 2, "Python task ends.");
 			}
 			catch (const std::exception &ex) {
+				std::cerr << "*** The Python interpreter died ***" << std::endl;
 				std::cerr << typeid(ex).name() << std::endl;
 				std::cerr << "  what(): " << ex.what() << std::endl;
 			}
 			catch (...) {
+				std::cerr << "*** The Python interpreter died ***" << std::endl;
 				std::cerr << typeid(std::current_exception()).name() << std::endl;
+				throw;
 			}
 
 			PyTTD::exit_ttd();
