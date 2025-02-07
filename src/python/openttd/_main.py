@@ -333,11 +333,19 @@ class Main:
             msg = _ttd.msg._done_cb(cmdr.callback, st)
             if msg is not None:
                 # The callback enqueued another command.
-                # Wait on that and then trigger the original.
+                # Wait for that before continuing.
+                try:
+                    r2 = await msg
 
-                evt.value = await msg
-            else:
-                evt.value = st.result
+                except BaseException:
+                    evt.value = CancelledError()
+                    evt.event.set()
+                    raise
+                else:
+                    self.debug(5,"Subcommand:",r2)
+            # We return the original result because that's what matters.
+            res = st.result  # can only be read once!
+            evt.value = res
         else:
             evt.value = msg.result.success
         evt.event.set()
@@ -486,8 +494,6 @@ class Main:
 
     def _send_cmd(self, cmd, buf, cb) -> Awaitable[CommandResult]:
         # called from the command hook
-        if estimating.get():
-            raise RuntimeError(f"Test mode is on but command {cmd} got enqueued anyway")
         return self.send_cmd(cmd, buf, cb=cb)
 
     def send_cmd(self, cmd, buf, company=None, cb=0) -> Awaitable[CommandResult]:
