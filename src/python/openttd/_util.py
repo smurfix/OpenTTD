@@ -85,9 +85,21 @@ def with_(Wrap:type, proc, *a, **kw):
                     return _resolve(result, maybe_async=False)
                 return hdl()
 
-        if Wrap is None:
+        if Wrap in (True,None):
+            if isinstance(result, _ttd.support.CommandCost):
+                if result.message is not None:
+                    raise TTDCommandError(proc,a,kw, result=result)
+                breakpoint()
             if not result:
-                raise TTDCommandError(proc,a,kw)
+                from openttd._main import estimating
+                if estimating.get():
+                    return False
+                raise TTDCommandError(proc,a,kw, err="?")
+            if isinstance(result,list):
+                result = result[0]
+            if not result:
+                breakpoint()
+                raise TTDCommandError(proc,a,kw, err="?")
             return result
         if Wrap is False:
             return result
@@ -95,6 +107,7 @@ def with_(Wrap:type, proc, *a, **kw):
             return Wrap(*result)
         else:
             # presumably this didn't work
+            breakpoint()
             raise TTDCommandError(proc,a,kw,result)
 
     return _resolve(proc(*a,**kw))
