@@ -14,6 +14,7 @@ from contextlib import nullcontext
 from operator import itemgetter
 from ._util import capture
 from heapq import heappush,heappop
+from functools import wraps
 
 test_stop = None  # from openttd.base. Circular import. Patched in later.
 
@@ -88,6 +89,21 @@ def extension_of(base: type) -> Callable[[type],type]:
         DERIV.__name__=deriv.__name__
         return DERIV
     return mangler
+
+def sync(fn):
+    """
+    This decorator ensures that the wrapped call does not block.
+
+    In sync mode we transparently forward to the wrapped function.
+    In async mode we delegate the call to a subthread and return the
+    resulting Awaitable.
+
+    """
+    @wraps(fn)
+    def wrapper(*a,**kw):
+        from openttd.base import SELF
+        return SELF.get()._sync(fn,a,kw)
+    return wrapper
 
 async def maybe_async(fn, *a, **kw):
     """

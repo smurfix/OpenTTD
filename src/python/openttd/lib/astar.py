@@ -10,6 +10,7 @@ from operator import attrgetter
 import heapq
 from attrs import define
 import openttd
+from openttd.util import sync
 
 __all__ = ["AStar"]
 
@@ -127,6 +128,7 @@ class AStar:
         """
         return False
 
+    @sync
     def run(self, start: TilePath|Iterable[TilePath]) -> TilePath | None:
         """
         Run the search.

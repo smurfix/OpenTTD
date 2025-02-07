@@ -18,6 +18,7 @@ from contextvars import ContextVar
 from contextlib import contextmanager
 from concurrent.futures import CancelledError
 
+import _ttd
 import openttd
 from ._main import _async, _storage, _main, estimating, VEvent, test_mode, _STOP
 from .util import maybe_async_threaded
@@ -143,15 +144,47 @@ class BaseScript:
     async def _sleep(self, ticks):
         await _main.get().tick_wait(ticks)
 
+    ### Subthread handling
+
+    def _in_thr(self,hlt,proc,a,kw):
+        # in-thread wrapper: stops on HLT, clears async
+        _STOP.set(hlt._STOP)
+        _async.set(False)
+        estimating.set(False)
+
+        sto = _ttd.object.Storage(self.__company)
+        try:
+            sto.road_type=self.__storage.road_type
+        except ValueError:
+            pass
+        try:
+            sto.rail_type=self.__storage.rail_type
+        except ValueError:
+            pass
+        _storage.set(sto)
+
+        with hlt.lock:
+            if hlt.halt is not None:
+                return
+            hlt.halt=False
+        return proc(*a,**kw)
+
+    async def _run_thr(self,hlt,proc,a,kw):
+        # Starts the thread, triggers HLT when done
+        try:
+            hlt.res = await anyio.to_thread.run_sync(self._in_thr,hlt,proc,a,kw, abandon_on_cancel=False)
+        except* CancelledError:
+            pass
+        finally:
+            hlt.halt=True
+            hlt.evt.set()
+
     # TODO typing
-    def subthread(self, proc:Callable, *a, **kw):
+    def subthread(self, proc:Callable, *a, **kw) -> Awaitable|HLT:
         """
         Start a thread.
 
-        The thread can read OpenTTD data. It runs synchronously.
-        Test mode is enabled.
-
-        Your procedure *MUST* periodically call 'test_stop()'.
+        @proc procedure *MUST* periodically call 'test_stop()'.
         This call will raise a `CancelledError` exception if your thread
         should exit. *DO NOT* ignore it.
 
@@ -161,37 +194,32 @@ class BaseScript:
         can stop the task the usual way (i.e. wrap the call to this method
         in an `anyio.CancelScope` and cancel that).
         """
-        def _call2(hlt,proc,a,k):
-            _STOP.set(hlt._STOP)
-            _async.set(False)
-            estimating.set(False)
-            with hlt.lock:
-                if hlt.halt is not None:
-                    return
-                hlt.halt=False
-            return proc(*a,**kw)
-
-        async def _call(hlt,proc,a,kw):
-            try:
-                hlt.res = await anyio.to_thread.run_sync(_call2,hlt,proc,a,kw, abandon_on_cancel=False)
-            except* CancelledError:
-                pass
-            finally:
-                hlt.halt=True
-                hlt.evt.set()
-
         hlt = HLT()
 
         if _async.get():
-            return self._subthread(_call,hlt,proc,a,kw)
+            # start a subtask that triggers HLT when cancelled
+            # because _run_thr can't do that
+            return self._subthread(hlt,proc,a,kw)
         else:
-            return anyio.from_thread.run_sync(self.taskgroup.start_soon,_call,hlt,proc,a,kw)
+            # run _run_thr in our taskgroup,
+            anyio.from_thread.run_sync(self.taskgroup.start_soon,self._subthread,hlt,proc,a,kw)
+            return hlt
 
-    async def _subthread(self, _call,hlt,proc,a,kw) -> Awaitable[Any]:
+    # TODO typing
+    def _sync(self, proc:Callable, a, kw):
+        """
+        Helper for the ``@sync`` wrapper to delegate to a thread
+        when in async mode.
+        """
+        if not _async.get():
+            return proc(*a,**kw)
+        return self._subthread(HLT(),proc,a,kw)
+
+    async def _subthread(self, hlt,proc,a,kw) -> Awaitable[Any]:
         "Encapsulate a subthread so it's cancelled on error."
         async with anyio.create_task_group() as tg:
             try:
-                tg.start_soon(_call,hlt,proc,a,kw)
+                tg.start_soon(self._run_thr,hlt,proc,a,kw)
                 await hlt.evt.wait()
             except BaseException:  # we got cancelled
                 with hlt.lock:
@@ -199,7 +227,7 @@ class BaseScript:
                         # didn't yet start, so set the event here.
                         hlt.evt.set()
                     hlt.halt=True
-                    # otherwise _call2 is running, so _call will set the event.
+                    # otherwise _in_thr is running, so _run_thr will set the event.
 
                 # In any case, we wait a bit for the thread to end
                 with anyio.move_on_after(0.2,shield=True):
@@ -211,7 +239,9 @@ class BaseScript:
                     await hlt.evt.wait()
                 raise
 
-            return hlt.res
+        if isinstance(hlt.res,Exception):
+            raise hlt.res
+        return hlt.res
 
     def print(self, *a, **kw) -> None:
         """
@@ -261,7 +291,6 @@ class BaseScript:
 
         Don't override this.
         """
-        import _ttd
         evt = VEvent()
         self.__storage = st = _ttd.object.Storage(self.__company)
         _storage.set(st)
