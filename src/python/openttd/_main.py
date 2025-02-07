@@ -84,6 +84,20 @@ def test_mode():
     finally:
         estimating.reset(token)
 
+@contextmanager
+def real_mode():
+    """
+    Switch the script engine to real mode.
+    Script commands will do real work.
+
+    This is intended for debugging.
+    """
+    try:
+        token = estimating.set(False)
+        yield
+    finally:
+        estimating.reset(token)
+
 
 @define(hash=True,eq=True)
 class CmdR:
