@@ -79,7 +79,7 @@ class RoadPath(AStar):
     cost_tile = 100
     cost_no_existing_road = 40
     cost_turn = 50
-    cost_slope = 300
+    cost_slope = 500
     cost_bridge = 200
     cost_tunnel = 50
     cost_bridge_per_tile = 150
