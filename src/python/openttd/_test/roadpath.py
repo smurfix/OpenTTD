@@ -22,6 +22,11 @@ class Script(TestScript):
     async def test(self):
         # TODO as soon as it's working, move the blocking stuff to a subthread
         t=openttd.tile
+
+        # Get more money
+        corp = self.company
+        await corp.set_loan_amount(corp.max_loan_amount)
+
         async def rtest(a,b,ab,c,d,cd):
             from openttd.lib.pathfinder.road import RoadPath
 
