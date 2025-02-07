@@ -23,6 +23,8 @@
 
 #include "script/api/script_object.hpp"
 #include "script/script_storage.hpp"
+#include "script/api/script_road.hpp"
+#include "script/api/script_rail.hpp"
 
 #include <nanobind/intrusive/counter.inl>
 
@@ -85,8 +87,12 @@ namespace PyTTD {
 			.def_rw("last_cost", &Storage::last_cost)
 			.def_rw("last_error", &Storage::last_error)
 
-			.def_rw("road_type", &Storage::road_type)
-			.def_rw("rail_type", &Storage::rail_type)
+			.def_prop_rw("road_type",
+						 [](const Storage &x) { return (ScriptRoad::RoadType)x.road_type;},
+						 [](Storage &x, ScriptRoad::RoadType y) {x.road_type = (RoadType)y;})
+			.def_prop_rw("rail_type",
+						 [](const Storage &x) { return (ScriptRail::RailType)x.rail_type;},
+						 [](Storage &x, ScriptRail::RailType y) {x.rail_type = (RailType)y;})
 
 			.def_prop_rw("result", &Storage::get_result, &Storage::add_result, "Read the command result data")
 			;
