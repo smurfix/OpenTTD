@@ -92,13 +92,13 @@ class RoadPath(AStar):
         self.sources = sources
         self.goals = set(goals)
         for k,v in cfg:
-            if not isinstance(getattr(self,k,None),int):
+            if not isinstance(getattr(self,k,None),(int,float)):
                 raise ValueError(f"Unknown attribute: {k !r}")
             setattr(self,k,v)
 
     def run(self) -> TilePath:
         """
-        Main code. You *must* Run in a subthread without arguments.
+        Main pathfinder.
         """
         return super().run(self.sources)
 
@@ -137,26 +137,23 @@ class RoadPath(AStar):
             return 1
         return is_sloped(end_a.slope, direction) + is_sloped(end_b.slope,direction.back)
 
-    def cost(self, prev, tile):
-        """Incremental cost to go to new_tile"""
+    def cost(self, tile):
+        """Incremental cost to go to this tile"""
         may_need_build = True
 
-        if prev is None:
+        if tile.d is Dir.SAME:
             # first node of a path
             return 0
 
-        # If the new tile is an existing bridge / tunnel start,
-        # we came from the other end.
-        if tile.has_bridge:
-            return tile.d_manhattan(prev) * self.cost_tile + self.slopes_for_bridge(tile, prev) * self.cost_slope
+        # If the current leg is a jump, there either is a bridge or tunnel
+        # here, or we want one to be built.
+        if tile.jump:
+            if tile.has_bridge:
+                return tile.dist * self.cost_tile + self.slopes_for_bridge(tile, tile.start) * self.cost_slope
 
-        if tile.has_tunnel:
-            return tile.d_manhattan(prev) * self.cost_tile
+            if tile.has_tunnel:
+                return tile.dist * self.cost_tile
 
-        # If the two tiles are more than 1 tile apart, the pathfinder wants a
-        # bridge or tunnel to be built.
-
-        if tile.d_manhattan(prev) > 1:
             # Check if we should build a bridge or a tunnel. If it's
             # a tunnel then it has a valid destination *and* tunneling the
             # other end gets back to us.
@@ -164,23 +161,25 @@ class RoadPath(AStar):
                 dest = tile.tunnel_dest
             except ValueError:
                 dest = None
-            if dest is not None and dest == prev:
-                cost = self.cost_tunnel + tile.d_manhattan(prev) * (self.cost_tile + self.cost_tunnel_per_tile)
+
+            if dest is not None and dest == tile.start:
+                cost = self.cost_tunnel + tile.dist * (self.cost_tile + self.cost_tunnel_per_tile)
             else:
-                cost = self.cost_bridge + tile.d_manhattan(prev) * (self.cost_tile + self.cost_bridge_per_tile) + self.slopes_for_bridge(tile, prev) * self.cost_slope
+                cost = self.cost_bridge + tile.dist * (self.cost_tile + self.cost_bridge_per_tile) + self.slopes_for_bridge(tile, tile.prev) * self.cost_slope
 
         else:
+            # incremental cost for this step
             cost = self.cost_tile if tile.dist else 0
             may_need_build = True
 
         # Next, account for turns.
-        if tile.d != prev.d:
+        if tile.dist == 1 and tile.prev_turn and tile.prev_turn.d not in (tile.d,Dir.SAME):
             cost += self.cost_turn
 
             # Check for two turns in succession. We make these a bit more
             # expensive so we don't end up with a zigzag pattern.
 
-            if tile.prev_turn is not None and tile.prev_turn.prev_turn is not None and tile.prev_turn.dist <= 2 and tile.prev_turn.prev_turn.d is not Dir.SAME:
+            if tile.prev_turn.prev_turn is not None and tile.prev_turn.dist <= 2 and tile.prev_turn.prev_turn.d is not Dir.SAME:
                 if tile.prev_turn.d-tile.d == tile.prev_turn.prev_turn.d-tile.prev_turn.d:
                     # Tight U-turns get even more penalized.
                     cost += self.cost_turn*3
@@ -190,10 +189,10 @@ class RoadPath(AStar):
         if tile.is_coast:
             cost += self.cost_coast
 
-        if prev.prev is not None and not prev.has_bridge and not prev.has_tunnel and self.is_sloped_road(prev.prev,prev,tile):
+        if tile.prev.prev is not None and self.is_sloped_road(tile.prev.prev,tile.prev,tile):
             cost += self.cost_slope
 
-        if not prev.has_road_to(tile):
+        if not tile.prev.has_road_to(tile) or not tile.has_road_to(tile.prev):
             cost += self.cost_no_existing_road
 
         return cost
@@ -217,55 +216,68 @@ class RoadPath(AStar):
 
     def neighbors(self, tile):
         def _cost(new_tile):
-            return new_tile,self.cost(tile,new_tile)
+            return new_tile,self.cost(new_tile)
 
         # self.max_cost is the maximum path cost;
         # if we go over it, the path isn't valid.
         if tile.cache.fscore > self.max_cost:
             return
 
-        if (tile.has_bridge or tile.has_tunnel) and tile.has_transport(Transport.ROAD):
-            # We're at the exit of a bridge/tunnel.
+        if tile.jump:
+            # We're on the exit of a bridge/tunnel. Must exit straight.
             next_tile = tile+Turn.S
-            # test whether we can step off the bridge/tunnel
+            # Note that this test is not exhaustive: an existing road might
+            # be going down a slope that a bridge joins at a right angle.
+            # But that gets filtered at the next step.
             if tile.has_road_to(next_tile) or next_tile.is_buildable or next_tile.is_road:
                 yield _cost(next_tile)
             return
 
-        # If you compare this code to the original, you might wonder what
-        # happened to the next two sections. Surprise: they are superfluous.
-
-        for turn in (
-                # If not a start tile we can go straight, or turn right or left.
-                (Turn.S,Turn.RR,Turn.LL) if tile.prev_turn is not None else
-
-                # If the start direction doesn't matter, use any direction.
-                (Dir.NE,Dir.SE,Dir.NW,Dir.SW) if tile.d == Dir.SAME else
-
-                # If it does, go in that direction (only).
-                (tile.d,)
-                ):
-            next_tile = tile+turn
-
-            # We use the destination if one of the following applies:
-
-            if tile.has_road_to(next_tile):
-                # 1) There already is a connections between the current tile and the next tile.
-                yield _cost(next_tile)
-            elif (next_tile.is_buildable or next_tile.is_road) and (tile.prev is None or tile.can_build_road_parts(tile.prev.t, next_tile.t)) and tile.build_road_to(next_tile.t):
-                # 2) We can build a road to the next tile.
-                yield _cost(next_tile)
-            elif (length := self.check_tunnel_bridge(tile, next_tile)):
-                # 3) The next tile is the entrance of a tunnel / bridge in that direction.
-                yield _cost(tile+next_tile.d*length)  # exit of the tunnel
-
-        # Bridges and tunnels
-        if tile.prev is None:
-            # The start node can't be a tunnel.
+        # Test if we're at the start of an existing bridge or tunnel.
+        if (length := self.check_tunnel_bridge(tile)):
+            # Yes. Create a leg for the bridge/tunnel.
+            next_tile = tile + tile.d*length
+            yield _cost(next_tile)
+            return
+        elif length is False:
+            # Oops, dead end
             return
 
-        # Bridges will only be build starting on non-flat tiles for
-        # performance reasons. (XXX but we want to cross railways ..?)
+        # Which way can we go?
+        #
+        if tile.d is Dir.SAME:
+            # start tile: arbitrary direction.
+            dirs = (Dir.NE,Dir.SE,Dir.NW,Dir.SW)
+        elif tile.dist == 0:
+            # start tile: specific direction.
+            dirs = (tile.d,)
+        else:
+            # we can go straight, or turn right or left.
+            dirs = (Turn.S,Turn.RR,Turn.LL)
+
+        for turn in dirs:
+            next_tile = tile+turn
+
+            # We use the destination if either …
+            if tile.has_road_to(next_tile):
+                # … there already is a connections between the current tile and the next tile.
+                yield _cost(next_tile)
+
+            elif (next_tile.is_buildable or next_tile.is_road or next_tile.has_bridge or next_tile.has_tunnel) and (tile.prev is None or tile.can_build_road_parts(tile.prev.t, next_tile.t)) and tile.build_road_to(next_tile.t):
+                # … or we can build a road to it.
+                yield _cost(next_tile)
+
+        # Last, check if we can build a bridge or tunnel here.
+
+        if tile.dist == 0:
+            # The start node can't be a tunnel.
+            return
+        if not tile.is_buildable:
+            # There's already something here, so we can't place a bridge/tunnel.
+            return
+
+        # Bridges will only be built starting on non-flat tiles, for
+        # performance reasons. (TODO we want to cross railways or rivers)
         slope = tile.slope
         if slope is Slope.FLAT:
             return
@@ -276,10 +288,10 @@ class RoadPath(AStar):
         # (XXX well …)
 
         for i in range(2, self.max_bridge_length):
-            bridges = BridgeType.List(i + 1)
+            bridges = BridgeType.List(i)
             if bridges:
                 try:
-                    dest = tile+tile.d*(i+1)
+                    dest = tile+tile.d*i
                 except ValueError:
                     break
                 if bridges.any.build(VT_Road, tile.t,dest.t):
@@ -290,16 +302,12 @@ class RoadPath(AStar):
         try:
             dest = tile.tunnel_dest
             src = dest.tunnel_dest
-        except ValueError:
-            pass
-        else:
             tunnel_length = tile.d_manhattan(dest)
-            try:
-                prev_tile = tile + dest%tile
-            except TTDWrongTurn:
-                return
-            if src == tile and tunnel_length >= 2 and prev_tile.xy == tile.prev.xy and tile.build_tunnel(VT_Road):
-                yield _cost(tile+tile.d*tunnel_length)
+            next_tile=tile+tile.d*tunnel_length
+            if tunnel_length >= 2 and next_tile == dest and tile.build_tunnel(VT_Road):
+                yield _cost(next_tile)
+        except (ValueError,TTDWrongTurn):
+            pass
 
     @staticmethod
     def is_sloped_road(start, middle, end):
@@ -337,18 +345,21 @@ class RoadPath(AStar):
         return False
 
     @staticmethod
-    def check_tunnel_bridge(current, new) -> Literal[False]|int:
+    def check_tunnel_bridge(tile) -> Literal[False]|None|int:
         """
         Check if the next tile is the start of a bridge/tunnel
         that goes in the correct direction.
+
+        Returns `False` if the tunnel/bridge goes the wrong way, `None` if
+        there isn't one, otherwise the length of the tunnel/bridge.
         """
-        if new.has_bridge:
-            other = new.bridge_dest
-        elif new.has_tunnel:
-            other = new.tunnel_dest
+        if tile.has_bridge:
+            other = tile.bridge_dest
+        elif tile.has_tunnel:
+            other = tile.tunnel_dest
         else:
+            return None
+        if tile.d is not Dir.SAME and tile%other != tile.d:
             return False
-        if current%new != new%other:
-            return False
-        return current.d_manhattan(other)
+        return tile.d_manhattan(other)
 

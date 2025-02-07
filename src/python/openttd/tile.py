@@ -184,6 +184,9 @@ class Slope:
     def is_steep(self) -> bool:
         return bool(self.value & self.STEEP.value)
 
+    def __bool__(self):
+        return self.value != 0
+
     def can_build_road_parts(start:Dir, end:Dir, *existing:Dir):
         """
         Test whether a road from @start to @end is possible given this
@@ -285,6 +288,10 @@ class Tile[Collection:Tiles]:
 
     def __repr__(self):
         return f"Tile({self.x},{self.y})"
+
+    @property
+    def d(self):
+        return Dir.SAME
 
     @overload
     def __add__(self, x: Literal[Dir.SAME]) -> Self: ...
@@ -549,12 +556,6 @@ class Tile[Collection:Tiles]:
         return _ttd.script.order.are_order_flags_valid(self, flags)
 
     @property
-    def is_tunnel(self) -> bool:
-        return _ttd.script.tunnel.is_tunnel_tile(self)
-    @property
-    def tunnel_dest(self) -> Tile:
-        return Tile(_ttd.script.tunnel.get_other_tunnel_end(self))
-    @property
     def terrain(self) -> _ttd.script.tile.TerrainType:
         return _ttd.script.tile.get_terrain_type(self)
 
@@ -605,6 +606,10 @@ class Tile[Collection:Tiles]:
             return None
         return openttd._.Bridge(self, with_(Tile, _ttd.script.bridge.get_other_bridge_end,self))
 
+    @property
+    def bridge_dest(self) -> Tile:
+        return Tile(_ttd.script.bridge.get_other_bridge_end(self))
+
     # Building: _.BridgeType.build
 
     def remove_bridge(self) -> None:
@@ -617,6 +622,10 @@ class Tile[Collection:Tiles]:
     @property
     def has_tunnel(self) -> bool:
         return _ttd.script.tunnel.is_tunnel_tile(self)
+
+    @property
+    def tunnel_dest(self) -> Tile:
+        return Tile(_ttd.script.tunnel.get_other_tunnel_end(self))
 
     def build_tunnel(self, roadtype: _ttd.script.vehicle.Type):
         return with_(None,_ttd.script.tunnel.build_tunnel,roadtype, self)
@@ -746,6 +755,7 @@ class TilePath:
     t:Tile=field()
     d:Dir=field()
     _prev:TilePath|None=field(default=None)
+    _next:TilePath|None=field(default=None,init=False)
     dist:int=field(default=0)
     cache:Any=None
     jump:bool=False # bridge or tunnel
@@ -789,15 +799,15 @@ class TilePath:
 
     def __eq__(self, other:Tile|TilePath):
         """Compares location only!"""
-        if self.t.xy != other.xy:
+        if self.xy != other.xy:
             return False
+        if not isinstance(other, TilePath):
+            return True
         if self.d is Dir.SAME:
             return True
-        if isinstance(other,(Tile,_ttd.support.Tile_)):
-            return self.t == other
         if other.d is Dir.SAME:
             return True
-        return self.d is other.d
+        return self.d == other.d
 
     def __lt__(self, other:TilePath):
         return self.cache.__lt__(other.cache)
@@ -821,6 +831,8 @@ class TilePath:
             # No, turn
             if self.d is Dir.SAME:
                 raise ValueError("No initial direction, so where to?")
+            if self.jump and x not in (Turn.S,Turn.R,Tunr.L):
+                raise TTDWrongTurn(self.d,x, "corner")
             d=self.d+x
             return TilePath(self.t+d.xy, d, prev=self, dist=1)
 
@@ -869,7 +881,18 @@ class TilePath:
 
     @property
     def prev_turn(self):
+        """
+        Return the leg before this one.
+        """
         return self._prev
+
+    @property
+    def next_turn(self):
+        """
+        Return the leg after this one.
+        This value only exists when iterating the path.
+        """
+        return self._next
 
     @property
     def reversed(self):
@@ -878,19 +901,32 @@ class TilePath:
         if this.d is not Dir.SAME:
             # build an explicit start tile
             last = TilePath(self.t,Dir.SAME)
+            last._next = this
             yield last
+            last._next = None
         while this is not None:
             if this.d is not Dir.SAME:  # skip no-movement tiles
                 d=this.d.back
                 last = TilePath(this.t+d*this.dist, d, prev=last, dist=this.dist, jump=this.jump)
+                last._next = this
                 yield last
+                last._next = None
             this=this._prev
 
     def __iter__(self):
         """Iterate the path, starting at the beginning."""
-        if self._prev is not None:
-            yield from self._prev
-        yield self
+        while self._prev is not None:
+            self._prev._next = self
+            self = self._prev
+        try:
+            while self is not None:
+                yield self
+                s,self._next = self._next,None
+                self = s
+        finally:  # clean up the rest
+            while self is not None:
+                s,self._next = self._next,None
+                self = s
 
     def show(self):
         res = self.prev_turn.show() if self.prev_turn is not None else ""
