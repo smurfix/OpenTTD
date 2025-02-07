@@ -34,14 +34,9 @@ class TTDExecError(TTDError):
     """
     error = None
 
-    def __init__(self, err=None):
-        if err is None:
-            raise RuntimeError("No Error!")
-        if isinstance(err,str):
-            self.error = err
-            self.err = -1
-        else:
-            self.err = err
+    def __init__(self, err:int=None, err2:int=None):
+        self.err = err
+        self.err2 = err2
 
     def resolve(self):
         """
@@ -50,19 +45,31 @@ class TTDExecError(TTDError):
         # get the error enum
         if self.error is not None:
             return
+        if self.err is None:
+            self.error = "?"
+            return
+        msg = _ttd.support.get_string(self.err)
+        if msg is None:
+            msg = "?"
+        else:
+            if self.err2 and (msg2 := _ttd.support.get_string(self.err2)) is not None:
+                msg = f"{msg} ({msg2})"
+            msg=ctrl_re.sub("",msg)
+
+        msg2 = None
         try:
-            err = _ttd.script.error.Error(self.err).name
+            msg2 = _ttd.script.error.Error(self.err).name
         except ValueError:
-            for tag in ("bridge","marine","order","rail","road","sign"):
+            for tag in dir(_ttd.script):
                 try:
-                    err = getattr(_ttd.script,tag).Error(self.err).name
+                    msg2 = getattr(getattr(_ttd.script,tag),"Error")(self.err).name
                 except (AttributeError,ValueError):
                     pass
                 else:
                     break
-            else:
-                err = "?"
-        self.error = err
+        if msg2 is not None:
+            msg = f"{msg}:{msg2.name}"
+        self.error = msg
 
     def __repr__(self):
         if self.err == -1:
@@ -89,13 +96,11 @@ class TTDCommandError(TTDExecError):
         self.a = a
         self.kw = kw
         self.result = result
+
         if result is not None:
-            assert err is None
-            err = result.message
-            if result.extra_message is not None:
-                err += " "+result.extra_message
-            err=ctrl_re.sub("",err)
-        super().__init__(err)
+            super().__init__(result.message,result.extra_message)
+        else:
+            super().__init__()
 
     def resolve(self):
         """

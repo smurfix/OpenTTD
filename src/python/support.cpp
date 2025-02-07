@@ -30,6 +30,12 @@ namespace PyTTD {
 		m.def("get_setting", &ScriptController::GetSetting, nanobind::arg("name"));
 		m.def("get_version", &ScriptController::GetVersion);
 		m.def("print", &ScriptController::Print);
+		m.def("get_string", [](int msg) {
+                if (msg == INVALID_STRING_ID)
+                    return py::none();
+                auto s = GetString(msg);
+                return py::object(py::str(s.c_str(),s.size()));
+                });
 		m.def("leakage_warning", [](bool warn) {
 			py::set_leak_warnings(warn);
 		});
@@ -113,22 +119,10 @@ namespace PyTTD {
 
 		py::class_<CommandCost>(m, "CommandCost")
 			.def_prop_ro("cost", &CommandCost::GetCost)
-			.def_prop_ro("message", [](CommandCost &x){
-				auto msg = x.GetErrorMessage();
-				if (msg == INVALID_STRING_ID)
-					return py::none();
-				auto s = GetString(msg);
-				return py::object(py::str(s.c_str(),s.size()));
-				})
+			.def_prop_ro("message", &CommandCost::GetErrorMessage)
 			.def_prop_ro("expense_type", &CommandCost::GetExpensesType)
 			.def_prop_ro("success", &CommandCost::Succeeded)
-			.def_prop_ro("extra_message", [](CommandCost &x){
-				auto msg = x.GetExtraErrorMessage();
-				if (msg == INVALID_STRING_ID)
-					return py::none();
-				auto s = GetString(msg);
-				return py::object(py::str(s.c_str(),s.size()));
-				})
+			.def_prop_ro("extra_message", &CommandCost::GetExtraErrorMessage)
 			.def("__bool__", &CommandCost::Succeeded)
 			;
 
