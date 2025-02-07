@@ -253,6 +253,16 @@ def _copy(dst,src,prefix=""):
             continue
         setattr(dst,k,getattr(src,k))
 
+
+def _cmd_data_repr(self):
+    "__repr__ for CommandData"
+    return f"‹CmdData:{self.cmd.name}›"
+
+def _cmd_res_repr(self):
+    "__repr__ for CmdResult"
+    return f"‹CmdRes:{self.cmd.name}:{self.resultdata !r}›"
+
+
 def _importer(_ttd):
     """
     Reorganize the raw _ttd modules so that they look more pythonic.
@@ -324,6 +334,8 @@ def _importer(_ttd):
     ti.Command = _ttd.enum.Command
     ti.GameMode = _ttd.enum.GameMode
     ti.PauseState = _ttd.enum.PauseMode
+    _ttd.support.CommandData.__repr__ = _cmd_data_repr
+    _ttd.msg.CmdResult.__repr__ = _cmd_res_repr
     #t.Command=_ttd._support.Command
     #t.date.Date = _Date
     #t.date.sleep = _sleep
