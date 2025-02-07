@@ -200,7 +200,7 @@ file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stub")
 
 add_custom_command_timestamp(OUTPUT ${STUB_OUT}
         COMMAND env "TTDPYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}:${CMAKE_SOURCE_DIR}/src/3rdparty/nanobind/" ${CMAKE_BINARY_DIR}/openttd -v null -s null -b null -Q -Y 'openttd._stub_export ${STUB_OUT}'
-        MAIN_DEPENDENCY ${CMAKE_BINARY_DIR}/openttd
+        MAIN_DEPENDENCY openttd
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating stub API file"
 )
@@ -211,3 +211,28 @@ add_custom_target_timestamp(script_python_stub
         ${STUB_OUT}
 )
 install(FILES ${STUB_OUT} DESTINATION ${GLOBAL_DIR}/python/openttd/_stub/)
+
+
+# The code below auto-generates the string table mapping.
+
+set(STRINGTABLE_OUT "${CMAKE_CURRENT_BINARY_DIR}/export_strings.cpp")
+set(STRINGTABLE_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/export_strings.py)
+set(STRINGTABLE_SOURCE ${CMAKE_BINARY_DIR}/generated/table/strings.h)
+
+add_custom_command(OUTPUT ${STRINGTABLE_OUT}
+    COMMAND python3 ${STRINGTABLE_SCRIPT} ${STRINGTABLE_SOURCE} ${STRINGTABLE_OUT}
+    MAIN_DEPENDENCY ${STRINGTABLE_SOURCE}
+    DEPENDS ${STRINGTABLE_SCRIPT}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating ${STRINGTABLE_OUT}"
+)
+set_property(SOURCE ${STRINGTABLE_OUT} PROPERTY GENERATED ON)
+
+add_custom_target_timestamp(script_python_strings
+    DEPENDS
+    ${STRINGTABLE_OUT}
+)
+add_dependencies(script_python
+    script_python_strings
+)
+target_sources(openttd_lib PRIVATE ${STRINGTABLE_OUT})

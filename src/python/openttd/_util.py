@@ -11,6 +11,7 @@ This submodule is used to re-organize the raw _ttd import.
 
 from __future__ import annotations
 
+import _ttd
 from collections.abc import Sequence
 from .error import TTDCommandError
 
@@ -21,6 +22,42 @@ if TYPE_CHECKING:
     from typing import Callable
 
 _assigned = set()
+
+
+class StringTab:
+    """
+    String mapping.
+    """
+    _sub:dict[str,StringTab]=None
+    _ids:dict[str,int]=None
+
+    def __init__(self):
+        self._sub=dict()
+        self._ids=dict()
+
+    def bool(self):
+        return bool(self._sub) or bool(self._ids)
+    def __setattr__(self,k,v):
+        if k[0] == "_":
+            object.__setattr__(self,k,v)
+        else:
+            self._sub[k] = v
+    def __setitem__(self,k,v):
+        self._ids[k] = v
+    def __getattr__(self,k):
+        if k in self._sub:
+            return self._sub[k]
+        return self._ids[k]
+    def __dir__(self):
+        res = []
+        if self._sub is not None:
+            res.extend(self._sub.keys())
+        if self._ids is not None:
+            res.extend(self._ids.keys())
+        if not res:
+            res = super().__dir__()
+        return res
+
 
 def with_(Wrap:type, proc, *a, **kw):
     """
@@ -228,7 +265,9 @@ def _importer(_ttd):
     import openttd as t
     import openttd._hook as th
 
+    t.str = _ttd._add_strings(StringTab)
     t.internal = ti = _Sub("internal")
+
     ti.msg = _ttd.msg
     ti.task = _ttd._task
     ti.StopWork = StopWork

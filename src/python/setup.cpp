@@ -20,6 +20,7 @@ namespace PyTTD {
 	extern void init_ttd_object(py::module_ &);
 	extern void init_ttd_support(py::module_ &);
 	extern void init_ttd_modules(py::module_ &);
+	extern void init_ttd_string_id(py::module_ &);
 
 	PyObject *init_ttd()
 	{
@@ -33,6 +34,7 @@ namespace PyTTD {
 		init_ttd_msg(m);
 		init_ttd_enums(m);
 		init_ttd_modules(m);
+		init_ttd_string_id(m);
 
 		// magic incantation 2
 		return m.release().ptr();
