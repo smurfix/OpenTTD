@@ -48,7 +48,7 @@
 
 ## 3.0) Playing internet games
 
-- Servers with a red dot behind it have a different version then you have. You
+- Servers with a red dot behind it have a different version than you have. You
   will not be able to join those servers.
 
 - Servers with a yellow dot behind it have NewGRFs that you do not have. You
@@ -57,7 +57,7 @@
   NewGRFs after which you can join the server.
 
 - It can happen that a connection is that slow, or you have that many clients
-  connected to your server, that your clients start to loose their connection.
+  connected to your server, that your clients start to lose their connection.
   Some things you can do about it:
   - `[network] frame_freq`:
     change it in console with: `set network.frame_freq <number>`
@@ -74,7 +74,7 @@
     clients can desync in 1960, but the server detects it in 1970. Not really
     handy. The lower the value, the more bandwidth it uses.
 
-   NB: changing `frame_freq` has more effect on the bandwidth then `sync_freq`.
+   NB: changing `frame_freq` has more effect on the bandwidth than `sync_freq`.
 
 ## 4.0) Tips for servers
 
@@ -85,7 +85,7 @@
 - You can automatically clean companies that do not have a client connected to
   them, for, let's say, 3 years. You can do this via: `set autoclean_companies`
   and `set autoclean_protected` and `set autoclean_unprotected`. Unprotected
-  removes a password from a company when it is not used for more then the
+  removes a password from a company when it is not used for more than the
   defined amount of months. `set autoclean_novehicles` can be used to remove
   companies without any vehicles quickly.
 
@@ -94,7 +94,7 @@
 - You can let your server automatically restart a map when, let's say,
   year 2030 is reached. See `set restart_game_date` for detail.
 
-- If you want to be on the server-list, make your server public. You can do
+- If you want to be on the server list, make your server public. You can do
   this either from the Start Server window, via the in-game Online Players
   window, or by typing in the console: `set server_game_type public`.
 
@@ -107,7 +107,7 @@
   `frame_freq` to 1 will reduce it to roughly 1 kilobyte per second per client.
 
 - OpenTTD's default settings for maximum number of clients, and amount of data
-  from clients to process are chosen to not influence the normal playing of
+  from clients to process, are chosen to not influence the normal playing of
   people, but to prevent or at least make it less likely that someone can
   perform a (distributed) denial-of-service attack on your server by causing
   an out-of-memory event by flooding the server with data to send to all
