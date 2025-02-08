@@ -13,11 +13,8 @@ import anyio
 import openttd
 from openttd.base import BaseScript
 from openttd.road import RoadType
-from openttd.bridge import BridgeType
-from openttd.error import TTDCommandError
 from openttd._main import VEvent
 from . import TestScript
-VT_Road=openttd._.VehicleType.ROAD
 
 class Script(TestScript):
     async def test(self):
@@ -40,7 +37,8 @@ class Script(TestScript):
 
             pf = RoadPath((start,),(dest,))
 
-            await openttd.road.set_current_type(RoadType.ROAD)
+            RoadType.set_current(RoadType.ROAD)
+            assert RoadType.current == RoadType.ROAD
             res = await self.subthread(pf.run)
             if res is None:
                 print("ROUTING PROBLEM",a,b,ab,c,d,cd)
@@ -50,54 +48,8 @@ class Script(TestScript):
             print("***")
             for k in res.reversed:
                 print(k)
-            todo=None
 
-            async def rd(a,b):
-                try:
-                    await a.build_road_to(b)
-                except TTDCommandError as err:
-                    if err.err != openttd.str.error.ALREADY_BUILT:
-                        print("ERR ROAD {a} {b} {err}")
-                        await a.Sign(f"ERR {a}")
-                        await b.Sign(f"ERR {b}")
-                        #raise
-
-            for k in res:
-                if k.d is t.Dir.SAME:
-                    continue
-                if not k.jump:
-                    print(f"Road from {k.start} to {k.t}")
-                    a = k.start
-                    b = k.t
-                    if k.next_turn and k.next_turn.jump:
-                        todo = (a,b)
-                    else:
-                        await rd(a,b)
-                    continue
-
-                # Tunnel?
-                try:
-                    dest = k.tunnel_dest
-                    src = dest.tunnel_dest
-                except ValueError:
-                    src = None
-                if src is not None and src == k:
-                    if not k.has_tunnel:
-                        try:
-                            await k.build_tunnel(VT_Road)
-                        except Exception as exc:
-                            print("OWCH",exc)
-                            await k.Sign(f"ERR {k}")
-                            await k.start.Sign(f"ERR {k.start}")
-                else:
-                    # No. Build a Bridge.
-                    if not k.has_bridge:
-                        print(f"Bridge from {k.t} to {k.start}")
-                        await BridgeType.List(k.dist).any.build(VT_Road,k.t,k.start)
-
-                if todo:
-                    await rd(*todo)
-                    todo=None
+            await res.build_road()
 
         async with anyio.create_task_group() as tg:
             tg.start_soon(rtest, 50,105,"A", 70,100,"B")

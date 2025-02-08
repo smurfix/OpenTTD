@@ -937,4 +937,12 @@ class TilePath:
             res += _arrows[i]*max(self.dist,1)
         return res
 
+    def build_road(self, **kw):
+        """
+        Build a road on this path.
+
+        See `openttd.road.build_road` for details.
+        """
+        from openttd.road import build_road
+        return build_road(self, **kw)
 
