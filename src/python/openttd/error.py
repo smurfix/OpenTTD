@@ -10,8 +10,8 @@ Errors
 from __future__ import annotations
 
 import _ttd
-import re
-ctrl_re=re.compile("[\ue000-\ue0ff]+")
+import re as _re
+_ctrl_re=_re.compile("[\ue000-\ue0ff]+")
 
 class TTDError(RuntimeError):
     """
@@ -54,7 +54,7 @@ class TTDExecError(TTDError):
         else:
             if self.err2 and (msg2 := _ttd.support.get_string(self.err2)) is not None:
                 msg = f"{msg} ({msg2})"
-            msg=ctrl_re.sub("",msg)
+            msg=_ctrl_re.sub("",msg)
 
         msg2 = None
         try:
