@@ -154,6 +154,7 @@ BEGIN {
 /\/\*/           { comment_buffer = ""; comment = "false";  next; }
 /\*\//           { comment_buffer = comment_buffer $0; comment = "false"; next; }
 {
+	if (comment == "true" && match($0, /@lock /)) next;
 	if (comment == "true" && !match($0, /@api/))
 	{
 		if (match($0, /@game /) && api != "GS") next;
