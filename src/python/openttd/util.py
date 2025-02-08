@@ -37,6 +37,9 @@ class _add_new_checker(type):
         return getattr(self._DERIV__Base, k)
 
 
+class classproperty(property):
+    _ttd_META = True
+
 def extension_of(base: type) -> Callable[[type],type]:
     """
     Mostly-transparently extend a class or enum with additional methods.
@@ -67,11 +70,16 @@ def extension_of(base: type) -> Callable[[type],type]:
         import os
         if "PY_OTTD_STUB_GEN" in os.environ:
             return deriv
+        attrs={}
         for k in dir(deriv):
             if k.startswith("__") and hasattr(base,k):
                 continue
             v = getattr(deriv,k)
-            setattr(base,k,v)
+            if getattr(v,"_ttd_META", False):
+                attrs[k] = v
+            else:
+                setattr(base,k,v)
+
         for k in ("__members__",):
             try:
                 v = getattr(base,k)
@@ -83,9 +91,13 @@ def extension_of(base: type) -> Callable[[type],type]:
                 except AttributeError:
                     pass
 
-        class DERIV(deriv,metaclass=_add_new_checker):
+        class META(_add_new_checker):
+            pass
+        class DERIV(deriv,metaclass=META):
             __Base=base
             __over_new = "__new__" not in deriv.__dict__
+        for k,v in attrs.items():
+            setattr(META,k,v)
         DERIV.__name__=deriv.__name__
         return DERIV
     return mangler
@@ -137,6 +149,25 @@ async def maybe_async_threaded(fn, *a, **kw):
     if hasattr(res,"__await__"):
         res = await res
     return res
+
+def maybe_sync(fn, *a, **kw):
+    """
+    This wrapper runs the supplied function. If the result
+    is an Awaitable, it waits for it.
+
+    Use this in ``@sync``-wrapped functions when you don't know the type of
+    a callback or similar.
+    """
+    from ._main import _async
+    if _async.get():
+        raise RuntimeError("Can only be used in a subthread")
+    res = fn(*a,**kw)
+    if not hasattr(res,"__await__"):
+        return res
+    async def hdl(res):
+        return await res
+    return anyio.from_thread.run(hdl,res)
+
 
 def testmode_if(flag:bool):
     """
