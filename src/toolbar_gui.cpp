@@ -61,9 +61,7 @@
 #include "timer/timer_game_calendar.h"
 #include "help_gui.h"
 
-#ifdef WITH_PYTHON
-#include "python/script_funcs.h"
-#endif
+#include "python/gui.h"
 
 #include "widgets/toolbar_widget.h"
 

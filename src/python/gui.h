@@ -5,17 +5,14 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file script_cmd.h Command definitions related to scripts. */
+/** @file python/gui.h window constructor declarations for Python. */
 
-#ifndef PY_SCRIPT_FUNCS_H
-#define PY_SCRIPT_FUNCS_H
-
-#include "../command_type.h"
-#include "../tile_type.h"
+#ifndef PY_GUI_H
+#define PY_GUI_H
 
 struct Window;
 
 /* python_gui.cpp */
 Window *ShowPythonScriptList();
 
-#endif /* PY_SCRIPT_FUNCS_H */
+#endif /* PY_GUI_H */
