@@ -79,7 +79,7 @@ public:
 	virtual ~SimpleCountedObject() = default;
 
 	inline void AddRef() { ++this->ref_count; }
-	void Release();
+	bool Release();
 	virtual void FinalRelease() {};
 
 private:
