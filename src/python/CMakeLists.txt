@@ -235,4 +235,7 @@ add_custom_target_timestamp(script_python_strings
 add_dependencies(script_python
     script_python_strings
 )
+add_dependencies(script_python_strings
+    table_strings
+)
 target_sources(openttd_lib PRIVATE ${STRINGTABLE_OUT})
