@@ -258,8 +258,10 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
         enum_cls = cls_name
         enum_name = m.group(1)
         ename = enum_name
-        if ename.startswith(api_cls):
+        if len(ename) > len(api_cls) and ename.startswith(api_cls):
             ename = ename[len(api_cls):]
+        elif len(ename) > len(api_cls)+6 and ename.startswith("Script"+api_cls):
+            ename = ename[len(api_cls)+6:]
         if ename == "":
             # Umm, no.
             enum_cls=enum_name=None
@@ -270,6 +272,12 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
             print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}", py::is_flag(),py::is_arithmetic())')
         else:
             print(f'    py::enum_<{enum_cls}::{enum_name}>(m, "{ename}")')
+
+        enum_prefixes = {api_cls, enum_name}
+        if enum_name.endswith("Type"):
+            enum_prefixes.add(enum_name[:-4])
+        if enum_name.startswith("Script"):
+            enum_prefixes.add(enum_name[6:])
         continue
 
     # Maybe the end of the class
@@ -306,8 +314,7 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
                 pname = pname[4:]
 
         pname = pname.replace("VEHTYPE","VEHICLETYPE")
-        for cn in (api_cls, enum_name)+((enum_name[:-4] if
-                                         enum_name.endswith("Type") else ()),):
+        for cn in enum_prefixes:
             if cn and pname.startswith(cn.upper()+"_"):
                 # ERR_VEHICLE_TOO_MANY ⇒ vehicle.Error.TOO_MANY
                 pname = pname[len(cn)+1:]
