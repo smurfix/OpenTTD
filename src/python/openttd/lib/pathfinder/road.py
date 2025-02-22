@@ -201,9 +201,9 @@ class RoadPath(AStar):
 
         return cost
 
-    def estimate(self, tile):
+    def estimate(self, tile:TilePath):
         for g in self.goals:
-            if tile.t == g:
+            if tile.t == g and g.d is not Dir.SAME:
                 # We reached the tile from the wrong direction.
                 if tile.d == g.d.back:
                     # do a loop
