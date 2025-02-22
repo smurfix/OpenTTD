@@ -81,6 +81,12 @@ def extension_of(base: type) -> Callable[[type],type]:
             else:
                 setattr(base,k,v)
 
+        for k in dir(base):
+            if k.startswith("_") or hasattr(deriv,k):
+                continue
+            v = getattr(base,k)
+            setattr(deriv,k,v)
+
         for k in ("__members__",):
             try:
                 v = getattr(base,k)
