@@ -6,7 +6,7 @@
 #
 
 """
-This module contails additional support for cargoes.
+This module contains additional support for cargoes.
 """
 
 from __future__ import annotations
@@ -23,6 +23,11 @@ from ._support.id import _ID
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Callable,Self,Iterable
+
+@extension_of(_ttd.script.cargo.Class)
+class Class(_ID,int):
+    pass
+CargoClass = Class
 
 @extension_of(_ttd.script.cargo.TownEffect)
 class TownEffect(_ID,int):
@@ -56,7 +61,7 @@ class Cargo(_ID, int):
         return _ttd.script.cargo.is_freight(self)
 
     def has_class(self, cls:CargoClass) -> bool:
-        return _ttd.script.cargo.has_class(self, cls)
+        return _ttd.script.cargo.has_cargo_class(self, cls)
 
     def town_effect(self) -> TownEffect:
         return _ttd.script.cargo.get_town_effect(self)
@@ -102,7 +107,8 @@ class Cargoes(PlusSet[Cargo]):
     def AcceptedByStation(cls, station:Station):
         return cls(_ttd.script.cargolist.StationAccepting(station._))
 
-Cargo.List=Cargoes
+List=Cargoes
+Cargo.List=staticmethod(Cargoes)
 Cargo.AcceptedByIndustry=Cargoes.AcceptedByIndustry
 Cargo.ProducedByIndustry=Cargoes.ProducedByIndustry
 Cargo.AcceptedByStation=Cargoes.AcceptedByStation

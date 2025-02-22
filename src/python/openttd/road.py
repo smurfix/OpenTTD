@@ -71,14 +71,14 @@ class RoadType:
         """
         return _ttd.script.road.get_current_road_type()
 
-    @staticmethod
-    def set_current(road_type: RoadType):
-        return unless(False, _ttd.script.road.set_current_road_type, road_type)
+    def set_current(self):
+        return unless(False, _ttd.script.road.set_current_road_type, self)
 
     @property
     def is_current(self):
         return type(self).current == self
 
+Type = RoadType
 
 @extension_of(_ttd.script.road.TramTypes)
 class TramType:
@@ -91,18 +91,20 @@ class VehicleType:
     """
     Enum for types of road vehicles
     """
+RoadVehicleType = VehicleType
 
 @extension_of(_ttd.script.road.BuildType)
 class BuildType:
     """
     Enum for types of things to build
     """
+RoadBuildType = BuildType
 
 @sync
 def build_road(path,
                on_bridge:Callable[[TilePath],int]|None=None,
                on_error:Callable[[TilePath,TTDError],bool]|None=None,
-               ) -> None:
+               ) -> None|bool:
     """
     Build a road on this path.
 

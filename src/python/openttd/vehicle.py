@@ -22,29 +22,33 @@ from ._util import with_, _WrappedList
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Callable,Self,Iterable
+    from openttd.engine import Engine
 
 @extension_of(_ttd.script.vehicle.Type)
 class Type:
-    pass
+    def order_distance(self,origin:Teil, dest:Tile):
+        return _ttd.script.order.get_order_distance(self, origin, dest)
+
 VehicleType = Type
 
 @extension_of(_ttd.script.vehicle.State)
 class State:
     pass
 
-def New(depot: Tile, engine:EngineID, cargo:CargoID|None=None) -> Vehicle:
-    if cargo is None:
-        vid = with_(Vehicle,_ttd.script.vehicle.build_vehicle)
-    else:
-        vid = with_(Vehicle,_ttd.script.vehicle.build_vehicle_with_refit,cargo)
-    return vid
-
 class Vehicle(_ID, int):
     def for_str(self) -> Iterable[str]:
-        return str(self.id),self.name,
+        return str(int(self)),self.name,
 
     def for_repr(self) -> Iterable[str]:
-        return str(self.id),
+        return str(int(self)),
+
+    @classmethod
+    def New(cls, depot: Tile, engine:Engine, cargo:CargoID|None=None) -> Vehicle:
+        if cargo is None:
+            vid = with_(Vehicle,_ttd.script.vehicle.build_vehicle, depot, engine)
+        else:
+            vid = with_(Vehicle,_ttd.script.vehicle.build_vehicle_with_refit, depot, engine, cargo)
+        return vid
 
     @staticmethod
     def is_valid(id) -> bool:
@@ -62,7 +66,7 @@ class Vehicle(_ID, int):
     def name(self) -> str|None:
         return _ttd.script.vehicle.get_name(self)
 
-    def set_name(self, name) -> bool:
+    def set_name(self, name) -> None:
         return with_(None,_ttd.script.vehicle.set_name,self, openttd.Text(name))
 
     @property
@@ -145,8 +149,8 @@ class Vehicle(_ID, int):
     def stopped_in_depot(self) -> bool:
         return _ttd.script.vehicle.is_stopped_in_depot(self)
 
-    def clone(depot: Tile, share_orders:bool) -> Vehicle:
-        return with_(Vehicle,_ttd.script.vehicle.clone_vehicle, self.tile, self, share_orders)
+    def clone(self, depot: Tile, share_orders:bool=False) -> Vehicle:
+        return with_(Vehicle,_ttd.script.vehicle.clone_vehicle, depot, self, share_orders)
 
     def move_wagon(self, wagon:int, dest: Vehicle,after:int) -> None:
         return with_(None,_ttd.script.vehicle.move_wagon,self, wagon, -1 if dest is None else dest, after)
@@ -164,39 +168,39 @@ class Vehicle(_ID, int):
         return with_(None,_ttd.script.vehicle.sell_vehicle,self)
 
     def sell_wagon(self, wagon:int) -> None:
-        return with_(_ttd.script.vehicle.sell_wagon,self, wagon)
+        return with_(None,_ttd.script.vehicle.sell_wagon,self, wagon)
 
     def sell_wagons(self, wagon:int) -> bool:
-        return with_(_ttd.script.vehicle.sell_wagon_chain,self, wagon)
+        return with_(None,_ttd.script.vehicle.sell_wagon_chain,self, wagon)
 
     def send_to_depot(self) -> None:
-        return with_(_ttd.script.vehicle.send_vehicle_to_depot,self)
+        return with_(None,_ttd.script.vehicle.send_vehicle_to_depot,self)
 
     def send_to_depot_service(self) -> None:
-        return with_(_ttd.script.vehicle.send_vehicle_to_depot_for_servicing,self)
+        return with_(None,_ttd.script.vehicle.send_vehicle_to_depot_for_servicing,self)
 
     def start_stop(self) -> None:
-        return with_(_ttd.script.vehicle.start_stop_vehicle,self)
+        return with_(None,_ttd.script.vehicle.start_stop_vehicle,self)
 
     def start(self) -> bool:
         state = self.state
-        if state is VS.RUNNING:
+        if state is State.RUNNING:
             return True
-        elif state in (VS.AT_STATION,VS.STOPPED,VS.IN_DEPOT):
+        elif state in (State.AT_STATION,State.STOPPED,State.IN_DEPOT):
             with_(None,_ttd.script.vehicle.start_stop_vehicle,self)
             return True
         return False
 
     def stop(self) -> bool:
         state = self.state
-        if state in (VS.AT_STATION,VS.STOPPED,VS.IN_DEPOT):
+        if state in (State.AT_STATION,State.STOPPED,State.IN_DEPOT):
             return True
-        elif state in (VS.RUNNING,VS.BROKEN):
+        elif state in (State.RUNNING,State.BROKEN):
             return with_(None,_ttd.script.vehicle.start_stop_vehicle,self)
         return False
 
     def reverse(self) -> None:
-        return with_(_ttd.script.vehicle.reverse_vehicle,self)
+        return with_(None,_ttd.script.vehicle.reverse_vehicle,self)
 
     def capacity_for(self, cargo: CargoID) -> int:
         return _ttd.script.vehicle.get_capacity(self, cargo)
@@ -230,8 +234,9 @@ class Vehicle(_ID, int):
         return Stations(openttd.station.List_Vehicles(self))
 
     @property
-    def order(self) -> Order:
-        return openttd._.Orders(self)
+    def orders(self) -> Order:
+        import openttd.order
+        return openttd.order.Orders(self)
 
 class Vehicles(PlusSet[Vehicle]):
     def __init__(self, source:Iterable[Vehicle|int]=None):

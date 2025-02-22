@@ -17,7 +17,8 @@ import enum
 import os
 from attrs import define,field
 from .util import extension_of, PlusSet
-from ._util import with_
+from .error import TTDCommandError
+from ._util import with_, _WrappedList, unless
 from .error import TTDError, TTDWrongTurn
 
 import typing
@@ -42,6 +43,8 @@ _offsets = (
 
 _arrows = "↑↗→↘↓↙←↖🡱🡵🡲🡶🡳🡷🡰🡴"
 _places = "○●"
+
+INVALID = _ttd.script.map.TILE_INVALID
 
 @extension_of(_ttd.enum.Direction)
 class Dir:
@@ -463,12 +466,12 @@ class Tile[Collection:Tiles]:
         id = _ttd.script.station.get_station_id(self)
         if not _ttd.script.station.is_valid_station(id):
             raise ValueError(f"not a station at {self.xy}")
-        return Station(id)
+        return openttd._.Station(id)
 
     @property
     def waypoint(self) -> Waypoint:
         id = _ttd.script.station.get_waypoint_id(self)
-        return Waypoint(id)
+        return openttd._.Waypoint(id)
 
     @property
     def is_road_station(self) -> bool:
@@ -484,15 +487,15 @@ class Tile[Collection:Tiles]:
 
     @property
     def road_depot_front(self) -> Tile:
-        return  _ttd.script.road.get_road_depot_front_tile(self)
+        return  unless(INVALID, _ttd.script.road.get_road_depot_front_tile,self)
 
     @property
     def road_station_front(self) -> Tile:
-        return  _ttd.script.road.get_road_station_front_tile(self)
+        return  unless(INVALID, _ttd.script.road.get_road_station_front_tile, self)
 
     @property
     def road_station_back(self) -> Tile:
-        return  _ttd.script.road.get_drive_through_back_tile(self)
+        return  unless(INVALID, _ttd.script.road.get_drive_through_back_tile,self)
 
     def is_road_type(self, type:RoadType) -> bool:
         return _ttd.script.road.is_road_depot_tile(self)
@@ -500,14 +503,16 @@ class Tile[Collection:Tiles]:
     def build_road_depot(self, front:Tile|Dir) -> None:
         if isinstance(front,Dir):
             front = self+front
-        return with_(None, _ttd.script.road.buil_road_depot,self,front)
+        if not with_(None, _ttd.script.road.build_road_depot,self,front):
+            return False
+        return front.build_road_to(self)
 
-    def build_road_station(self, front:Tile|Dir, type: RoadType, drive_through:bool=False, station: Station|None=None) -> None:
+    def build_road_station(self, front:Tile|Dir, type_: RoadType, drive_through:bool=False, station: Station|None=None) -> None:
         if isinstance(front,Dir):
             front = self+front
         if station is None:
             station = openttd._.Station.NEW
-        return with_(None, _ttd.script.road.build_drive_through_road_station if drive_through else _ttd.script.road.build_road_station,self,front,station)
+        return with_(None, _ttd.script.road.build_drive_through_road_station if drive_through else _ttd.script.road.build_road_station,self,front,type_,station)
 
     def remove_road(self, full:bool=False) -> None:
         return with_(None, _ttd.script.road.remove_road_full if full else _ttd.script.road.remove_road)
@@ -589,9 +594,15 @@ class Tile[Collection:Tiles]:
         # script_road.cpp to piece it together again. Oh well. TODO.
         r = _ttd.script.road
         p = (r.build_one_way_road_full if oneway else r.build_road_full) if full else (r.build_one_way_road if oneway else r.build_road)
+
         if isinstance(other,TilePath):
             other = other.t
-        return with_(None,p,self, other)
+        try:
+            return with_(None,p,self, other)
+        except TTDCommandError as exc:
+            if exc.err == openttd.str.error.ALREADY_BUILT:
+                return True
+            raise
 
 
     ### Bridges ###
@@ -719,7 +730,6 @@ class Tile[Collection:Tiles]:
             else:
                 self.add(t)
 
-    @classmethod
     def Rect(self, size:int) -> Self:
         xmin,xmax=max(1,self.x-size),min(self.x+size,_ttd.script.map.get_map_size_x()-1)
         ymin,ymax=max(1,self.y-size),min(self.y+size,_ttd.script.map.get_map_size_y()-1)
@@ -727,11 +737,10 @@ class Tile[Collection:Tiles]:
         res = self.Tiles()
         for x in range(xmin,xmax+1):
             for y in range(ymin,ymax+1):
-                res.add(self+(x,y))
+                res.add(Tile(x,y))
         return res
 
-    @classmethod
-    def Diamond(cls, size: int) -> Self:
+    def Diamond(self, size: int) -> Self:
         xmin,xmax=max(1,self.x-size),min(self.x+size,_ttd.script.map.get_map_size_x()-1)
         ymin,ymax=max(1,self.y-size),min(self.y+size,_ttd.script.map.get_map_size_y()-1)
 
@@ -741,7 +750,7 @@ class Tile[Collection:Tiles]:
             for y in range(ymin,ymax+1):
                 if abs(x-cx)+abs(y-cy)>size:
                     continue
-                res.add(self+(x,y))
+                res.add(Tile(x,y))
         return res
 
 
@@ -945,4 +954,12 @@ class TilePath:
         """
         from openttd.road import build_road
         return build_road(self, **kw)
+
+class Depots(PlusSet[Tile]):
+    """
+    A list of tiles with depots on them.
+    """
+    def __init__(self, type_:TransportType):
+        for t in _WrappedList(_ttd.script.depotlist.List(type_)):
+            self.add(Tile(t))
 

@@ -51,22 +51,22 @@ class Town(_ID, int):
         return _ttd.script.town.get_house_count(self)
 
     @property
-    def tile(self) -> Tile:
-        return Tile(_ttd.script.town.get_location(self))
+    def center(self) -> Tile:
+        return _ttd.script.town.get_location(self)
 
     def last_month_production(self, cargo:int) -> int:
-        return Tile(_ttd.script.town.get_last_month_production(self, cargo))
+        return _ttd.script.town.get_last_month_production(self, cargo)
 
     def last_month_supplied(self, cargo:int) -> int:
-        return Tile(_ttd.script.town.get_last_month_supplied(self, cargo))
+        return _ttd.script.town.get_last_month_supplied(self, cargo)
 
     def last_month_transported(self, cargo:int) -> int:
         "percentage"
-        return Tile(_ttd.script.town.get_last_month_transported_percentage(self, cargo))
+        return _ttd.script.town.get_last_month_transported_percentage(self, cargo)
 
     @property
     def last_month_received(self, effect:TownEffect) -> int:
-        return Tile(_ttd.script.town.get_last_month_supplied(self, effect))
+        return _ttd.script.town.get_last_month_supplied(self, effect)
 
     def set_cargo_goal(self, effect:TownEffect, goal:int) -> None:
         return with_(_ttd.script.town.set_cargo_goal,self, effect, goal)

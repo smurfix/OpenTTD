@@ -6,7 +6,7 @@
 #
 
 """
-This module contails additional support for cargoes.
+This module contains additional support for bridges.
 """
 
 from __future__ import annotations

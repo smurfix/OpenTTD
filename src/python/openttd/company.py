@@ -6,7 +6,7 @@
 #
 
 """
-This module contails support for companies.
+This module contains support for companies.
 """
 
 from __future__ import annotations
@@ -28,6 +28,9 @@ if TYPE_CHECKING:
 
     Money = _ttd.support.Money
 
+@extension_of(_ttd.support.CompanyID)
+class ID(_ID,int):
+    pass
 
 @extension_of(_ttd.script.company.Quarter)
 class Quarter(_ID,int):
@@ -149,17 +152,21 @@ class Company(_ID,int):
         return _ttd.script.company.get_loan_amount()
 
     @property
+    @cache
     def max_loan_amount(self) -> Money:
         self._chk("max loan amount",True)
         return _ttd.script.company.get_max_loan_amount()
 
     def set_max_loan_amount(self, amount: Money) -> None:
+        self.max_loan_amount.cache_clear()
         return with_(None, _ttd.script.company.set_max_loan_amount_for_company, self, amount)
 
     def reset_max_loan_amount(self) -> None:
+        self.max_loan_amount.cache_clear()
         return with_(None, _ttd.script.company.reset_max_loan_amount_for_company, self)
 
     @property
+    @cache
     def loan_interval(self) -> Money:
         self._chk("loan interval",True)
         return _ttd.script.company.get_loan_interval()

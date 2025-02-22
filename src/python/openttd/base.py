@@ -101,9 +101,9 @@ class BaseScript:
     either ``test_stop()``, ``sleep(game_ticks:int)``, or ``anyio.from_thread.*``.
 
     If you want more control, you can designate your script as
-    asynchronous, simply by using "async main". If you do this,
-    you're responsible for running everything that could possibly block in
-    a subthread.
+    asynchronous, simply by using "async main". If you do this
+    you're responsible for delegating *everything* that could *possibly*
+    block to a subthread.
     """
     __setup_called = False
     __storage: Storage
@@ -117,6 +117,10 @@ class BaseScript:
 
     def __init__(self, id, company, state=None, /, **kw):
         self.__id = id
+        if company is None:
+            company = _ttd.support.CompanyID.DEITY
+        elif type(company) is int:
+            company = openttd._.Company(company)
         self.__company = company
         self.__kw = kw
         self.__state = state

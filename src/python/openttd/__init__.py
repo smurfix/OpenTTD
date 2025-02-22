@@ -42,8 +42,8 @@ _u.test_stop = _ts
 del _u
 del _ts
 
-# This hack is used so you can do "from openttd._ import Tile" without
-# importing all up-front ... or "from openttd._ import *" if you want to do exactly that
+# This hack is used so you can call "openttd._.Tile" ad-hoc.
+# Alternately, "from openttd._ import *" works too.
 class _imp:
     def __getattr__(self,k):
         if k[0] == "_":
@@ -65,17 +65,32 @@ _sys.modules["openttd._"] = _
 _content = {
     'Bridge':'bridge',
     'BridgeType':'bridge',
+    'BuildType':'tile',
     'Cargo':'cargo',
+    'CargoClass':'cargo',
     'Company':'company',
+    'Date':'date',
+    'Depots':'tile',
     'Dir':'tile',
+    'Engine':'engine',
+    'Engines':'engine',
+    'Path':'tile',
+    'RoadBuildType':'road',
+    'RoadVehicleType':'road',
+    'RoadType':'road',
     'Sign':'sign',
     'Signs':'sign',
-    'RoadType':'road',
+    'SpecialStationID':'station',
+    'Station':'station',
+    'Stations':'station',
+    'TerrainType':'tile',
     'Tile':'tile',
-    'Path':'tile',
-    'Turn':'tile',
+    'TilePath':'tile',
+    'Tiles':'tile',
     'Town':'town',
     'Towns':'town',
+    'TransportType':'tile',
+    'Turn':'tile',
     'Vehicle':'vehicle',
     'Vehicles':'vehicle',
     'VehicleType':'vehicle',
