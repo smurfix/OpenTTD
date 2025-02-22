@@ -47,18 +47,15 @@ upcase_re = re.compile("[A-Z0-9]+")
 
 cls_def = None
 
-def strip_var(p: str) -> str:
-    """removes the last word
+def get_var(p: str) -> str:
+    """return the last word
     """
     p = p.rstrip()
     try:
         p,x = p.rsplit(" ", 1)
     except ValueError:
-        pass
-    else:
-        if x[0] in ("&","*"):
-            p += " "+x[0]
-    return p
+        return p
+    return x
 
 def to_snake(s: str) -> str:
     """Converts a camel case or pascal case string to snake case.
@@ -353,6 +350,7 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
 
     # Add a method to the list
     if m := method_re.match(line):
+        pars = []
         if want_skip:
             skip_next = True
             continue
@@ -365,7 +363,8 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
         if line.rstrip().endswith(":"):
             skip_next = True
 
-        params = ",".join(strip_var(p) for p in params.split(","))
+        for p in params.split(","):
+            pars.append(p)
 
         if name.startswith("~"):
             if api_selected:
@@ -382,14 +381,14 @@ for num_line,line in enumerate(api_file.read_text().split("\n")):
 
             if cls_super == "ScriptEvent":
                 pass
-            elif "HSQUIRRELVM" in params:
-                print(f'    /* TODO init {cls_name}.def(py::init<{params}>()); */');
+            elif any("HSQUIRRELVM" in p for p in pars):
+                print(f'    /* TODO init {cls_name}.def(py::init<{', '.join(pars)}>()); */');
             else:
                 if cls_def is not None:
                     print(cls_def)
                     cls_def = None
-                if params:
-                    print(f"// TODO {cls_name} {params}")
+                if pars:
+                    print(f'    cls_{cls_name}.def(wrap_new([]({', '.join(pars)}){{ return new {cls_name} ({','.join(get_var(p) for p in pars)}); }}));');
                 else:
                     print(f'    cls_{cls_name}.def(wrap_new([](){{ return new {cls_name} (); }}));');
             continue
