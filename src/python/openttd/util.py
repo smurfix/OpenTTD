@@ -238,9 +238,11 @@ class PlusSet[T](set):
     min, max: Find the member that minimizes / maximizes a given function.
 
     min_n, max_n: Ditto, but returns the N largest / smallest elements.
+
+    sorted, sorted_n: return a sorted iterator on all elements.
     """
 
-    def filter(self, test: Callable[[T],bool]) -> set[T]:
+    def __matmul__(self, test: Callable[[T],bool]) -> set[T]:
         """
         Filter the list by a test function.
 
@@ -248,32 +250,24 @@ class PlusSet[T](set):
 
         This method is aliased to the `@` operator. Use `@=` if you want to
         filter in-place (i.e. remove the members that do not match).
+
+        In async code, use ``new_list = await things.all(testfn)``.
         """
-        res = set()
+        res = PlusSet()
         for t in self:
             if test(t):
                 res.add(t)
         return res
 
-    __matmul__ = filter
-
-    async def filter_a(self, test: Callable[[T],Awaitable[bool]]) -> set[T]:
-        """
-        Filter the list by an async test function.
-
-        The original is not modified: the result is a new list.
-        """
-        res = set()
-        for t in self:
-            if await test(t):
-                res.add(t)
-        return self
+    all = sync(__matmul__)
 
     def __imatmul__(self, test: Callable[[T],bool]) -> set[T]:
         """
         Filter the list by a test function.
 
         Non-matching members are removed.
+
+        In async code, use ``await things.filter(testfn)``.
         """
         drop = []
         for t in self:
@@ -283,20 +277,14 @@ class PlusSet[T](set):
             self.remove(t)
         return self
 
+    filter = sync(__imatmul__)
+
     @property
     def any(self) -> T:
         "Return a random member"
         return next(iter(self))
 
-    async def filtered_a(self, test: Callable[[T],Awaitable[bool]]) -> set[T]:
-        drop = []
-        for t in self:
-            if not await test(t):
-                drop.append(t)
-        for t in drop:
-            self.remove(t)
-        return self
-
+    @sync
     def min(self, key: Callable[[T], int|float]) -> T:
         "Return the smallest element, according to a key function"
         tt = iter(self)
@@ -309,6 +297,7 @@ class PlusSet[T](set):
                 val = v
         return res
 
+    @sync
     def max(self, key: Callable[[T], int|float]) -> T:
         "Return the largest element, according to a key function"
         tt = iter(self)
@@ -321,6 +310,7 @@ class PlusSet[T](set):
                 val = v
         return res
 
+    @sync
     def max_n(self, n:int, key: Callable[[T], int|float]) -> Sequence[T]:
         """
         Return the N largest elements, as selected by the function 'key'.
@@ -337,6 +327,7 @@ class PlusSet[T](set):
                 heappop(res)
         return map(itemgetter(1), res)
 
+    @sync
     def min_n(self, n:int, key: Callable[[T], int|float]) -> Sequence[T]:
         """
         Return the smallest element, as selected by the function 'key'.
@@ -352,103 +343,27 @@ class PlusSet[T](set):
                 heappop(res)
         return map(itemgetter(1), res)
 
-
-    # async versions, if you need this in the main loop
-
-    async def min_a(self, key: Callable[[T], Awaitable[int|float]]) -> T:
+    @sync
+    def sorted(self, key: Callable[[T], int|float]) -> Iterator[T]:
         """
-        Return the smallest element, as selected by the function 'key'.
-
-        This is an async function. The key function may be async
-        but doesn't need to be; if it is, it *must* call 'anyio.sleep'
-        (or some equivalent tat causes scheduling).
+        Iterate the elements in key order, starting with the smallest.
         """
-        it = iter(self)
-        res = next(it)
-        val = key(res)
-
-        if hasattr(val,__await__):
-            async def adapt(res):
-                return await res
-        else:
-            async def adapt(res):
-                await anyio.sleep(0)
-                return res
-
-        for tile in it:
-            if (v := (await adapt(key(tile)))) < val:
-                res = tile
-                val = v
-        return res
-
-    async def max_a(self, key: Callable[[T], Awaitable[int|float]]) -> T:
-        """
-        Return the largest element, as selected by the function 'key'.
-
-        This is an async function. The key function may be async
-        but doesn't need to be; if it is, it *must* call 'anyio.sleep'
-        (or some equivalent tat causes scheduling).
-        """
-        it = iter(self)
-        res = next(it)
-        val = key(res)
-
-        if hasattr(val,__await__):
-            async def adapt(res):
-                return await res
-        else:
-            async def adapt(res):
-                await anyio.sleep(0)
-                return res
-
-        for tile in it:
-            if (v := (await adapt(key(tile)))) > val:
-                res = tile
-                val = v
-        return res
-
-    async def max_na(self, n:int, key: Callable[[T], Awaitable[int|float]]) -> Sequence[T]:
-        "Return the N largest elements, according to a key"
-
         res = []
-        it = iter(self)
-        x = next(it)
-        val = key(t)
-        if hasattr(val,__await__):
-            async def adapt(res):
-                return await res
-        else:
-            async def adapt(res):
-                await anyio.sleep(0)
-                return res
-        res.append((val,x))
+        for x in self:
+            heappush(res, (key(x),x))
+        return it(res)
+    sorted_min = sorted
 
-        for x in it:
-            heappush(res,((await adapt(key(x))),x))
-            if len(res) > n:
-                # too long: take the smallest element off
-                heappop(res)
-        return map(itemgetter(1), res)
-
-    async def min_na(self, n:int, key: Callable[[T], Awaitable[int|float]]) -> Sequence[T]:
-        "Return the N largest elements, according to a key"
-
+    @sync
+    def sorted_max(self, key: Callable[[T], int|float]) -> Iterator[T]:
+        """
+        Iterate the elements in key order, starting with the largest.
+        """
         res = []
-        it = iter(self)
-        x = next(it)
-        val = key(t)
-        if hasattr(val,__await__):
-            async def adapt(res):
-                return await res
-        else:
-            async def adapt(res):
-                await anyio.sleep(0)
-                return res
-        res.append((-val,x))
+        for x in self:
+            heappush(res, (-key(x),x))
+        return it(res)
 
-        for x in it:
-            heappush(res,(-(await adapt(key(x))),x))
-            if len(res) > n:
-                # too long: take the smallest element off
-                heappop(res)
-        return map(itemgetter(1), res)
+def it(heap):
+    while heap:
+        yield heappop(heap)[1]
