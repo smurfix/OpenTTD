@@ -25,10 +25,11 @@ class TestScript(BaseScript):
     """
 
     step="idle"
-    def setup(self):
+    def setup(self, **kw):
         self._set_company(1)
 
         self.step="after setup"
+        self.__kw = kw
         super().setup()
 
     def _set_company(self, cid=None):
@@ -44,7 +45,7 @@ class TestScript(BaseScript):
     async def main(self):
         self.print(f"START Test {self.__class__.__name__}")
         self.step=2
-        await maybe_async_threaded(self.test)
+        await maybe_async_threaded(self.test, **self.__kw)
 
     def test(self):
         raise NotImplementedError(f"Please fix test {self.__module__ !r}")
@@ -69,7 +70,9 @@ async def run(main, *tests):
             Not in "all":
 debug       breaks into the debugger (Python is stopped)
 bugtask     starts a debugger thread (Python continues to run)
-error       triggers an exception (to test error handling)""")
+error       triggers an exception (to test error handling)
+ai run=…    Start a game with this AI as company #1
+""")
 
         if ex is not None:
             from traceback import print_exception
@@ -78,18 +81,35 @@ error       triggers an exception (to test error handling)""")
 
     if tests == ("all",):
         tests = TESTS
+    vars = {}
     for t in tests:
+        if "=" in t:
+            k,v = t.split("=",1)
+            try:
+                v=int(v)
+            except ValueError:
+                try:
+                    v=float(v)
+                except ValueError:
+                    pass
+            vars[k] = v
+            continue
         if t == "debug":
             breakpoint()
             continue
         print(f"* Test: {t}{' (final, exiting)' if t == 'delay' else ''}", file=sys.stderr)
         mod = import_module(f"openttd._test.{t}")
         script = mod.Script
-        val = await main.do_start(script, company=getattr(mod,"COMPANY",Company(1)))
+        try:
+            vars["company"] = mod.COMPANY
+        except AttributeError:
+            pass
+        val = await main.do_start(script, **vars)
         await val.event.wait()
         if isinstance(val.value,Exception):
             raise val.value
         print("  … completed.", file=sys.stderr)
+        vars = {}
 
 TESTS = [
     "basic",
