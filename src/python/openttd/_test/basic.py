@@ -13,7 +13,7 @@ from __future__ import annotations
 import anyio
 import openttd
 from openttd.base import BaseScript
-from openttd._main import VEvent
+from openttd._main import VEvent, exceptions
 from . import TestScript
 from .._ import TTDError
 
@@ -42,10 +42,15 @@ class Script(TestScript):
             assert res
         signs = openttd._.Sign.List()
         assert len(signs) == 0, signs
-        try:
-            s3.remove()
-        except TTDError:
-            pass
-        else:
-            raise RuntimeError("invalid but no error raised")
+        with exceptions(True):
+            try:
+                s3.remove()
+            except TTDError:
+                pass
+            else:
+                raise RuntimeError("invalid but no error raised")
+        with exceptions(False):
+            if s3.remove():
+                raise RuntimeError("invalid but no error returned")
+
 

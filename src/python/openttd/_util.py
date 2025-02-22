@@ -59,19 +59,38 @@ class StringTab:
         return res
 
 
+def _err(*a,**kw) -> bool:
+    from openttd._main import _last_error, excepting, estimating
+
+    err = TTDCommandError(*a,**kw)
+    if estimating.get() or not excepting.get():
+        _last_error.set(err)
+        return False
+    _last_error.set(None)
+    raise err
+
+
 def with_(Wrap:type, proc, *a, **kw):
     """
     Generate a result type or an error, whether or not we're in async context.
 
     Usage::
 
-        sign = [await] with_(Sign,ttd.script.sign.make_sign(Text("Hello")))
+        sign:Sign = [await] with_(Sign,ttd.script.sign.make_sign(Text("Hello")))
+
+    @Wrap is the class to convert the result to. Special values:
+    * `True`, `None`: The wrapped method must return True.
+    * `False`: Return the result directly.
 
     The 'await' is necessary *only* in async mode.
-    """
-    from openttd._main import _async
 
-    def _resolve(result, maybe_async=True):
+    You can use the `exceptions` context manager to control whether a
+    failure raises an exception or returns `False`. The default is to
+    raise.
+    """
+    from openttd._main import _async, _last_error, estimating
+
+    def _resolve(result, maybe_async=True) -> bool|Wrap:
         if maybe_async:
             if hasattr(result,"__await__"):
                 # Definitely in async mode. Retrieve the result and retry.
@@ -85,43 +104,50 @@ def with_(Wrap:type, proc, *a, **kw):
                     return _resolve(result, maybe_async=False)
                 return hdl()
 
+        _last_error.set(None)
+
         if Wrap in (True,None):
             if isinstance(result, _ttd.support.CommandCost):
                 if result.message is not None:
-                    raise TTDCommandError(proc,a,kw, result=result)
+                    return _err(proc,a,kw, result=result)
                 breakpoint()
             if not result:
-                from openttd._main import estimating
-                if estimating.get():
-                    return False
-                raise TTDCommandError(proc,a,kw, err="?")
+                return _err(proc,a,kw, err="?")
             if isinstance(result,list):
                 result = result[0]
             if not result:
-                breakpoint()
-                raise TTDCommandError(proc,a,kw, err="?")
+                return _err(proc,a,kw, err="?")
             return result
+
         if Wrap is False:
             return result
         if isinstance(result,list):
             return Wrap(*result)
-        else:
-            # presumably this didn't work
-            breakpoint()
-            raise TTDCommandError(proc,a,kw,result)
+
+        # seems like this didn't work
+        return _err(proc,a,kw,result)
 
     return _resolve(proc(*a,**kw))
 
 def unless(err, proc, *a, **kw):
     """
     Call this non-command method and return its result.
-    "err" indicates an error that is not otherwise signalled.
+    "err" is the return values that signals an error:
+
     """
+    from openttd._main import _last_error, estimating, excepting
+
     result = proc(*a,**kw)
     if hasattr(result,"__await__"):
         raise RuntimeError(f"Owch. {proc} is supposed not to be async")
     if result == err:
-        raise TTDError(proc,a,kw)
+        _err = TTDCommandError(proc,a,kw, value=result)
+        if excepting.get():
+            raise _err
+        _last_error.set(_err)
+
+    else:
+        _last_error.set(None)
     return result
 
 

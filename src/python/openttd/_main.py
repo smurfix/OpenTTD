@@ -63,6 +63,7 @@ _storage = ContextVar("_storage")
 
 _main = ContextVar("_main")
 estimating = ContextVar("estimating", default=True)
+excepting = ContextVar("excepting", default=True)
 _async = ContextVar("_async", default=True)
 
 # Set to a cancel-test procedure.
@@ -70,6 +71,11 @@ def _err():
     raise CancelledError
 
 _STOP = ContextVar("_STOP", default=_err)
+
+_last_error = ContextVar("_last_error", default=None)
+
+def last_error() -> TTDError|None:
+    return _last_error.get()
 
 
 @contextmanager
@@ -97,6 +103,24 @@ def real_mode():
         yield
     finally:
         estimating.reset(token)
+
+@contextmanager
+def exceptions(raised: bool):
+    """
+    A context wrapper for real mode that controls whether to raise
+    exceptions on error.
+
+    If True (default), do raise exceptions.
+    Otherwise failing calls return False and store the error in the
+    last_error contextvar (which gets cleared on success).
+    """
+    try:
+        token = excepting.set(raised)
+        yield
+    finally:
+        excepting.reset(token)
+
+
 
 
 @define(hash=True,eq=True)
@@ -812,11 +836,12 @@ class Main:
         _STOP.set(self.test_stop)
 
         msg_in_w,msg_in_r = anyio.create_memory_object_stream(999)
+        self.stopping = False
+        estimating.set(False)
+        excepting.set(True)
 
         async with anyio.create_task_group() as tg:
             self._tg = tg
-            self.stopping = False
-            estimating.set(False)
 
             await tg.start(self._ttd_reader, msg_in_w)
             tg.start_soon(self._process, msg_in_r)
