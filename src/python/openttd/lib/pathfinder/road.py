@@ -88,9 +88,10 @@ class RoadPath(AStar):
     max_bridge_length = 10
     max_tunnel_length = 20
 
-    def __init__(self, sources:Iterable[Tile], goals:Iterable[Tile], **cfg):
+    def __init__(self, sources:Iterable[Tile], goals:Iterable[Tile], avoid:Iterable[Tile]=(), **cfg):
         self.sources = sources
         self.goals = set(goals)
+        self.avoid = set(avoid)
         for k,v in cfg:
             if not isinstance(getattr(self,k,None),(int,float)):
                 raise ValueError(f"Unknown attribute: {k !r}")
@@ -112,7 +113,10 @@ class RoadPath(AStar):
         return False
 
     def is_not_goal(self, dest):
-        "Check for goal tiles that were reached from the wrong direction."
+        "Check for tiles to avoid, and goal tiles that were reached from the wrong direction."
+        if dest.t in self.avoid:
+            return True
+
         for goal in self.goals:
             if dest.xy != goal.xy:
                 continue
