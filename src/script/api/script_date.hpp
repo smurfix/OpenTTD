@@ -53,6 +53,8 @@ public:
 	/**
 	 * Date data type is an integer value. Use ScriptDate::GetDate to
 	 * compose valid date values for a known year, month and day.
+	 *
+     * @api ai game python*
 	 */
 	enum Date {
 		DATE_INVALID = ::EconomyTime::INVALID_DATE.base(), ///< A value representing an invalid date.
