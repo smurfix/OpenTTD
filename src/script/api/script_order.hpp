@@ -126,6 +126,7 @@ public:
 	 * use ORDER_INVALID yourself, it's used as return value by for example ResolveOrderPosition.
 	 * @note Automatic orders are hidden from scripts, so OrderPosition 0 will always be the first
 	 * manual order.
+     * @api ai game python*
 	 */
 	enum OrderPosition {
 		ORDER_CURRENT = 0xFF, ///< Constant that gets resolved to the current order.
