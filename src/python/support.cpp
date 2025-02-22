@@ -92,6 +92,10 @@ namespace PyTTD {
 			.def("__repr__", [](const TileIndex &t){ return fmt::format("Tile({})", t.value);})
 			.def("__str__", [](const TileIndex &t){ return fmt::format("Tile({},{})", TileX(t), TileY(t));})
 			.def("__eq__", [](const TileIndex &t, const TileIndex &o){ return t.value == o.value;}, py::is_operator())
+			.def("__eq__", [](const TileIndex &t, const uint32_t &o){ return t.value == o;}, py::is_operator())
+			// for heapqueue and other incidental comparisons
+			.def("__lt__", [](const TileIndex &t, const TileIndex &o){ return t.value < o.value;}, py::is_operator())
+
 			.def_prop_ro("x", [](const TileIndex &t){ return TileX(t);})
 			.def_prop_ro("y", [](const TileIndex &t){ return TileY(t);})
 			.def_ro("value", &TileIndex::value)
@@ -104,18 +108,28 @@ namespace PyTTD {
 			.def("__int__", [](const Money &x){ return (int64_t)x;})
 			.def("__add__", [](const Money &x, const Money &y){ return (int64_t)(x+y);}, py::is_operator())
 			.def("__add__", [](const Money &x, const int64_t &y){ return (int64_t)(x+Money{y});}, py::is_operator())
+			.def("__radd__", [](const Money &x, const int64_t &y){ return (int64_t)(x+Money{y});}, py::is_operator())
 			.def("__sub__", [](const Money &x, const Money &y){ return (int64_t)(x-y);}, py::is_operator())
 			.def("__sub__", [](const Money &x, const int64_t &y){ return (int64_t)(x-Money{y});}, py::is_operator())
+			.def("__rsub__", [](const Money &x, const int64_t &y){ return (int64_t)(Money{y}-x);}, py::is_operator())
 			.def("__mul__", [](const Money &x, const int64_t &y){ return Money{x*y};}, py::is_operator())
+			.def("__rmul__", [](const Money &x, const int64_t &y){ return Money{x*y};}, py::is_operator())
 			.def("__div__", [](const Money &x, const int64_t &y){ return Money{x*y};}, py::is_operator())
+			.def("__mod__", [](const Money &x, const int64_t &y){ return Money{(int64_t)x%y};}, py::is_operator())
+			.def("__rmod__", [](const Money &x, const int64_t &y){ return Money{y%(int64_t)x};}, py::is_operator())
+			.def("__lt__", [](const Money &x, const int64_t &y){ return (int64_t)x<y;}, py::is_operator())
+			.def("__gt__", [](const Money &x, const int64_t &y){ return (int64_t)x>y;}, py::is_operator())
+			.def("__eq__", [](const Money &x, const int64_t &y){ return (int64_t)x==y;}, py::is_operator())
 			.def("__repr__", [](const Money &x){ return fmt::format("Money({})", (int64_t)x);})
 			.def("__str__", [](const Money &x){ return fmt::format("€ {}", (int64_t)x);})
 			;
 
+#if 0
 		py::enum_<ScriptDate::Date>(m, "Date", py::is_arithmetic())
 			.value("INVALID", ScriptDate::Date::DATE_INVALID)
 			// .export_values()
 			;
+#endif
 
 		py::class_<CommandCost>(m, "CommandCost")
 			.def_prop_ro("cost", &CommandCost::GetCost)
