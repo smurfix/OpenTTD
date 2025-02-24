@@ -18,22 +18,25 @@ from openttd.util import maybe_async_threaded
 from inspect import cleandoc
 from openttd.base import BaseScript
 from openttd.company import Company
+from openttd._main import _storage
 
 class TestScript(BaseScript):
     """
     Basic test script, async mode.
     """
-
+    COMPANY=1
     step="idle"
+
+    def __init__(self, id,company,state=None,/,**kw):
+        if company is None:
+            company = self.COMPANY or _ttd.support.CompanyID.DEITY
+        super().__init__(id,company,state,**kw)
+
     def setup(self, **kw):
-        self._set_company(1)
 
         self.step="after setup"
         self.__kw = kw
         super().setup()
-
-    def _set_company(self, cid=None):
-        self._basescript__company = _ttd.support.CompanyID.DEITY if cid is None else _ttd.support.CompanyID(cid-1)
 
     def get_info(self):
         return f"Test {self.__name__}, in step {self.step}"

@@ -458,9 +458,6 @@ class Main:
         @company: the company to run under, or DEITY for game scripts.
 
         """
-        if company is None:
-            company = _ttd.support.CompanyID.DEITY
-
         Script = args[0]
         for val in args[1:]:
             try:
