@@ -56,8 +56,8 @@ class Script(TestScript):
             tg.start_soon(rtest, 40,55,"C", 45,75,"D")
             tg.start_soon(rtest, 80,31,"E", 67,32,"F")
 
-            # and a more complicated one
-            tg.start_soon(rtest, 50,105,"", 80,31,"")
+        # and a more complicated one
+        await rtest( 50,105,"", 80,31,"")
 
         self.print("Paths built.")
 
