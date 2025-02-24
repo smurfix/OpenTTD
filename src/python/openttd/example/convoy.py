@@ -10,7 +10,7 @@ from openttd.base import AIScript
 from openttd.lib.pathfinder.road import RoadPath
 import operator
 from openttd.util import testmode_if, PlusSet
-from openttd._main import exceptions,estimating
+from openttd._main import exceptions,estimating,test_mode
 from itertools import pairwise
 from functools import partial
 import openttd.cargo
@@ -217,10 +217,16 @@ class Script(AIScript):
                     tile2.build_road_to(tile)
                 except TTDError as exc:
                     self.log.error("TryBuild %s: Error %r",tile,exc)
-                    if exc.err != openttd.str.error.ALREADY_BUILT:
-                        raise
-                    # TODO only wait if something's in the way
-                    self.sleep(0.5)
+                    if exc.err == openttd.str.error.ALREADY_BUILT:
+                        break
+                    if exc.err == openttd.str.error.BUILDING_MUST_BE_DEMOLISHED:
+                        tile.demolish()
+                        continue
+                    if exc.err == openttd.str.error.ROAD_VEHICLE_IN_THE_WAY:
+                        self.sleep(10)
+                        continue
+
+                    raise
                 else:
                     break
             else:
@@ -376,12 +382,21 @@ class Script(AIScript):
         """
         Add a depot close to @tile, in the direction of @town.
         """
-        tiles = station.location.Rect(10)
+        front = station.location.road_station_front
+        tiles = front.Rect(10)
         tiles @= lambda t: t.count_adjacent_roads > 0
         tiles @= lambda t: not t.is_road
         tiles @= lambda t: t.slope == Slope.FLAT
+        # XXX this code (adapted from the original) can find an unreachable
+        # location (which is why this version adds a pathfind below).
+        # Better solution: follow the actual road and build a depot as soon
+        # as there is a suitable spot.
 
-        loc = town.center
+        def err(step:TilePath, exc:TTDError):
+            if exc.err == openttd.str.error.ALREADY_BUILT:
+                return False
+            raise exc
+
         def try_this(tile):
             for adj in tile.adjacent:
                 if not adj.is_road or adj.slope != Slope.FLAT:
@@ -392,9 +407,16 @@ class Script(AIScript):
                     except TTDError as exc:
                         self.log.info("Tried to clean {adj.xy} but got {exc}")
                         continue
+
+                pathfinder = RoadPath((TilePath(adj,Dir.SAME),),(TilePath(front,Dir.SAME),))
+                path = pathfinder.run()
+                if not path:
+                    continue
+
                 for _ in range(10):
                     try:
                         tile.build_road_depot(adj)
+                        path.build_road(on_error=err)
                     except TTDError as exc:
                         self.log.info("Tried to build at {tile.xy} but got {exc}")
                         self.sleep(1)
@@ -404,6 +426,7 @@ class Script(AIScript):
             self.log.info("Failed to build at {tile.xy}")
             return False
 
+        loc = town.center
         for tile in tiles.sorted_min(lambda t: t.d_manhattan(loc)):
             if try_this(tile):
                 self.depots[tile.closest_town].add(tile)
@@ -449,10 +472,14 @@ class Script(AIScript):
 
     def manage_vehicles(self):
         for line in self.lines.values():
+            if line.try_rebuild:
+                continue
             line.manage_vehicles()
 
     def add_vehicles(self):
         for line in self.lines.values():
+            if line.try_rebuild:
+                continue
             line.add_vehicles()
 
 
@@ -516,6 +543,8 @@ class Line:
                 continue
 
             loc = self.script.find_bus_stop_location(town, self.script.passenger_cargo, False)
+            if loc is None:
+                return False
             if not self.script.build_bus_stop(loc):
                 return False
             self.stations[town]=loc.station
@@ -563,11 +592,13 @@ class Line:
         # important, but we need to be able to afford it.
 
         engine_list = openttd._.Engines(VT_Road)
-        engine_list @= lambda e: e.road_type == RT_Road
+        engine_list @= lambda e: (e.road_type == RT_Road and e.cargo == self.script.passenger_cargo)
 
         balance = self.script.company.bank_balance
         engine_list @= lambda e: e.price < balance
-        engine_list @= lambda e: e.cargo == self.script.passenger_cargo
+        if not engine_list:
+            # not enough money. probably.
+            return False
 
         bus_model = engine_list.max(lambda e: e.capacity)
 
