@@ -234,8 +234,7 @@ class Vehicle(_ID, int):
 
     @property
     def stations(self) -> StationList:
-        from .stations import Stations
-        return Stations(openttd.station.List_Vehicles(self))
+        return openttd._.Stations(source=_WrappedList(_ttd.script.stationlist.Vehicle(self)))
 
     @property
     def orders(self) -> Order:
@@ -247,6 +246,6 @@ class Vehicles(PlusSet[Vehicle]):
         if source is None:
             source = _WrappedList(_ttd.script.vehicle.List())
         for t in source:
-            self.add(_ttd.script.Vehicle(t))
+            self.add(Vehicle(t))
 
     # XXX maybe add classmethods for adjacency
