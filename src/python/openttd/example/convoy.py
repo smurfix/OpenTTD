@@ -58,6 +58,7 @@ class Script(AIScript):
     """
     ATTRS = (
         ("agressive",False),
+        ("network",0),
         ("d_min",70),
         ("d_max",140),
         ("waiting",10),
@@ -263,33 +264,42 @@ class Script(AIScript):
 
         self.log.info("Find a town");
         for town in Towns().sorted_max(lambda t: t.population):
-            self.log.info(f"Acceptance of {town}:{town.name}: {self.estimate_acceptance(town)}");
-            area = town.center.Rect(8)
+            if town in self.stations and not self.network:
+                continue
+            if not self.estimate_acceptance(town):
+                continue
             if not self.agressive:
-                area @= lambda t:t.is_road_station
-            if not area:
-                break
+                area = town.center.Rect(8)
+                # can't be ours because we already checked that the town
+                # doesn't have one of our stations
+                area @= lambda t:(t.is_road_station and t.owner != self.company)
+                if area:
+                    continue
+
+            self.log.info("Find second town for {town.name}");
+
+            dm = town.center.d_manhattan
+            for town2 in (Towns() @ (lambda t: self.d_min <= dm(t.center) <= self.d_max)).sorted_max(lambda t: t.population):
+                if town2 in self.stations and self.network < 2:
+                    continue
+                if not self.estimate_acceptance(town2):
+                    continue
+                if not self.agressive:
+                    area = town2.center.Rect(8)
+                    # … thus not skipping our own stations here either
+                    area @= lambda t:(t.is_road_station and t.owner != self.company)
+                    if area:
+                        continue
+
+                # TODO maybe find a third town
+
+                tt = frozenset((town,town2))
+                if tt not in self.lines:
+                    return tt
+
         else:
-            self.log.info("No unused town!");
+            self.log.info("No unused towns!");
             return
-
-        self.log.info("Find second town");
-
-        dm = town.center.d_manhattan
-        for town2 in (Towns() @ (lambda t: self.d_min <= dm(t.center) <= self.d_max)).sorted_max(lambda t: t.population):
-            self.log.info(f"Acceptance of {town2}:{town2.name}: {self.estimate_acceptance(town2)}");
-            area = town2.center.Rect(8)
-            if not self.agressive:
-                area @= lambda t:t.is_road_station
-            if not area:
-                break
-        else:
-            self.log.info("No unused second town!");
-            return
-
-        # TODO maybe find a third town
-        return (town,town2)
-
 
     def has_money(self, amount:int) -> bool:
         """Do I have that much money?
