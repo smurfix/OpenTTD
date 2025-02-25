@@ -119,19 +119,19 @@ class Vehicle(_ID, int):
 
     @property
     def running_cost(self) -> Money:
-        return _ttd.script.vehicle.get_running_cost(self)
+        return int(_ttd.script.vehicle.get_running_cost(self))
 
     @property
     def profit_this_year(self) -> Money:
-        return _ttd.script.vehicle.get_profit_this_year(self)
+        return int(_ttd.script.vehicle.get_profit_this_year(self))
 
     @property
     def profit_last_year(self) -> Money:
-        return _ttd.script.vehicle.get_profit_last_year(self)
+        return int(_ttd.script.vehicle.get_profit_last_year(self))
 
     @property
     def value(self) -> Money:
-        return _ttd.script.vehicle.get_current_value(self)
+        return int(_ttd.script.vehicle.get_current_value(self))
 
     @property
     def type(self) -> VehicleType:

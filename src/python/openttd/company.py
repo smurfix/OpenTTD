@@ -140,26 +140,26 @@ class Company(_ID,int):
 
     def set_loan_amount(self, amount: Money) -> None:
         self._chk("loan amount")
-        return with_(None, _ttd.script.company.set_loan_amount, amount)
+        return with_(None, _ttd.script.company.set_loan_amount, int(amount))
 
     def set_min_loan_amount(self, amount: Money) -> None:
         self._chk("minimum loan amount")
-        return with_(None, _ttd.script.company.set_minimum_loan_amount, amount)
+        return with_(None, _ttd.script.company.set_minimum_loan_amount, int(amount))
 
     @property
     def loan_amount(self) -> Money:
         self._chk("loan amount",True)
-        return _ttd.script.company.get_loan_amount()
+        return int(_ttd.script.company.get_loan_amount())
 
     @property
     @cache
     def max_loan_amount(self) -> Money:
         self._chk("max loan amount",True)
-        return _ttd.script.company.get_max_loan_amount()
+        return int(_ttd.script.company.get_max_loan_amount())
 
     def set_max_loan_amount(self, amount: Money) -> None:
         self.max_loan_amount.cache_clear()
-        return with_(None, _ttd.script.company.set_max_loan_amount_for_company, self, amount)
+        return with_(None, _ttd.script.company.set_max_loan_amount_for_company, self, int(amount))
 
     def reset_max_loan_amount(self) -> None:
         self.max_loan_amount.cache_clear()
@@ -169,23 +169,23 @@ class Company(_ID,int):
     @cache
     def loan_interval(self) -> Money:
         self._chk("loan interval",True)
-        return _ttd.script.company.get_loan_interval()
+        return int(_ttd.script.company.get_loan_interval())
 
     @property
     def bank_balance(self) -> Money:
-        return _ttd.script.company.get_bank_balance(self)
+        return int(_ttd.script.company.get_bank_balance(self))
 
     def set_bank_balance(self, amount: Money) -> None:
-        return with_(None, _ttd.script.company.change_bank_balance, self, amount)
+        return with_(None, _ttd.script.company.change_bank_balance, self, int(amount))
 
     def quarterly_income(self, quarter: Quarter) -> Money:
-        return _ttd.script.company.get_quarterly_income(self, quarter)
+        return int(_ttd.script.company.get_quarterly_income(self, quarter))
 
-    def quarterly_expenses(self, quarter: Quarter) -> int:
-        return _ttd.script.company.get_quarterly_expenses(self, quarter)
+    def quarterly_expenses(self, quarter: Quarter) -> Money:
+        return int(_ttd.script.company.get_quarterly_expenses(self, quarter))
 
-    def quarterly_cargo_delivered(self, quarter: Quarter) -> int:
-        return _ttd.script.company.get_quarterly_expenses(self, quarter)
+    def quarterly_cargo_delivered(self, quarter: Quarter) -> Money:
+        return int(_ttd.script.company.get_quarterly_expenses(self, quarter))
 
     def quarterly_performance_rating(self, quarter: Quarter) -> int:
         return _ttd.script.company.get_quarterly_performance_rating(self, quarter)
@@ -217,11 +217,11 @@ class Company(_ID,int):
 
     def set_auto_renew_money(self, money: Money) -> None:
         self._chk("autorenew money")
-        return with_(None, _ttd.script.company.set_auto_renew_money, self, money)
+        return with_(None, _ttd.script.company.set_auto_renew_money, self, int(money))
 
     @property
-    def auto_renew_money(self) -> int:
-        return _ttd.script.company.get_auto_renew_money(self)
+    def auto_renew_money(self) -> Money:
+        return int(_ttd.script.company.get_auto_renew_money(self))
 
     def livery_colours(self, scheme:LiveryScheme) -> tuple[LiveryColour, LiveryColour]:
         self._chk("livery colours",True)

@@ -62,8 +62,8 @@ class Engine(_ID,int):
         return _ttd.script.engine.get_max_speed(self)
 
     @property
-    def price(self) -> int:
-        return _ttd.script.engine.get_price(self)
+    def price(self) -> Money:
+        return int(_ttd.script.engine.get_price(self))
 
     @property
     def max_age(self) -> int:
