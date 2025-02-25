@@ -689,42 +689,54 @@ class Line:
         return min(n_buses, 25)
 
     def manage_vehicles(self):
-        cars = PlusSet(self.vehicles)
+        # Find unprofitable cars
+        cars = PlusSet(self.vehicles) - self.to_sell
         cars @= lambda v:v.age>700
         cars @= lambda v:v.profit_last_year < -100
-        cars @= lambda v:v not in self.to_sell
 
-        # Find unprofitable cars and order them to the nearest depot.
+        # … and order them to the nearest depot
         if cars and all(s.rating_for(self.script.passenger_cargo) > 40 for s in self.stations.values()):
             for c in cars:
                 c.send_to_depot()
                 self.to_sell.add(c)
 
-        # … then sell the cars as soon as they're in a depot.
+        # … then sell the cars as soon as they're in it.
         sold = set()
         for c in self.to_sell:
             if c.stopped_in_depot:
                 c.sell()
                 sold.add(c)
+                self.vehicles.remove(c)
         self.to_sell -= sold
 
-        if not self.script.has_money(12000):
-            return
-
-        # Check if we need more buses than estimated:
+        # Check if we need more buses than estimated.
         # * less than 35 buses on the road
-        # * the previous add-on bus was bought more than 50 days ago
-        # * more than 45 people waiting (total) and at least one town rating worse than 75%
-        # * (add) … or more than 200 people waiting
+        #   (20 when networking)
+        # * the last add-on bus was bought more than 50 days ago
+        # * we have enough money
+        # * more than 45 people waiting
+        # * at least one town rating worse than 75% (70% when networking is on)
+        #   * or more than 200 people waiting
         #
-        if len(self.vehicles) >= 35:
+        if self.n_buses > len(self.vehicles):
+            return  # managed by add_vehicles
+        if len(self.vehicles) >= (20 if self.script.network else 35):
             return
         if Date.now() - self.date_last_vehicle <= 50:
             return
-        waiting = sum(s.cargo_waiting(self.script.passenger_cargo) for s in self.stations.values())
+        if not self.script.has_money(self.vehicles.any.engine_type.price * 3/2):
+            return
+
+        waiting = 0
+        for s in self.stations.values():
+            for sn in self.stations.values():
+                if s == sn:
+                    continue
+                waiting += s.cargo_waiting_via(sn,self.script.passenger_cargo)
+
         if waiting <= 45:
             return
-        elif waiting <= 200 and all(s.rating_for(self.script.passenger_cargo) >= 75 for s in self.stations.values()):
+        elif waiting <= 200 and all(s.rating_for(self.script.passenger_cargo) >= (70 if self.script.network else 75) for s in self.stations.values()):
             return
 
         try:
