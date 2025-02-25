@@ -379,7 +379,9 @@ class BaseScript:
 
         for k,v in kw.items():
             typ = setup[k][1]
-            if not isinstance(v,typ):
+            if typ is bool and v in (0,1):
+                v=bool(v)
+            elif not isinstance(v,typ):
                 raise ValueError(f"The value of {k} must be {typ}, not {v !r}")
             setup[k] = v,
 
