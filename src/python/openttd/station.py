@@ -198,8 +198,9 @@ class Mode(_ID,int):
 
 
 class Stations(PlusSet[Station]):
-    def __init__(self, type_:StationType):
-        source = _WrappedList(_ttd.script.stationlist.List(type_))
+    def __init__(self, type_:StationType|None=None, source=None):
+        if source is None:
+            source = _WrappedList(_ttd.script.stationlist.List(type_))
         for s in source:
             self.add(Station(s))
 
