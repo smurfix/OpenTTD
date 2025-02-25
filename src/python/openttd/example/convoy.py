@@ -310,9 +310,7 @@ class Script(AIScript):
         if bal > amount:
             return True
 
-        return (self.company.bank_balance +
-                self.company.max_loan_amount -
-                self.company.loan_amount > amount)
+        self.manage_loan(amount)
 
 
     def main(self):
@@ -365,7 +363,7 @@ class Script(AIScript):
             self.sleep(.1)
 
             if i%200 == 1:
-                self.manage_loan()
+                self.manage_loan(repay=True)
                 self.manage_vehicles()
 
             if i%50 == 1:
@@ -375,8 +373,6 @@ class Script(AIScript):
             i += 1
 
     def manage_building(self):
-        self.company.set_loan_amount(self.company.max_loan_amount)
-
         for towns,line in self.lines.items():
             if not self.has_money(25000):
                 return
@@ -473,24 +469,34 @@ class Script(AIScript):
                 i += 1
             raise RuntimeError("Cannot set company name: ??")
 
-    def manage_loan(self, min_balance=None):
+    def manage_loan(self, min_balance=None, repay=False):
         interval = self.company.loan_interval
+        balance = self.company.bank_balance
         if min_balance is None:
-            # keep 2*interval in the bank by default
-            min_balance=2*interval
-        balance = self.company.bank_balance - min_balance
+            # keep 2*interval in the bank by default, but add some hysteresis
+            if balance < interval*2:
+                min_balance = 2*interval
+            elif balance > 4*interval:
+                min_balance = 3*interval
+            else:
+                return True
+        balance -= min_balance
         loan = self.company.loan_amount
         if balance > 0:
             if loan == 0:
                 return True
             if loan < balance:
-                self.company.set_loan_amount(0)
+                if repay:
+                    self.company.set_loan_amount(0)
                 return True
 
-        # round up to the next interval
+        # round to the next interval
+        current_loan = loan
         loan = loan-balance + interval-1
         loan -= loan%interval
         with exceptions(False):
+            if current_loan > loan and not repay:
+                return True
             return self.company.set_loan_amount(loan)
 
     def manage_vehicles(self):
