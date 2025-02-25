@@ -32,6 +32,7 @@ Stations = openttd._.Stations
 StationType = openttd.station.Type
 Vehicle = openttd._.Vehicle
 TTDError = openttd._.TTDError
+TTDCommandError = openttd._.TTDCommandError
 
 Slope = openttd.tile.Slope
 Err = openttd.error.Error
@@ -109,15 +110,23 @@ class Script(AIScript):
                     t.Sign(t.content_str)
                 return
 
-            while True:
+            for _ in range(30):
                 try:
                     path.build_road(on_error=err)
-                except TTDError as exc:
+                except TTDCommandError as exc:
+                    if exc.err == openttd.str.error.ROAD_VEHICLE_IN_THE_WAY:
+                        self.sleep(10)
+                        continue
+                    if exc.err == openttd.str.error.NOT_ENOUGH_CASH_REQUIRES_CURRENCY:
+                        if not self.manage_loan(10000):
+                            break
+                        continue
+
                     # TODO classify as to the list below
                     # and decide whether to retry
                     self.log.exception("Build Fail: %r", exc)
                     t = getattr(exc,"tile", None)
-                    if tile is not None:
+                    if t is not None:
                         avoid.add(tile)
                         break
                     else:
