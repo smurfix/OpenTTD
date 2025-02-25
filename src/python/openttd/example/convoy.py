@@ -59,6 +59,7 @@ class Script(AIScript):
         ("agressive",False),
         ("d_min",70),
         ("d_max",140),
+        ("waiting",10),
     )
 
     lines:dict[frozenset[Station],Line]
@@ -586,6 +587,15 @@ class Line:
 
         # Not too fast please.
         if Date.now() - self.date_last_vehicle <= 10:
+            return
+
+        # Figure out how many are blocked, so we don't add to an existing
+        # gridlock
+        blocks = self.vehicles @ (lambda v: not v.tile.is_station and not v.tile.is_road_depot)
+        blocks @= lambda v: (v.speed == 0 and not v.is_broken)
+        if len(blocks) > len(self.vehicles) * self.script.waiting/100:
+            # TODO if they're all waiting on the same station, we
+            # should think about extending it
             return
 
         # OK so we do need some. Figure out what to buy. Capacity is
