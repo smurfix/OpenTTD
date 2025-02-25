@@ -68,6 +68,12 @@ class Script(AIScript):
     depots:dict[Town,Tile]
     stations:dict[Town,PlusSet[Station]]
 
+    agressive:bool
+    network:int
+    waiting:int
+    d_min:int
+    d_max:int
+
     retry_towns:int = 0
     # skip trying to find a new pair of towns if we didn't get one often
     # enough, as to conserve CPU
