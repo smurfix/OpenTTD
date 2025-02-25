@@ -356,9 +356,9 @@ class Script(AIScript):
                 try:
                     l=self.lines[towns]
                 except KeyError:
-                    self.lines[towns]=l=Line(towns)
-                l.cars.add(v)
-                l.stations[s.closest_town].add(s)
+                    self.lines[towns]=l=Line(self,towns)
+                l.vehicles.add(v)
+                l.stations[s.closest_town] = s
 
         for l in self.lines.values():
             l.restored()
@@ -576,13 +576,19 @@ class Line:
         for town,station in self.stations.items():
             if station is not None:
                 continue
+            if (sn := self.script.stations[town]):
+                station = sn.any
+                self.stations[town] = station
 
-            loc = self.script.find_bus_stop_location(town, self.script.passenger_cargo, False)
-            if loc is None:
-                return False
-            if not self.script.build_bus_stop(loc):
-                return False
-            self.stations[town]=loc.station
+            else:
+                loc = self.script.find_bus_stop_location(town, self.script.passenger_cargo, False)
+                if loc is None:
+                    self.failed = True
+                    return False
+                if not self.script.build_bus_stop(loc):
+                    return False
+                self.stations[town]=loc.station
+                sn.add(loc.station)
 
         ts = list(self.stations.items())
         if len(ts) > 2:
