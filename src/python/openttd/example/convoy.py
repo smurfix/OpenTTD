@@ -318,7 +318,7 @@ class Script(AIScript):
     def main(self):
         self.set_name()
         openttd._.RoadType.ROAD.set_current()
-        self.log.info(f"{self.name} starting in {'agressive' if self.agressive else 'lenient'} mode")
+        self.log.info(f"{self.company.name} starting in {'agressive' if self.agressive else 'lenient'} mode")
 
         cargoes = openttd._.Cargo.List()
         cargoes @= lambda c: c.has_class(openttd.cargo.Class.PASSENGERS)
@@ -458,17 +458,20 @@ class Script(AIScript):
 
     def set_name(self):
         name="Convoy"
-        if self.company.set_name(name):
-            self.name=name
+        if self.company.name == name:
             return
-        i = 2
-        while i<30:
-            name = f"Convoy#{i}"
+        with exceptions(False):
             if self.company.set_name(name):
-                self.name=name
                 return
-            i += 1
-        raise RuntimeError("Cannot set company name: ??")
+            i = 2
+            while i<30:
+                name = f"Convoy#{i}"
+                if self.company.name == name:
+                    return
+                if self.company.set_name(name):
+                    return
+                i += 1
+            raise RuntimeError("Cannot set company name: ??")
 
     def manage_loan(self, min_balance=None):
         interval = self.company.loan_interval
