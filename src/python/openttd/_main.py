@@ -290,7 +290,14 @@ class Main:
             except KeyError:
                 # last possibility, it's a plain script
                 runner = data["Script"]
-                vev = await self.do_start(runner, *args)
+                from .base import AIScript
+                if issubclass(runner,AIScript):
+                    # first arg must be the company
+                    company, *args = args
+                    company = openttd._.Company(int(company))
+                    vev = await self.do_start(runner, *args, company=company)
+                else:
+                    vev = await self.do_start(runner, *args)
                 await vev.event.wait()
 
             else:

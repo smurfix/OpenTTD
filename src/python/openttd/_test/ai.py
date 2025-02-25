@@ -18,8 +18,11 @@ from importlib import import_module
 
 class Script(TestScript):
     async def test(self, *, run:str, **kw):
-        s = import_module(run).Script(company=self.company)
+        s = import_module(run).Script(self.id, self.company)
+
+        from openttd.base import SELF
+        SELF.set(s)
         await maybe_async_threaded(s.setup,**kw)
-        await maybe_async_threaded(s.run)
+        await maybe_async_threaded(s.main)
 
 

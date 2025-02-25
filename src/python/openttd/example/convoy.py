@@ -70,8 +70,8 @@ class Script(AIScript):
     # enough, as to conserve CPU
     date_town_acc_update = 0
 
-    def __init__(self, *a, company=None, **kw):
-        super().__init__(self,company,*a,**kw)
+    def __init__(self, *a, **kw):
+        super().__init__(*a,**kw)
 
         self.selling: PlusSet[Vehicle] = PlusSet()
         self.lines = dict()
@@ -295,7 +295,7 @@ class Script(AIScript):
                 self.company.loan_amount > amount)
 
 
-    def run(self):
+    def main(self):
         self.set_name()
         openttd._.RoadType.ROAD.set_current()
         self.log.info(f"{self.name} starting in {'agressive' if self.agressive else 'lenient'} mode")

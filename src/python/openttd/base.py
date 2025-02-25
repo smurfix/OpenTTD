@@ -134,6 +134,10 @@ class BaseScript:
     test_mode = staticmethod(test_mode)
 
     @property
+    def id(self):
+        return self.__id
+
+    @property
     def company(self):
         """Returns the company this script runs as."""
         return self.__company
