@@ -179,6 +179,10 @@ class Vehicle(_ID, int):
     def send_to_depot_service(self) -> None:
         return with_(None,_ttd.script.vehicle.send_vehicle_to_depot_for_servicing,self)
 
+    @property
+    def is_broken(self) -> bool:
+        return self.state == State.BROKEN
+
     def start_stop(self) -> None:
         return with_(None,_ttd.script.vehicle.start_stop_vehicle,self)
 
