@@ -364,6 +364,8 @@ class Script(AIScript):
             l.restored()
 
         i=0
+        n_towns = len(openttd._.Towns())
+        n_towns = 4*n_towns**1.5
         while True:
             self.test_stop()
             self.sleep(.1)
@@ -372,7 +374,7 @@ class Script(AIScript):
                 self.manage_loan(repay=True)
                 self.manage_vehicles()
 
-            if i%50 == 1:
+            if i%n_towns == 1:
                 self.add_vehicles()
                 self.manage_building()
 
