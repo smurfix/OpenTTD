@@ -405,7 +405,7 @@ class Script(AIScript):
         front = station.location.road_station_front
         tiles = front.Rect(10)
         tiles @= lambda t: t.count_adjacent_roads > 0
-        tiles @= lambda t: not t.is_road
+        tiles @= lambda t: (not t.is_road and not t.is_road_station and not t.is_road_depot)
         tiles @= lambda t: t.slope == Slope.FLAT
         # XXX this code (adapted from the original) can find an unreachable
         # location (which is why this version adds a pathfind below).
