@@ -364,6 +364,21 @@ class PlusSet[T](set):
             heappush(res, (-key(x),x))
         return it(res)
 
+    # sets use |/- instead of +/- which is annyoing
+
+    def __iadd__(self,other):
+        return set.__ior__(self,other)
+
+    def __add__(self, other):
+        res = PlusSet(self)
+        res |= other
+        return res
+
+    def __sub__(self, other):
+        res = PlusSet(self)
+        res -= other
+        return res
+
 def it(heap):
     while heap:
         yield heappop(heap)[1]
