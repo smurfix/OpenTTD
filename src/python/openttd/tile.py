@@ -730,28 +730,37 @@ class Tile[Collection:Tiles]:
             else:
                 self.add(t)
 
-    def Rect(self, size:int) -> Self:
+    def Rect(self, size:int, *, _filter = lambda x,y:True) -> Self:
         xmin,xmax=max(1,self.x-size),min(self.x+size,_ttd.script.map.get_map_size_x()-1)
         ymin,ymax=max(1,self.y-size),min(self.y+size,_ttd.script.map.get_map_size_y()-1)
 
         res = self.Tiles()
-        for x in range(xmin,xmax+1):
-            for y in range(ymin,ymax+1):
-                res.add(Tile(x,y))
+        def chk(x,y):
+            x += self.x
+            y += self.y
+            if not (xmin <= x <= xmax):
+                return
+            if not (ymin <= y <= ymax):
+                return
+            if not _filter(x,y):
+                return
+            res.add(Tile(x,y))
+
+        for d in range(0,2*size+1):
+            for x in range(d+1):
+                y=d-x
+                chk(x,y)
+                chk(-x,y)
+                chk(-x,-y)
+                chk(x,-y)
         return res
 
     def Diamond(self, size: int) -> Self:
-        xmin,xmax=max(1,self.x-size),min(self.x+size,_ttd.script.map.get_map_size_x()-1)
-        ymin,ymax=max(1,self.y-size),min(self.y+size,_ttd.script.map.get_map_size_y()-1)
+        return self.Rect(size, _filter=lambda: abs(x)+abs(y)<=size)
 
-        res = self.Tiles()
-        cx,cy=self.xy
-        for x in range(xmin,xmax+1):
-            for y in range(ymin,ymax+1):
-                if abs(x-cx)+abs(y-cy)>size:
-                    continue
-                res.add(Tile(x,y))
-        return res
+    def Circle(self, size: int) -> Self:
+        sz2 = size*size
+        return self.Rect(size, _filter=lambda: x*x+y*y<=sz2)
 
 
 @define
