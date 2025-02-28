@@ -737,16 +737,15 @@ class Line:
 
         # Check if we need more buses than estimated.
         # * less than 35 buses on the road
-        #   (20 when networking)
+        #   (15 when networking)
         # * the last add-on bus was bought more than 50 days ago
         # * we have enough money
         # * more than 45 people waiting
-        # * at least one town rating worse than 75% (70% when networking is on)
-        #   * or more than 200 people waiting
+        # * at least one town rating worse than 75% (60% when networking is on)
         #
         if self.n_buses > len(self.vehicles):
             return  # managed by add_vehicles
-        if len(self.vehicles) >= (20 if self.script.network else 35):
+        if len(self.vehicles) >= (15 if self.script.network else 35):
             return
         if Date.now() - self.date_last_vehicle <= 50:
             return
@@ -773,7 +772,7 @@ class Line:
 
         if waiting <= 45:
             return
-        elif waiting <= 200 and all(s.rating_for(self.script.passenger_cargo) >= (70 if self.script.network else 75) for s in self.stations.values()):
+        if all(s.rating_for(self.script.passenger_cargo) >= (60 if self.script.network else 75) for s in self.stations.values()):
             return
 
         try:
