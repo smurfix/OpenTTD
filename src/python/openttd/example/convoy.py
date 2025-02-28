@@ -167,16 +167,20 @@ class Script(AIScript):
 #
 
     #= TownManager::CreateExitRoute
-    def create_exit_route(self, busstop:Tile, town:Town, size:int=5):
+    def create_exit_route(self, busstop:Tile, town:Town, size:int=5) -> bool:
         exits = busstop.Rect(size)
         exits @= attr_("is_road")
         exits @= lambda t: t.slope == Slope.FLAT
         center = town.center
         exits = list(exits.max_n(2, lambda t: t.d_manhattan(center)))
+        if not exits:
+            return False
+
         with self.test_mode():
             if not RoadPath((TilePath(center,Dir.SAME),),exits).run():
                 self.log.warn(f"No way for stop at {busstop.xy} to reach {exit.xy} ??")
-        return exit
+                return False
+        return True
 
 
     #= TownManager::FindLineBusStopLocation
@@ -561,15 +565,19 @@ class Line:
         pass
 
     def build_road(self):
-        sn = list(self.stations.values())
-        if len(sn) > 2:
-            ts.append(sn[0])
-        for sn1,sn2 in pairwise(sn):
-            # TODO use Station.tiles_for
-            sp1 = sn1.location.road_station_front
-            sp2 = sn2.location.road_station_front
-            self.script.build_road((TilePath(sp1,Dir.SAME),),(TilePath(sp2,Dir.SAME),))
-        return True
+        try:
+            sn = list(self.stations.values())
+            if len(sn) > 2:
+                ts.append(sn[0])
+            for sn1,sn2 in pairwise(sn):
+                # TODO use Station.tiles_for
+                sp1 = sn1.location.road_station_front
+                sp2 = sn2.location.road_station_front
+                self.script.build_road((TilePath(sp1,Dir.SAME),),(TilePath(sp2,Dir.SAME),))
+            return True
+        except TTDCommandError:
+            self.failed=True
+            return False
 
     def build_stations(self) -> bool:
         """
@@ -596,7 +604,12 @@ class Line:
         if len(ts) > 2:
             ts.append(ts[0])
         for a,b in pairwise(ts):
-            self.script.create_exit_route(a[1].location.road_station_front, b[0])
+            with exceptions(False):
+                self.script.create_exit_route(a[1].location.road_station_front, b[0])
+                # On error:
+                # Most likely the station's general location doesn't match
+                # the actual station. This happens when the user extends the
+                # station. TODO find the station's actual bus station tiles.
 
         # if we got here we have built (or found) a station in every town
         return True
@@ -669,10 +682,9 @@ class Line:
                 if depots:
                     vo.append(depots.any, OrderFlags.SERVICE_IF_NEEDED)
                 vo.append(s.location)  # TODO find an actual tile
-            try:
+            with exceptions(False):
                 vo[self.start_station*2+1].goto()
-            except TTDError:
-                pass
+                # Happens when one of the locations couldn't get a depot
             v.start()
         except Exception as exc:
             # If anything went wrong, toss the thing.
@@ -738,8 +750,19 @@ class Line:
             return
         if Date.now() - self.date_last_vehicle <= 50:
             return
-        if not self.script.has_money(self.vehicles.any.engine_type.price * 3/2):
-            return
+        while True:
+            vo = self.vehicles.any
+            try:
+                if not self.script.has_money(vo.engine_type.price * 3/2):
+                    return
+            except TTDCommandError:
+                # somebody sold this bus (or maybe it crashed).
+                self.vehicles.remove(vo)
+            except StopIteration:
+                # somebody sold all our buses?!?
+                return
+            else:
+                break
 
         waiting = 0
         for s in self.stations.values():
@@ -756,10 +779,11 @@ class Line:
         try:
             # Pick a vehicle and a depot
             v = None
-            vo = self.vehicles.any
             for t,s in self.stations.items():
                 if (dep := self.script.depots[t].any) is not None:
                     v = vo.clone(dep, True)
+                    with exceptions(False):
+                        v.orders[self.start_station*2+1].goto()
                     v.start()
                     break
             # TODO jump the order list to the station in the town where the depot is

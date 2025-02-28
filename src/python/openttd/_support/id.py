@@ -33,8 +33,8 @@ class _ID:
     _Base:ClassVar[type] = int
 
     def __new__(cls, *a,**kw):
-        if not cls.is_valid(*a,**kw):
-            raise ValueError(f"Invalid ID {id} for {cls}")
+        if not cls.is_valid(*a):
+            raise ValueError(f"Invalid ID {' '.join(str(x) for x in a)} for {cls.__name__}")
         return super().__new__(cls,*a,**kw)
 
     @staticmethod
